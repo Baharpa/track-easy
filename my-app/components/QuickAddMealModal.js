@@ -56,7 +56,7 @@ export default function QuickAddMealModal({ meal, show, onHide }) {
   }
 
   return (
-    <Modal show={show} onHide={closeModal} centered>
+    <Modal show={show} onHide={closeModal} centered dialogClassName="quick-add-modal">
       <Modal.Header closeButton>
         <Modal.Title>Quick Add</Modal.Title>
       </Modal.Header>

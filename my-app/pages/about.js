@@ -4,7 +4,7 @@ import PageHeader from '../components/PageHeader';
 export default function About() {
   return (
     <>
-      <PageHeader title="About Track Easy" text="A beginner-friendly full-stack food tracking app." />
+      <PageHeader title="Track easier with me." />
       <Row className="g-4">
         <Col md={6}>
           <Card className="page-card p-4 h-100">
@@ -14,11 +14,6 @@ export default function About() {
           </Card>
         </Col>
         <Col md={6}>
-          <Card className="page-card p-4 h-100">
-            <h4>How nutrition is calculated</h4>
-            <p>Ingredients are the base data. Meals use selected amounts of those ingredients. The app scales calories, protein, carbs, fats, and sugar based on the amount used.</p>
-            <p>Meal components can also split a smaller eaten portion proportionally across their ingredients.</p>
-          </Card>
         </Col>
       </Row>
     </>

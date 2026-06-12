@@ -200,6 +200,14 @@ a:hover {
   box-shadow: 0 0 0 3px rgba(95, 143, 95, 0.18);
 }
 
+.ingredient-library-category-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
 .ingredient-library-actions {
   display: flex;
   flex-wrap: wrap;
@@ -222,6 +230,21 @@ a:hover {
 .empty-category-card h5 {
   color: #203227;
   font-weight: 800;
+}
+
+@media (max-width: 575.98px) {
+  .ingredient-library-category-header {
+    display: block;
+  }
+
+  .ingredient-library-actions {
+    justify-content: stretch;
+    margin-top: 0.85rem;
+  }
+
+  .ingredient-library-actions .btn {
+    flex: 1 1 100%;
+  }
 }
 
 .ingredient-library-img {
@@ -752,6 +775,287 @@ a:hover {
   font-size: 3rem;
 }
 
+.meal-details-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.meal-details-page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding-top: 0.25rem;
+}
+
+.meal-details-page-actions .btn {
+  margin: 0 !important;
+}
+
+.meal-details-card {
+  margin-bottom: 1.5rem;
+}
+
+.meal-details-card .card-body {
+  padding: 1.5rem;
+}
+
+.meal-details-hero {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.meal-details-hero h3 {
+  color: #203227;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.meal-detail-category {
+  color: var(--green-dark);
+  font-weight: 800;
+}
+
+.meal-detail-section {
+  border-top: 1px solid rgba(236, 229, 216, 0.9);
+  margin-top: 1.35rem;
+  padding-top: 1.35rem;
+}
+
+.meal-detail-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.85rem;
+}
+
+.meal-detail-section-heading h4 {
+  color: #203227;
+  font-size: 1.08rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.meal-detail-nutrition-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.meal-detail-nutrition-chip {
+  background: linear-gradient(180deg, #f8fbf4, #fffefb);
+  border: 1px solid rgba(95, 147, 104, 0.18);
+  border-radius: 16px;
+  padding: 0.8rem;
+}
+
+.meal-detail-nutrition-chip span {
+  color: var(--muted);
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 800;
+  margin-bottom: 0.2rem;
+}
+
+.meal-detail-nutrition-chip strong {
+  color: #203227;
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+
+.meal-component-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.meal-component-row {
+  align-items: center;
+  background: #fffaf3;
+  border: 1px solid rgba(236, 229, 216, 0.9);
+  border-radius: 16px;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+}
+
+.meal-component-row h5 {
+  color: #203227;
+  font-size: 1rem;
+  font-weight: 800;
+  margin: 0 0 0.18rem;
+}
+
+.meal-component-row span,
+.meal-component-nutrition {
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.meal-component-nutrition {
+  color: var(--green-dark);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.meal-ingredient-table-wrap {
+  overflow-x: auto;
+}
+
+.meal-ingredient-table {
+  margin-bottom: 0;
+  min-width: 760px;
+}
+
+.meal-ingredient-table th {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  border-bottom-color: var(--border);
+}
+
+.meal-ingredient-table td {
+  color: #203227;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.meal-ingredient-name-cell {
+  align-items: center;
+  display: flex;
+  gap: 0.65rem;
+}
+
+.meal-ingredient-thumb,
+.meal-ingredient-placeholder {
+  border-radius: 12px;
+  flex: 0 0 auto;
+  height: 44px;
+  object-fit: cover;
+  width: 44px;
+}
+
+.meal-ingredient-placeholder {
+  font-size: 1.35rem;
+}
+
+.meal-ingredient-mobile-list {
+  display: none;
+}
+
+.meal-ingredient-mobile-card {
+  background: #fffaf3;
+  border: 1px solid rgba(236, 229, 216, 0.9);
+  border-radius: 16px;
+  padding: 0.9rem;
+}
+
+.meal-ingredient-mobile-header {
+  align-items: center;
+  display: flex;
+  gap: 0.7rem;
+  margin-bottom: 0.75rem;
+}
+
+.meal-ingredient-mobile-header h5 {
+  color: #203227;
+  font-size: 1rem;
+  font-weight: 800;
+  margin: 0 0 0.12rem;
+}
+
+.meal-ingredient-mobile-header span {
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.meal-ingredient-mobile-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.meal-ingredient-mobile-stats span {
+  background: #fff;
+  border: 1px solid rgba(95, 147, 104, 0.14);
+  border-radius: 999px;
+  color: #203227;
+  font-size: 0.82rem;
+  font-weight: 800;
+  padding: 0.42rem 0.6rem;
+}
+
+@media (max-width: 767.98px) {
+  .meal-details-page-header {
+    display: block;
+  }
+
+  .meal-details-page-actions {
+    justify-content: flex-start;
+    margin-bottom: 1rem;
+  }
+
+  .meal-details-card .card-body {
+    padding: 1rem;
+  }
+
+  .meal-details-hero {
+    align-items: flex-start;
+  }
+
+  .meal-detail-img,
+  .meal-detail-placeholder {
+    width: 92px;
+    height: 82px;
+    border-radius: 14px;
+  }
+
+  .meal-detail-placeholder {
+    font-size: 2rem;
+  }
+
+  .meal-detail-nutrition-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .meal-component-row {
+    align-items: flex-start;
+    display: block;
+  }
+
+  .meal-component-nutrition {
+    margin-top: 0.45rem;
+    text-align: left;
+    white-space: normal;
+  }
+
+  .meal-ingredient-table-wrap {
+    display: none;
+  }
+
+  .meal-ingredient-mobile-list {
+    display: grid;
+    gap: 0.75rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .meal-details-page-actions .btn {
+    flex: 1 1 auto;
+  }
+
+  .meal-detail-nutrition-grid,
+  .meal-ingredient-mobile-stats {
+    grid-template-columns: 1fr;
+  }
+}
+
 .nutrition-summary-grid .col-md {
   min-width: 150px;
 }
@@ -1180,30 +1484,15 @@ a:hover {
 }
 
 .meal-filter-control,
-.meal-filter-control .form-control,
-.meal-filter-control .input-group-text,
 .meal-filter-bar .form-select {
   min-height: 42px;
   border-color: var(--border);
   background-color: #fffefb;
   font-size: 0.95rem;
-}
-
-.meal-filter-control .input-group-text {
-  border-radius: 999px 0 0 999px;
-  color: var(--green-dark);
-  font-weight: 800;
-}
-
-.meal-filter-control .form-control {
-  border-radius: 0 999px 999px 0;
-}
-
-.meal-filter-bar .form-select {
   border-radius: 999px;
 }
 
-.meal-filter-control .form-control:focus,
+.meal-filter-control:focus,
 .meal-filter-bar .form-select:focus,
 .meal-filter-week-toggle:focus-within {
   border-color: var(--green);
@@ -1221,6 +1510,22 @@ a:hover {
   color: #405044;
   font-size: 0.95rem;
   font-weight: 700;
+}
+
+@media (max-width: 575.98px) {
+  .meal-filter-bar .row > [class*="col"] {
+    width: 100%;
+  }
+
+  .meal-filter-control,
+  .meal-filter-bar .form-select,
+  .meal-filter-week-toggle {
+    width: 100%;
+  }
+
+  .meal-filter-week-toggle {
+    justify-content: flex-start;
+  }
 }
 
 .food-card-actions {
@@ -1547,18 +1852,144 @@ a:hover {
   color: #d85b7b;
 }
 
+.weekly-history-mobile-list {
+  display: none;
+}
+
+.weekly-history-table {
+  margin-bottom: 0;
+}
+
+.weekly-history-mobile-card {
+  background: #fffaf3;
+  border: 1px solid rgba(236, 229, 216, 0.9);
+  border-radius: 16px;
+  padding: 0.85rem;
+}
+
+.weekly-history-mobile-card strong,
+.weekly-history-mobile-card span {
+  display: block;
+}
+
+.weekly-history-mobile-card strong {
+  color: #203227;
+  font-weight: 800;
+}
+
+.weekly-history-mobile-card span {
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.weekly-history-mobile-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+  margin-top: 0.65rem;
+}
+
+.weekly-history-mobile-stats span {
+  background: #fff;
+  border: 1px solid rgba(95, 147, 104, 0.14);
+  border-radius: 999px;
+  color: #203227;
+  padding: 0.42rem 0.6rem;
+}
+
 @media (max-width: 576px) {
+  body {
+    background: linear-gradient(180deg, #fffaf3 0%, var(--app-bg) 18rem);
+  }
+
   .app-shell {
-    padding-left: 1rem;
-    padding-right: 1rem;
+    padding: 0.75rem 0.85rem calc(5rem + env(safe-area-inset-bottom));
   }
 
   .page-card {
-    border-radius: 18px;
+    border-radius: 16px;
+    box-shadow: var(--shadow-soft);
+  }
+
+  .page-card.p-3,
+  .page-card.p-4,
+  .page-card.p-5,
+  .dashboard-panel,
+  .tracker-log-card,
+  .tracker-goals-card,
+  .tracker-today-card,
+  .filter-card {
+    padding: 1rem !important;
+  }
+
+  .main-navbar {
+    margin-bottom: 0;
+  }
+
+  .main-navbar .container {
+    padding-left: 0.85rem;
+    padding-right: 0.85rem;
+  }
+
+  .brand-text {
+    font-size: 1.08rem;
   }
 
   .page-header h1 {
-    font-size: 1.75rem;
+    font-size: 1.45rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .page-header {
+    margin-bottom: 0.9rem;
+  }
+
+  .page-header p {
+    font-size: 0.9rem;
+    line-height: 1.35;
+  }
+
+  .list-page-header {
+    display: block;
+  }
+
+  .list-page-header .btn {
+    width: 100%;
+    margin-bottom: 1rem;
+  }
+
+  .form-group,
+  .mb-3 {
+    margin-bottom: 0.75rem !important;
+  }
+
+  .form-control,
+  .form-select,
+  .btn {
+    min-height: 44px;
+  }
+
+  .modal-dialog {
+    margin: 0.5rem;
+  }
+
+  .modal-content {
+    border-radius: 18px;
+  }
+
+  .modal-body {
+    max-height: calc(100vh - 8rem);
+    overflow-y: auto;
+  }
+
+  .modal-footer {
+    gap: 0.5rem;
+  }
+
+  .modal-footer .btn {
+    flex: 1 1 100%;
+    margin: 0;
   }
 
   .nutrition-summary-grid {
@@ -1602,6 +2033,46 @@ a:hover {
     grid-template-columns: 1fr;
   }
 
+  .dashboard-grid,
+  .tracker-layout,
+  .food-card-grid {
+    --bs-gutter-x: 0.8rem;
+    --bs-gutter-y: 0.8rem;
+    margin-top: 0.9rem;
+  }
+
+  .quick-action-button,
+  .tracker-submit-button,
+  .meal-builder-toolbar .btn,
+  .empty-builder-card .btn,
+  .ingredient-form-submit,
+  .quick-add-modal .btn-success {
+    width: 100%;
+  }
+
+  .quick-actions-card {
+    display: grid;
+    gap: 0.55rem;
+  }
+
+  .quick-actions-card .quick-action-button {
+    margin-bottom: 0;
+  }
+
+  .goal-progress {
+    padding: 0.65rem 0.75rem;
+    margin-bottom: 0.65rem;
+  }
+
+  .goal-card h4,
+  .quick-actions-card h4,
+  .recent-meals-card h4,
+  .tracker-log-card h4,
+  .page-card > h4 {
+    font-size: 1rem;
+    margin-bottom: 0.7rem;
+  }
+
   .food-card-grid > [class*="col-"] {
     width: 100%;
   }
@@ -1609,6 +2080,7 @@ a:hover {
   .compact-meal-card {
     gap: 0.7rem;
     padding: 0.65rem;
+    min-height: auto;
   }
 
   .compact-meal-image,
@@ -1630,6 +2102,10 @@ a:hover {
     justify-content: flex-start;
     flex-basis: auto;
     width: 100%;
+  }
+
+  .meal-card-actions .btn:not(.favourite-icon-button) {
+    flex: 1 1 auto;
   }
 
   .meal-stat-row {
@@ -1683,7 +2159,30 @@ a:hover {
   }
 
   .meal-picker-body {
-    max-height: 76vh;
+    max-height: calc(100vh - 7rem);
+    padding: 0.85rem;
+  }
+
+  .meal-picker-controls {
+    gap: 0.55rem;
+    margin-bottom: 0.65rem;
+    padding-bottom: 0.65rem;
+  }
+
+  .meal-image-preview,
+  .meal-preview-img,
+  .meal-preview-placeholder {
+    min-height: 118px;
+    height: 118px;
+  }
+
+  .meal-preview-placeholder {
+    font-size: 2.1rem;
+  }
+
+  .meal-setup-card .row,
+  .meal-setup-card .mt-3 {
+    --bs-gutter-y: 0.5rem;
   }
 
   .component-card-header {
@@ -1693,6 +2192,8 @@ a:hover {
 
   .component-ingredient-row {
     align-items: flex-start;
+    gap: 0.55rem;
+    padding: 0.55rem;
   }
 
   .component-ingredient-thumb,
@@ -1740,12 +2241,113 @@ a:hover {
     padding: 0.75rem 1rem;
   }
 
-  .component-ingredient-row {
-    align-items: flex-start;
+  .meal-builder-toolbar {
+    display: block;
+    margin-bottom: 0.75rem;
+  }
+
+  .meal-builder-toolbar p {
+    font-size: 0.9rem;
+    margin-bottom: 0.65rem;
+  }
+
+  .empty-builder-card {
+    padding: 1.25rem !important;
+  }
+
+  .empty-builder-card h4 {
+    font-size: 1.1rem;
+  }
+
+  .builder-summary-card .card-body {
+    padding: 1rem;
+  }
+
+  .builder-summary-header {
+    margin-bottom: 0.7rem;
   }
 
   .ingredient-actions {
-    flex-direction: column;
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .ingredient-actions .btn {
+    flex: 1 1 auto;
+  }
+
+  .ingredient-library-card .card-body {
+    padding: 0.8rem;
+  }
+
+  .ingredient-library-img,
+  .ingredient-library-placeholder {
+    height: 96px;
+  }
+
+  .empty-category-card .card-body {
+    padding: 1.25rem;
+  }
+
+  .selected-ingredient-img,
+  .selected-ingredient-placeholder {
+    height: 120px;
+  }
+
+  .nutrition-table {
+    min-width: 420px;
+  }
+
+  .nutrition-table th,
+  .nutrition-table td {
+    padding: 0.55rem 0.6rem;
+    font-size: 0.84rem;
+  }
+
+  .recent-meal-card {
+    padding: 0.55rem;
+  }
+
+  .daily-log-card {
+    padding: 0.75rem;
+  }
+
+  .daily-log-stats {
+    row-gap: 0.5rem;
+    text-align: left;
+  }
+
+  .daily-log-hint {
+    text-align: left;
+  }
+
+  .component-portion-row {
+    gap: 0.55rem;
+  }
+
+  .component-portion-row > [class*="col"] {
+    width: 100%;
+  }
+
+  .tracker-log-card {
+    margin-bottom: 0.9rem;
+  }
+
+  .tracker-goals-card {
+    display: none;
+  }
+
+  .tracker-today-card {
+    margin-top: 0;
+  }
+
+  .weekly-history-table-wrap {
+    display: none;
+  }
+
+  .weekly-history-mobile-list {
+    display: grid;
+    gap: 0.7rem;
   }
 }
 

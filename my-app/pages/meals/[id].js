@@ -27,9 +27,9 @@ export default function MealDetailsPage() {
     {error && <ErrorMessage text="Failed to load meal details." />}
     {!meal && !error && <LoadingMessage text="Loading meal details..." />}
     {meal && <>
-      <div className="d-flex justify-content-between align-items-center">
+      <div className="meal-details-page-header">
         <PageHeader title={meal.name} text={normalizeMealCategory(meal.category)} />
-        <div>
+        <div className="meal-details-page-actions">
           <Button as={Link} href={`/meals/edit/${meal._id}`} variant="warning" className="me-2">Edit</Button>
           <Button variant="outline-danger" onClick={() => setShowDelete(true)}>Delete</Button>
         </div>

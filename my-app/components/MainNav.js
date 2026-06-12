@@ -52,10 +52,10 @@ export default function MainNav() {
   const logoHref = user ? '/dashboard' : '/';
 
   return (
-    <Navbar bg="light" expand="lg" expanded={expanded} onToggle={setExpanded} className="sticky-top main-navbar">
+    <Navbar bg="light" expand="lg" expanded={expanded} onToggle={setExpanded} collapseOnSelect className="sticky-top main-navbar">
       <Container>
         <Navbar.Brand as={Link} href={logoHref} className="brand-text" onClick={() => setExpanded(false)}>Track Easy</Navbar.Brand>
-        <Navbar.Toggle />
+        <Navbar.Toggle aria-label="Toggle navigation" />
         <Navbar.Collapse>
           <Nav className="me-auto">
             {user ? loggedInLinks.map(link => (

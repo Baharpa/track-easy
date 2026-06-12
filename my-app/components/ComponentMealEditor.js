@@ -536,12 +536,13 @@ function IngredientLibraryModal({
       </>}
 
       {selectedCategory && <>
-        <div className="d-flex justify-content-between align-items-center mb-3">
+        <div className="ingredient-library-category-header">
           <div>
             <h4 className="mb-0">{selectedCategory}</h4>
             <div className="text-muted small">Ingredients added here will go into the {selectedCategory} component.</div>
           </div>
           <div className="ingredient-library-actions">
+            <Button as={Link} href={addIngredientHref} variant="success">+ Add New</Button>
             <Button variant="outline-secondary" onClick={() => setSelectedCategory('')}>Back to Categories</Button>
           </div>
         </div>
@@ -551,7 +552,6 @@ function IngredientLibraryModal({
             <Card.Body>
               <h5>No {selectedCategory} yet.</h5>
               <p className="text-muted">Add one now, then come back and select it for this meal.</p>
-              <Button as={Link} href={addIngredientHref} variant="success">+ Add New</Button>
             </Card.Body>
           </Card>
         )}

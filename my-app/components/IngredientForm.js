@@ -111,7 +111,7 @@ export default function IngredientForm({ defaultValues = {}, onSubmit, buttonTex
           <Form.Control {...register('imageUrl')} placeholder="https://example.com/food.jpg" />
         </Form.Group>
 
-        <Button type="submit" variant="success" disabled={isSubmitting}>{isSubmitting ? 'Saving...' : buttonText}</Button>
+        <Button type="submit" variant="success" className="ingredient-form-submit" disabled={isSubmitting}>{isSubmitting ? 'Saving...' : buttonText}</Button>
       </Form>
     </Card>
   );
