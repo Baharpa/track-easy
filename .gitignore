@@ -1,0 +1,39 @@
+# dependencies
+node_modules/
+my-app/node_modules/
+user-api/node_modules/
+
+# Next.js
+.next/
+my-app/.next/
+my-app/out/
+
+# builds
+build/
+dist/
+my-app/build/
+user-api/build/
+user-api/dist/
+
+# environment variables
+.env
+.env.local
+.env.*.local
+my-app/.env.local
+user-api/.env
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# test coverage
+coverage/
+
+# system files
+.DS_Store
+Thumbs.db
+
+*.log
+user-api/backend.log
