@@ -10,11 +10,40 @@ const app = express();
 const PORT = process.env.PORT || 8080;
 const mongoUrl = process.env.MONGO_URL || process.env.MONGODB_CONN_STRING;
 
-app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:3000' }));
+function normalizeOrigin(origin) {
+  return origin ? origin.replace(/\/+$/, '') : origin;
+}
+
+function getAllowedOrigins() {
+  const configuredOrigins = [
+    process.env.CLIENT_URL,
+    process.env.CLIENT_URLS
+  ].filter(Boolean).flatMap(value => value.split(','));
+
+  const origins = [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    ...configuredOrigins
+  ];
+
+  return [...new Set(origins.map(origin => normalizeOrigin(origin.trim())).filter(Boolean))];
+}
+
+const allowedOrigins = getAllowedOrigins();
+
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin) return callback(null, true);
+    return callback(null, allowedOrigins.includes(normalizeOrigin(origin)));
+  }
+}));
 app.use(express.json());
 app.use(passport.initialize());
 
 require('./config/passport')(passport);
+
+if (!mongoUrl) console.warn('MongoDB connection string is missing. Set MONGO_URL or MONGODB_CONN_STRING.');
+if (!process.env.JWT_SECRET) console.warn('JWT_SECRET is missing. Login and protected routes will fail.');
 
 mongoose.connect(mongoUrl)
   .then(() => console.log('MongoDB connected'))

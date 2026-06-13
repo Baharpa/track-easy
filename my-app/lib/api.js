@@ -1,4 +1,4 @@
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+export const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080').replace(/\/+$/, '');
 
 export function getToken() {
   if (typeof window === 'undefined') return null;
@@ -18,7 +18,8 @@ export async function apiFetch(path, options = {}) {
   const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(`${API_URL}${path}`, { ...options, headers });
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  const res = await fetch(`${API_URL}${cleanPath}`, { ...options, headers });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const detail = data.error ? `${data.message || 'Something went wrong'} ${data.error}` : data.message;
