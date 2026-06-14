@@ -7,11 +7,11 @@ import { removeToken } from '../lib/api';
 
 const loggedInLinks = [
   { label: 'Dashboard', href: '/dashboard' },
+  { label: 'Log Food', href: '/tracker' },
   { label: 'Inventory', href: '/ingredients' },
   { label: 'Create Meal', href: '/create-meal-component' },
   { label: 'Browse Meals', href: '/meals' },
   { label: 'Favourites', href: '/favourites' },
-  { label: 'Log Food', href: '/tracker' },
   { label: 'Profile', href: '/profile' }
 ];
 

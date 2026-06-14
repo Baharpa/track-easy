@@ -22,6 +22,7 @@ import {
 import { CATEGORY_LIBRARY, getCategoryClass, getCategoryIcon, getFoodImage } from '../lib/foodVisuals';
 import { getCategoryLabel } from '../lib/categoryHelpers';
 import { MEAL_CATEGORIES, normalizeMealCategory } from '../lib/mealCategoryHelpers';
+import { calculateNutritionWithUnit } from '../lib/unitConverter';
 
 function sameCategory(ingredient, categoryName) {
   const ingredientCategory = getCategoryLabel(ingredient.category || 'Other').toLowerCase();
@@ -41,11 +42,6 @@ function findIngredient(ingredients, ingredientId) {
 
 function componentIngredientLabel(count) {
   return `${count} ingredient${count === 1 ? '' : 's'}`;
-}
-
-function getServingSummary(ingredient) {
-  const nutrition = getIngredientServingNutrition(ingredient);
-  return `${formatCalories(nutrition.calories)} cal · ${formatMacro(nutrition.protein)}g protein`;
 }
 
 function getUsedAmountLabel(originalItem, calculatedItem) {
@@ -540,21 +536,29 @@ function IngredientLibraryModal({
   onSaveDraft
 }) {
   const targetGroup = selectedCategory || 'this category';
+  const selectedPreview = activeIngredient
+    ? calculateNutritionWithUnit(Number(amountUsed), unitUsed, activeIngredient)
+    : null;
   const addIngredientHref = {
     pathname: '/ingredients/add',
     query: { category: selectedCategory, returnTo: '/create-meal-component' }
   };
+  function handleSelectedIngredientSubmit(event) {
+    event.preventDefault();
+    if (!activeIngredient) return;
+    onAdd();
+  }
 
-  return <Modal show={show} onHide={onHide} size="xl" centered>
+  return <Modal show={show} onHide={onHide} size="xl" centered dialogClassName="ingredient-library-dialog">
     <Modal.Header closeButton>
       <Modal.Title>Ingredient Library</Modal.Title>
     </Modal.Header>
-    <Modal.Body>
+    <Modal.Body className="ingredient-library-body">
       {librarySuccess && <Alert variant="success" className="library-toast-alert">{librarySuccess}</Alert>}
 
       {!selectedCategory && <>
-        <p className="text-muted">Choose a category to browse ingredients from your inventory.</p>
-        <Row className="g-3">
+        <p className="text-muted ingredient-library-helper">Choose a category to browse ingredients from your inventory.</p>
+        <Row className="g-3 ingredient-library-category-grid">
           {CATEGORY_LIBRARY.map(category => {
             const count = ingredients.filter(ingredient => sameCategory(ingredient, category.name)).length;
             return <Col md={4} lg={3} key={category.name}>
@@ -579,7 +583,7 @@ function IngredientLibraryModal({
           </div>
           <div className="ingredient-library-actions">
             <Button as={Link} href={addIngredientHref} variant="success" onClick={onSaveDraft}>+ Add New</Button>
-            <Button variant="outline-secondary" onClick={() => setSelectedCategory('')}>Back to Categories</Button>
+            <Button variant="outline-secondary" onClick={() => setSelectedCategory('')}>Back</Button>
           </div>
         </div>
 
@@ -592,56 +596,50 @@ function IngredientLibraryModal({
           </Card>
         )}
 
-        {ingredientsInCategory.length > 0 && <Row className="g-3">
-          <Col lg={8}>
-            <Row className="g-3">
+        {ingredientsInCategory.length > 0 && <div className="ingredient-library-picker">
+          <div className="ingredient-library-list">
               {ingredientsInCategory.map(ingredient => {
                 const nutrition = getIngredientServingNutrition(ingredient);
                 const isActive = activeIngredient?._id === ingredient._id;
-                return <Col md={6} key={ingredient._id}>
-                  <Card className={`h-100 ingredient-library-card ${isActive ? 'selected' : ''}`} role="button" onClick={() => selectIngredient(ingredient)}>
+                return <Card className={`ingredient-library-card ${isActive ? 'selected' : ''}`} role="button" onClick={() => selectIngredient(ingredient)} key={ingredient._id}>
+                  <div className="ingredient-library-row">
                     <FoodImage src={getFoodImage(ingredient)} alt={ingredient.name} category={ingredient.category || selectedCategory} className="ingredient-library-img" placeholderClassName="ingredient-library-placeholder" />
-                    <Card.Body>
-                      <div className="d-flex justify-content-between gap-2">
-                        <h5 className="mb-1">{ingredient.name}</h5>
-                        <Badge bg="light" text="dark">{ingredient.category || 'Other'}</Badge>
+                    <Card.Body className="ingredient-library-row-body">
+                      <div className="ingredient-library-row-top">
+                        <h5>{ingredient.name}</h5>
+                        <Badge className="soft-pill soft-pill-beige">{ingredient.category || 'Other'}</Badge>
                       </div>
-                      <div className="text-muted small mb-2">Serving: {formatServingLabel(ingredient)}</div>
-                      <div className="small">
-                        {formatCalories(nutrition.calories)} cal - {formatMacro(nutrition.protein)}g protein
+                      <div className="ingredient-library-row-meta">{formatServingLabel(ingredient)}</div>
+                      <div className="ingredient-library-row-nutrition">
+                        {formatCalories(nutrition.calories)} cal · {formatMacro(nutrition.protein)}g protein
                       </div>
                     </Card.Body>
-                  </Card>
-                </Col>;
+                  </div>
+                </Card>;
               })}
-            </Row>
-          </Col>
+          </div>
 
-          <Col lg={4}>
-            <Card className="selected-ingredient-panel">
-              <h5>{activeIngredient ? `Selected: ${activeIngredient.name}` : 'Choose an ingredient'}</h5>
+          <div className="selected-ingredient-panel">
+              <h5>{activeIngredient ? activeIngredient.name : 'Choose an ingredient'}</h5>
               {libraryError && <Alert variant="warning" className="library-status-alert">{libraryError}</Alert>}
               {activeIngredient ? <>
-                <div className="selected-ingredient-summary">
-                  <div><span>Serving:</span> {formatServingLabel(activeIngredient)}</div>
-                  <div><span>Nutrition:</span> {getServingSummary(activeIngredient)}</div>
-                </div>
-                <div className="selected-target-note">
-                  This will be added to <strong>{targetGroup}</strong>.
-                </div>
-                <Form.Group className="mb-3">
-                  <Form.Label>Amount used</Form.Label>
-                  <div className="d-flex gap-2">
-                    <Form.Control type="number" min="0.1" step="0.1" value={amountUsed} onChange={e => setAmountUsed(e.target.value)} placeholder="Amount" />
-                    <UnitSelect value={unitUsed} onChange={e => setUnitUsed(e.target.value)} />
+                <Form onSubmit={handleSelectedIngredientSubmit}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Amount used</Form.Label>
+                    <div className="selected-ingredient-inputs">
+                      <Form.Control type="number" inputMode="decimal" enterKeyHint="done" min="0.1" step="0.1" value={amountUsed} onChange={e => setAmountUsed(e.target.value)} placeholder="Amount" />
+                      <UnitSelect value={unitUsed} onChange={e => setUnitUsed(e.target.value)} />
+                    </div>
+                  </Form.Group>
+                  <div className="selected-ingredient-preview">
+                    Preview: {formatCalories(selectedPreview?.calories || 0)} cal · {formatMacro(selectedPreview?.protein || 0)}g protein
                   </div>
-                </Form.Group>
 
-                <Button variant="success" onClick={onAdd}>{isEditing ? `Update in ${targetGroup}` : `Add to ${targetGroup}`}</Button>
+                  <Button type="submit" variant="success">{isEditing ? `Update in ${targetGroup}` : `Add to ${targetGroup}`}</Button>
+                </Form>
               </> : <p className="text-muted mb-0">Select an ingredient card to enter the amount used.</p>}
-            </Card>
-          </Col>
-        </Row>}
+          </div>
+        </div>}
       </>}
     </Modal.Body>
   </Modal>;
