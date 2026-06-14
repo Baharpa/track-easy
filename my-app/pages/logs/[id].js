@@ -21,11 +21,12 @@ export default function LoggedMealDetail() {
 
   if (!id || !today) return <RouteGuard><LoadingMessage text="Loading..." /></RouteGuard>;
 
-  const loggedMeal = today.meals?.find(m => String(m._id) === String(id));
-  if (!loggedMeal) {
-    console.error('Meal not found. ID:', id, 'Available meals:', today.meals?.map(m => ({ id: m._id, name: m.name })));
-    return <RouteGuard><ErrorMessage text="Logged meal not found." /></RouteGuard>;
+  const loggedFood = today.meals?.find(m => String(m._id) === String(id));
+  if (!loggedFood) {
+    console.error('Logged food not found. ID:', id, 'Available logs:', today.meals?.map(m => ({ id: m._id, name: m.name })));
+    return <RouteGuard><ErrorMessage text="Logged food not found." /></RouteGuard>;
   }
+  const isIngredientLog = loggedFood.type === 'ingredient' || loggedFood.ingredientId;
 
   const portionOptions = [
     { value: 1, label: '1 whole meal' },
@@ -62,22 +63,25 @@ export default function LoggedMealDetail() {
     try {
       const response = await apiFetch(`/api/tracker/log/${id}`, { method: 'DELETE' });
       if (!response || response.error) {
-        setDeleteError('Failed to delete meal. Please try again.');
+        setDeleteError('Failed to delete logged food. Please try again.');
         setIsDeleting(false);
         return;
       }
       await mutateToday();
       setIsDeleting(false);
-      router.push('/daily-tracker');
+      router.push('/tracker');
     } catch (err) {
       console.error('Delete error:', err);
-      setDeleteError(err.message || 'Failed to delete meal');
+      setDeleteError(err.message || 'Failed to delete logged food');
       setIsDeleting(false);
     }
   }
 
   return <RouteGuard>
-    <PageHeader title={loggedMeal.name} text={`Logged: ${loggedMeal.portionLabel || loggedMeal.servings}`} />
+    <PageHeader
+      title={loggedFood.name}
+      text={`Logged ${isIngredientLog ? 'ingredient' : 'meal'}: ${loggedFood.portionLabel || loggedFood.servings || `${formatAmount(loggedFood.amount || 0)} ${loggedFood.unit || ''}`}`}
+    />
 
     <Card className="page-card p-4 mb-4">
       <h4>Nutrition Details</h4>
@@ -85,7 +89,7 @@ export default function LoggedMealDetail() {
         <Col xs={6} sm={4}>
           <div className="text-center">
             <div className="log-stat-value log-stat-calories">
-              {formatCalories(loggedMeal.calories)}
+              {formatCalories(loggedFood.calories)}
             </div>
             <small className="text-muted">Calories</small>
           </div>
@@ -93,7 +97,7 @@ export default function LoggedMealDetail() {
         <Col xs={6} sm={4}>
           <div className="text-center">
             <div className="log-stat-value log-stat-protein">
-              {formatMacro(loggedMeal.protein)}g
+              {formatMacro(loggedFood.protein)}g
             </div>
             <small className="text-muted">Protein</small>
           </div>
@@ -101,7 +105,7 @@ export default function LoggedMealDetail() {
         <Col xs={6} sm={4}>
           <div className="text-center">
             <div className="log-stat-value log-stat-carbs">
-              {formatMacro(loggedMeal.carbs)}g
+              {formatMacro(loggedFood.carbs)}g
             </div>
             <small className="text-muted">Carbs</small>
           </div>
@@ -109,7 +113,7 @@ export default function LoggedMealDetail() {
         <Col xs={6} sm={4} className="mt-3">
           <div className="text-center">
             <div className="log-stat-value log-stat-fats">
-              {formatMacro(loggedMeal.fats)}g
+              {formatMacro(loggedFood.fats)}g
             </div>
             <small className="text-muted">Fats</small>
           </div>
@@ -117,7 +121,7 @@ export default function LoggedMealDetail() {
         <Col xs={6} sm={4} className="mt-3">
           <div className="text-center">
             <div className="log-stat-value log-stat-sugar">
-              {formatMacro(loggedMeal.sugar)}g
+              {formatMacro(loggedFood.sugar)}g
             </div>
             <small className="text-muted">Sugar</small>
           </div>
@@ -125,13 +129,13 @@ export default function LoggedMealDetail() {
       </Row>
     </Card>
 
-    {loggedMeal.components?.length > 0 && (
+    {loggedFood.components?.length > 0 && (
       <Card className="page-card p-4 mb-4">
         <h4>Component Breakdown</h4>
         <Table responsive hover>
           <thead><tr><th>Component</th><th>Eaten Amount</th><th>Calories</th><th>Protein</th></tr></thead>
           <tbody>
-            {loggedMeal.components.map((component, index) => (
+            {loggedFood.components.map((component, index) => (
               <tr key={index}>
                 <td>{component.name}</td>
                 <td>{formatAmount(component.eatenWeight || 0)} {component.unit || 'grams'}</td>
@@ -144,13 +148,13 @@ export default function LoggedMealDetail() {
       </Card>
     )}
 
-    {loggedMeal.ingredients?.length > 0 && (
+    {loggedFood.ingredients?.length > 0 && (
       <Card className="page-card p-4 mb-4">
         <h4>Ingredient Breakdown</h4>
         <Table responsive hover>
           <thead><tr><th>Ingredient</th><th>Amount</th><th>Calories</th><th>Protein</th><th>Carbs</th><th>Fats</th><th>Sugar</th></tr></thead>
           <tbody>
-            {loggedMeal.ingredients.map((ingredient, index) => (
+            {loggedFood.ingredients.map((ingredient, index) => (
               <tr key={index}>
                 <td>{ingredient.name}</td>
                 <td>{formatAmount(ingredient.quantityUsed || 0)} {ingredient.unit || 'grams'}</td>
@@ -166,54 +170,55 @@ export default function LoggedMealDetail() {
       </Card>
     )}
 
-    {/* Edit Portion Card */}
-    <Card className="page-card p-4 mb-4">
-      <h4>Edit Portion</h4>
-      {isEditing ? (
-        <>
-          <Form.Group className="mb-3">
-            <Form.Label>New Portion</Form.Label>
-            <Form.Select value={newPortion} onChange={(e) => setNewPortion(e.target.value)}>
-              <option value="">Choose portion</option>
-              {portionOptions.map(opt => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </Form.Select>
-          </Form.Group>
-          <div className="d-flex gap-2">
-            <Button variant="success" onClick={handleSaveEdit}>Save</Button>
-            <Button variant="outline-secondary" onClick={() => setIsEditing(false)}>Cancel</Button>
-          </div>
-        </>
-      ) : (
-        <>
-          <p>Current portion: <strong>{loggedMeal.portionLabel || loggedMeal.servings}</strong></p>
-          <Button variant="primary" onClick={() => setIsEditing(true)}>Edit Portion</Button>
-        </>
-      )}
-    </Card>
+    {!isIngredientLog && (
+      <Card className="page-card p-4 mb-4">
+        <h4>Edit Portion</h4>
+        {isEditing ? (
+          <>
+            <Form.Group className="mb-3">
+              <Form.Label>New Portion</Form.Label>
+              <Form.Select value={newPortion} onChange={(e) => setNewPortion(e.target.value)}>
+                <option value="">Choose portion</option>
+                {portionOptions.map(opt => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+            <div className="d-flex gap-2">
+              <Button variant="success" onClick={handleSaveEdit}>Save</Button>
+              <Button variant="outline-secondary" onClick={() => setIsEditing(false)}>Cancel</Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <p>Current portion: <strong>{loggedFood.portionLabel || loggedFood.servings}</strong></p>
+            <Button variant="primary" onClick={() => setIsEditing(true)}>Edit Portion</Button>
+          </>
+        )}
+      </Card>
+    )}
 
     {/* Delete Card */}
     <Card className="page-card p-4 mb-4 border-danger">
       <h4>Danger Zone</h4>
-      <p className="text-muted">Once you delete this logged meal, it cannot be recovered.</p>
-      <Button variant="danger" onClick={() => setShowDeleteModal(true)}>Delete Logged Meal</Button>
+      <p className="text-muted">Once you delete this logged food, it cannot be recovered.</p>
+      <Button variant="danger" onClick={() => setShowDeleteModal(true)}>Delete Logged Food</Button>
     </Card>
 
     {/* Back Button */}
-    <Link href="/daily-tracker">
-      <Button variant="outline-secondary">Back to Daily Tracker</Button>
+    <Link href="/tracker">
+      <Button variant="outline-secondary">Back to Log Food</Button>
     </Link>
 
     {/* Delete Confirmation Modal */}
     <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
       <Modal.Header closeButton>
-        <Modal.Title>Delete Logged Meal?</Modal.Title>
+        <Modal.Title>Delete Logged Food?</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        <p>Are you sure you want to delete this logged meal?</p>
+        <p>Are you sure you want to delete this logged food?</p>
         <p className="text-muted">This action cannot be undone.</p>
         {deleteError && <Alert variant="danger">{deleteError}</Alert>}
       </Modal.Body>

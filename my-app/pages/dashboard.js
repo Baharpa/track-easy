@@ -71,7 +71,7 @@ export default function Dashboard() {
             <h4>Quick Actions</h4>
             <Button as={Link} href="/ingredients/add" variant="success" className="quick-action-button">Add Ingredient</Button>
             <Button as={Link} href="/create-meal-component" variant="warning" className="quick-action-button">Create Meal</Button>
-            <Button as={Link} href="/tracker" variant="outline-success" className="quick-action-button">Log Meal</Button>
+            <Button as={Link} href="/tracker" variant="outline-success" className="quick-action-button">Log Food</Button>
           </Card>
         </Col>
       </Row>}

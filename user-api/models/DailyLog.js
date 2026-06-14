@@ -1,8 +1,12 @@
 const mongoose = require('mongoose');
 
 const loggedMealSchema = new mongoose.Schema({
+  type: { type: String, enum: ['meal', 'ingredient'], default: 'meal' },
   mealId: { type: mongoose.Schema.Types.ObjectId, ref: 'Meal' },
+  ingredientId: { type: mongoose.Schema.Types.ObjectId, ref: 'Ingredient' },
   name: String,
+  amount: Number,
+  unit: String,
   
   // Portion system (new)
   portion: { type: Number, default: 1 },

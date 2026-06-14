@@ -78,7 +78,7 @@ export default function QuickAddMealModal({ meal, show, onHide }) {
               </div>
             </div>
 
-            {success && <Alert variant="success">{success} <Link href="/daily-tracker">Go to Daily Tracker</Link></Alert>}
+            {success && <Alert variant="success">{success} <Link href="/tracker">Go to Log Food</Link></Alert>}
             {error && <Alert variant="warning">{error}</Alert>}
 
             <Form.Group className="mb-3">
