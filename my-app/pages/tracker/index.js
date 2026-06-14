@@ -153,7 +153,7 @@ export default function LogFood() {
     {today && <NutritionSummary item={today} />}
     {meals && ingredients && today && <Row className="tracker-layout log-food-layout">
       <Col md={5}>
-        <Card className="page-card tracker-log-card log-food-card">
+        <Card className="app-card section-card tracker-log-card log-food-card">
           <div className="log-food-tabs">
             <button type="button" className={activeTab === 'meal' ? 'active' : ''} onClick={() => setActiveTab('meal')}>Log Meal</button>
             <button type="button" className={activeTab === 'ingredient' ? 'active' : ''} onClick={() => setActiveTab('ingredient')}>Log Ingredient</button>
@@ -256,20 +256,20 @@ export default function LogFood() {
       </Col>
 
       <Col md={7}>
-        <Card className="page-card tracker-today-card">
+        <Card className="app-card section-card tracker-today-card">
           <h4>Logged Food Today</h4>
           {(today.meals || []).length === 0 && <EmptyMessage text="No logs yet. Log a meal or ingredient to see it here." />}
           {(today.meals || []).length > 0 && (
             <div className="daily-log-list">
               {(today.meals || []).map(item => (
-                <Card key={item._id} className={`daily-log-card log-food-item ${item.type === 'ingredient' ? 'ingredient' : 'meal'}`}>
-                  <div className="log-food-item-main" onClick={() => openLog(item)} role={item.type === 'ingredient' ? undefined : 'button'}>
+                <Card key={item._id} className={`compact-card picker-row ${item.type === 'ingredient' ? 'ingredient' : 'meal'}`}>
+                  <div className="picker-row-main" onClick={() => openLog(item)} role={item.type === 'ingredient' ? undefined : 'button'}>
                     <div>
                       <Badge className="soft-pill soft-pill-beige">{logTypeLabel(item)}</Badge>
                       <h6>{item.name}</h6>
                       <small className="text-muted">{logAmountLabel(item)}</small>
                     </div>
-                    <div className="log-food-item-stats">
+                    <div className="mini-stat-row">
                       <span>{formatCalories(item.calories)} cal</span>
                       <span>{formatMacro(item.protein)}g protein</span>
                       <span>{formatMacro(item.carbs)}g carbs</span>
@@ -292,17 +292,17 @@ function SelectedMealPreview({ meal, onChange }) {
   const mealCategory = normalizeMealCategory(meal.category);
 
   return (
-    <Card className="tracker-selected-meal-card">
-      <FoodImage src={meal.imageUrl} alt={meal.name} category={mealCategory} className="tracker-selected-meal-thumb" placeholderClassName="meal-placeholder-thumb" />
-      <Card.Body className="tracker-selected-meal-body">
-        <div className="tracker-selected-meal-header">
+    <Card className="compact-card picker-row">
+      <FoodImage src={meal.imageUrl} alt={meal.name} category={mealCategory} className="thumb-sm" placeholderClassName="emoji-thumb thumb-sm" />
+      <Card.Body className="picker-row-body">
+        <div className="picker-row-header">
           <div>
             <h5>{meal.name}</h5>
             <Badge className="soft-pill soft-pill-beige">{mealCategory}</Badge>
           </div>
           <Button variant="outline-success" size="sm" onClick={onChange}>Change</Button>
         </div>
-        <div className="meal-stat-row">
+        <div className="mini-stat-row">
           <span>cal {formatCalories(meal.totalCalories)}</span>
           <span>protein {formatMacro(meal.totalProtein)}g</span>
           <span>carbs {formatMacro(meal.totalCarbs)}g</span>
@@ -317,17 +317,17 @@ function SelectedMealPreview({ meal, onChange }) {
 function SelectedIngredientPreview({ ingredient, onChange }) {
   const nutrition = getIngredientServingNutrition(ingredient);
   return (
-    <Card className="tracker-selected-meal-card">
-      <FoodImage src={getFoodImage(ingredient)} alt={ingredient.name} category={ingredient.category || 'Other'} className="tracker-selected-meal-thumb" placeholderClassName="meal-placeholder-thumb" />
-      <Card.Body className="tracker-selected-meal-body">
-        <div className="tracker-selected-meal-header">
+    <Card className="compact-card picker-row">
+      <FoodImage src={getFoodImage(ingredient)} alt={ingredient.name} category={ingredient.category || 'Other'} className="thumb-sm" placeholderClassName="emoji-thumb thumb-sm" />
+      <Card.Body className="picker-row-body">
+        <div className="picker-row-header">
           <div>
             <h5>{ingredient.name}</h5>
             <Badge className="soft-pill soft-pill-beige">{ingredient.category || 'Other'}</Badge>
           </div>
           <Button variant="outline-success" size="sm" onClick={onChange}>Change</Button>
         </div>
-        <div className="meal-stat-row">
+        <div className="mini-stat-row">
           <span>{formatCalories(nutrition.calories)} cal per {formatServingLabel(ingredient)}</span>
           <span>{formatMacro(nutrition.protein)}g protein</span>
         </div>
@@ -364,14 +364,14 @@ function IngredientPickerModal({ show, onHide, ingredients = [], onSelect }) {
             const nutrition = getIngredientServingNutrition(ingredient);
             return (
               <Card className="meal-picker-card" key={ingredient._id}>
-                <FoodImage src={getFoodImage(ingredient)} alt={ingredient.name} category={ingredient.category || 'Other'} className="meal-picker-thumb" placeholderClassName="meal-placeholder-thumb" />
+                <FoodImage src={getFoodImage(ingredient)} alt={ingredient.name} category={ingredient.category || 'Other'} className="meal-picker-thumb" placeholderClassName="emoji-thumb meal-picker-thumb" />
                 <Card.Body className="meal-picker-card-body">
                   <div className="meal-picker-card-main">
                     <div className="meal-picker-card-title">
                       <h6>{ingredient.name}</h6>
                       <Badge className="soft-pill soft-pill-beige">{ingredient.category || 'Other'}</Badge>
                     </div>
-                    <div className="meal-stat-row">
+                    <div className="mini-stat-row">
                       <span>{formatServingLabel(ingredient)}</span>
                       <span>{formatCalories(nutrition.calories)} cal</span>
                       <span>{formatMacro(nutrition.protein)}g protein</span>

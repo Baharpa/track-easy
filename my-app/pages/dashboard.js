@@ -32,11 +32,11 @@ export default function Dashboard() {
       {(todayError || goalsError) && <ErrorMessage text="Failed to load dashboard data." />}
       {(!today || !goals) && !(todayError || goalsError) && <LoadingMessage text="Loading dashboard..." />}
 
-      {today && <Card className="page-card dashboard-stat-strip">
+      {today && <Card className="app-card stat-strip">
         {stats.map(stat => (
-          <div className="dashboard-stat-cell" key={stat.label}>
-            <span className="dashboard-stat-icon">{NUTRITION_ICONS[stat.label]}</span>
-            <span className="dashboard-stat-label">{stat.label}</span>
+          <div className="stat-cell" key={stat.label}>
+            <span className="stat-icon">{NUTRITION_ICONS[stat.label]}</span>
+            <span className="stat-label">{stat.label}</span>
             <strong>{stat.value}<small>{stat.unit}</small></strong>
           </div>
         ))}
@@ -44,20 +44,20 @@ export default function Dashboard() {
 
       {today && goals && <Row className="dashboard-grid dashboard-home-grid">
         <Col lg={8}>
-          <Card className="page-card dashboard-panel dashboard-goal-card">
+          <Card className="app-card section-card dashboard-panel">
             <h4>{NUTRITION_ICONS.Calories} Goal Progress</h4>
-            <div className="dashboard-goal-list">
+            <div className="mobile-stack">
               {stats.map(stat => {
                 const goal = Number(goals[stat.goalKey]) || 0;
                 const current = Number(stat.current) || 0;
                 const percent = goal > 0 ? Math.min(100, Math.round((current / goal) * 100)) : 0;
                 return (
-                  <div className={`dashboard-goal-row dashboard-goal-${stat.label.toLowerCase()}`} key={stat.label}>
-                    <div className="dashboard-goal-row-top">
-                      <span><span className="dashboard-goal-icon">{NUTRITION_ICONS[stat.label]}</span>{stat.label}</span>
+                  <div className="progress-row" key={stat.label}>
+                    <div className="progress-row-top">
+                      <span><span className="progress-row-icon">{NUTRITION_ICONS[stat.label]}</span>{stat.label}</span>
                       <strong>{goal > 0 ? `${formatGoalValue(stat.label, current)} / ${formatGoalValue(stat.label, goal)}${stat.unit === 'g' ? 'g' : ''}` : `${stat.value}${stat.unit} logged`}</strong>
                     </div>
-                    <div className="dashboard-goal-track">
+                    <div className="progress-track">
                       <span style={{ width: `${percent}%` }} />
                     </div>
                   </div>
@@ -67,11 +67,11 @@ export default function Dashboard() {
           </Card>
         </Col>
         <Col lg={4}>
-          <Card className="page-card dashboard-panel dashboard-actions-compact">
+          <Card className="app-card section-card dashboard-panel action-wrap dashboard-actions-compact">
             <h4>Quick Actions</h4>
-            <Button as={Link} href="/ingredients/add" variant="success" className="quick-action-button">Add Ingredient</Button>
-            <Button as={Link} href="/create-meal-component" variant="warning" className="quick-action-button">Create Meal</Button>
-            <Button as={Link} href="/tracker" variant="outline-success" className="quick-action-button">Log Food</Button>
+            <Button as={Link} href="/ingredients/add" variant="success" className="mobile-full-btn">Add Ingredient</Button>
+            <Button as={Link} href="/create-meal-component" variant="warning" className="mobile-full-btn">Create Meal</Button>
+            <Button as={Link} href="/tracker" variant="outline-success" className="mobile-full-btn">Log Food</Button>
           </Card>
         </Col>
       </Row>}

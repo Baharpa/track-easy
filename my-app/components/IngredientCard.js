@@ -17,20 +17,20 @@ export default function IngredientCard({ ingredient, onDeleted }) {
 
   return (
     <>
-      <Card className="page-card compact-meal-card">
-        <FoodImage src={ingredient.imageUrl} alt={ingredient.name} category={ingredient.category || 'Other'} className="compact-meal-image" placeholderClassName="meal-placeholder-thumb" />
-        <Card.Body className="meal-card-body">
-          <div className="meal-card-main">
+      <Card className="app-card picker-row">
+        <FoodImage src={ingredient.imageUrl} alt={ingredient.name} category={ingredient.category || 'Other'} className="thumb-md" placeholderClassName="emoji-thumb thumb-md" />
+        <Card.Body className="picker-row-body">
+          <div className="picker-row-main">
             <Card.Title>{ingredient.name}</Card.Title>
-            <div className="meal-stat-row">
+            <div className="mini-stat-row">
               <span>{formatAmount(ingredient.quantity)} {ingredient.unit}</span>
               <span>{formatIngredientServingNutrition(ingredient)}</span>
             </div>
-            <div className="meal-tag-row">
+            <div className="mini-stat-row">
               <Badge className="soft-pill soft-pill-beige">{ingredient.category || 'Other'}</Badge>
             </div>
           </div>
-          <div className="meal-card-actions">
+          <div className="action-wrap">
             <Button as={Link} href={`/ingredients/${ingredient._id}`} variant="warning" size="sm">Edit</Button>
             <Button variant="outline-danger" size="sm" onClick={() => setShowDelete(true)}>Delete</Button>
           </div>

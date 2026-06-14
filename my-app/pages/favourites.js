@@ -16,7 +16,7 @@ export default function Favourites() {
     {error && <ErrorMessage text="Failed to load favourite meals." />}
     {!favourites && !error && <LoadingMessage text="Loading favourites..." />}
     {favourites && favourites.length === 0 && <EmptyMessage text="No favourite meals yet. Use the favourite button on saved meals." />}
-    <Row className="food-card-grid">
+    <Row className="mobile-card-grid">
       {favourites?.map(meal => (
         <Col lg={6} key={meal._id}>
           <MealCard meal={meal} isFavourite onFavouriteChange={mutate} onDeleted={mutate} onQuickAdd={setQuickAddMeal} />

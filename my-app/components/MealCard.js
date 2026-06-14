@@ -32,29 +32,29 @@ export default function MealCard({ meal, isFavourite = false, onFavouriteChange,
 
   return (
     <>
-      <Card className="page-card compact-meal-card">
+      <Card className="app-card picker-row">
         <FoodImage
           src={meal.imageUrl}
           alt={meal.name}
           category={mealCategory}
-          className="compact-meal-image"
-          placeholderClassName="meal-placeholder-thumb"
+          className="thumb-md"
+          placeholderClassName="emoji-thumb thumb-md"
         />
-        <Card.Body className="meal-card-body">
-          <div className="meal-card-main">
+        <Card.Body className="picker-row-body">
+          <div className="picker-row-main">
             <Card.Title>{meal.name}</Card.Title>
-            <div className="meal-stat-row">
+            <div className="mini-stat-row">
               <span>🔥 {formatCalories(meal.totalCalories)} cal</span>
               <span>💪 {formatMacro(meal.totalProtein)}g</span>
               <span>🍞 {formatMacro(meal.totalCarbs)}g</span>
               <span>🥑 {formatMacro(meal.totalFats)}g</span>
               <span>🍬 {formatMacro(meal.totalSugar)}g</span>
             </div>
-            <div className="meal-tag-row">
+            <div className="mini-stat-row">
               <Badge className="soft-pill soft-pill-beige">{mealCategory}</Badge>
             </div>
           </div>
-          <div className="meal-card-actions">
+          <div className="action-wrap">
             <Button as={Link} href={`/meals/${meal._id}`} variant="success" size="sm">Details</Button>
             {onQuickAdd && <Button variant="outline-success" size="sm" onClick={() => onQuickAdd(meal)}>Quick Add</Button>}
             <Button

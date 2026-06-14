@@ -104,7 +104,7 @@ export default function MealPickerModal({ show, onHide, meals = [], selectedMeal
                     alt={meal.name}
                     category={normalizeMealCategory(meal.category)}
                     className="meal-picker-thumb"
-                    placeholderClassName="meal-placeholder-thumb"
+                    placeholderClassName="emoji-thumb meal-picker-thumb"
                   />
                   <Card.Body className="meal-picker-card-body">
                     <div className="meal-picker-card-main">
@@ -112,7 +112,7 @@ export default function MealPickerModal({ show, onHide, meals = [], selectedMeal
                         <h6>{meal.name}</h6>
                         <Badge className="soft-pill soft-pill-beige">{normalizeMealCategory(meal.category)}</Badge>
                       </div>
-                      <div className="meal-stat-row">
+                      <div className="mini-stat-row">
                         <span>cal {formatCalories(meal.totalCalories)}</span>
                         <span>protein {formatMacro(meal.totalProtein)}g</span>
                         <span>carbs {formatMacro(meal.totalCarbs)}g</span>

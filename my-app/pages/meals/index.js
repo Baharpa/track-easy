@@ -70,7 +70,7 @@ export default function SavedMeals() {
 
       {meals.length === 0 && <EmptyMessage text="No meals yet. Create your first meal from your ingredients." />}
       {meals.length > 0 && filtered.length === 0 && <EmptyMessage text="No meals match your search or filter." />}
-      <Row className="food-card-grid">{filtered.map(meal => <Col lg={6} key={meal._id}><MealCard meal={meal} isFavourite={favouriteIds.includes(meal._id)} onFavouriteChange={mutateFavourites} onDeleted={mutate} onQuickAdd={setQuickAddMeal} /></Col>)}</Row>
+      <Row className="mobile-card-grid">{filtered.map(meal => <Col lg={6} key={meal._id}><MealCard meal={meal} isFavourite={favouriteIds.includes(meal._id)} onFavouriteChange={mutateFavourites} onDeleted={mutate} onQuickAdd={setQuickAddMeal} /></Col>)}</Row>
     </>}
     <QuickAddMealModal meal={quickAddMeal} show={!!quickAddMeal} onHide={() => setQuickAddMeal(null)} />
   </RouteGuard>;

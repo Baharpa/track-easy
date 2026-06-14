@@ -80,6 +80,231 @@ a:hover {
   overflow: hidden;
 }
 
+.app-card,
+.compact-card,
+.section-card {
+  border: 0;
+  border-radius: 18px;
+  background: rgba(255, 254, 251, 0.96);
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
+}
+
+.section-card {
+  padding: 1rem;
+}
+
+.compact-card {
+  border: 1px solid rgba(236, 229, 216, 0.8);
+  padding: 0.75rem;
+}
+
+.mobile-stack {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.mobile-card-grid {
+  --bs-gutter-x: 0.9rem;
+  --bs-gutter-y: 0.9rem;
+}
+
+.action-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.mobile-full-btn {
+  min-height: 40px;
+}
+
+.thumb-xs,
+.thumb-sm,
+.thumb-md,
+.emoji-thumb {
+  object-fit: cover;
+  border-radius: 14px;
+  flex: 0 0 auto;
+}
+
+.thumb-xs {
+  width: 42px;
+  height: 42px;
+}
+
+.thumb-sm {
+  width: 56px;
+  height: 56px;
+}
+
+.thumb-md {
+  width: 72px;
+  height: 72px;
+}
+
+.emoji-thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--category-color, #5f8f5f) 16%, #fffaf1);
+  color: var(--category-color, #5f8f5f);
+  font-size: 1.55rem;
+  font-weight: 800;
+}
+
+.stat-strip {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.5rem;
+  padding: 0.75rem;
+}
+
+.stat-cell {
+  border: 1px solid rgba(236, 229, 216, 0.82);
+  border-radius: 14px;
+  background: #fffaf1;
+  min-width: 0;
+  padding: 0.65rem 0.45rem;
+  text-align: center;
+}
+
+.stat-icon {
+  display: block;
+  font-size: 1.15rem;
+  line-height: 1;
+  margin-bottom: 0.25rem;
+}
+
+.stat-label {
+  color: var(--muted);
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.stat-cell strong {
+  color: #203227;
+  display: block;
+  font-size: 1.05rem;
+  line-height: 1.1;
+}
+
+.stat-cell small {
+  color: var(--muted);
+  font-size: 0.78rem;
+  margin-left: 0.1rem;
+}
+
+.mini-stat-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.65rem;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+.progress-row {
+  border: 1px solid rgba(236, 229, 216, 0.75);
+  border-radius: 14px;
+  background: #fffaf1;
+  padding: 0.65rem 0.75rem;
+}
+
+.progress-row-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  margin-bottom: 0.35rem;
+}
+
+.progress-row-top span,
+.progress-row-top strong {
+  color: #314237;
+  font-size: 0.9rem;
+  font-weight: 850;
+}
+
+.progress-row-top strong {
+  color: #61705f;
+  font-size: 0.82rem;
+  text-align: right;
+}
+
+.progress-row-icon {
+  margin-right: 0.35rem;
+}
+
+.progress-track {
+  height: 0.38rem;
+  border-radius: 999px;
+  background: #ede5d6;
+  overflow: hidden;
+}
+
+.progress-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--green);
+}
+
+.picker-row {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 0.75rem;
+  padding: 0.75rem;
+}
+
+.picker-row-body {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 0.1rem 0 !important;
+}
+
+.picker-row-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.picker-row-main .card-title,
+.picker-row-main h6,
+.picker-row-header h5 {
+  color: #203227;
+  font-size: 1rem;
+  font-weight: 850;
+  line-height: 1.25;
+  margin-bottom: 0.35rem;
+}
+
+.picker-row-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.modal-picker .modal-content {
+  max-height: 90vh;
+  overflow: hidden;
+}
+
+.sticky-picker-footer {
+  position: sticky;
+  bottom: 0;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-bottom-space {
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+}
+
 .page-header h1 {
   color: #203227;
   font-size: clamp(1.75rem, 3vw, 2.55rem);
@@ -168,14 +393,6 @@ a:hover {
   background: linear-gradient(135deg, #eff8ea, #fff3df);
   border-radius: 24px;
   padding: 3rem;
-}
-
-.food-img {
-  width: calc(100% - 1.5rem);
-  height: 138px;
-  object-fit: cover;
-  border-radius: 18px;
-  margin: 0.75rem 0.75rem 0;
 }
 
 .category-card,
@@ -368,7 +585,6 @@ a:hover {
 }
 
 .meal-setup-card,
-.meal-summary-card,
 .component-builder-card {
   background: #fffdf8;
 }
@@ -392,7 +608,6 @@ a:hover {
 }
 
 .meal-preview-placeholder,
-.meal-card-placeholder,
 .ingredient-library-placeholder {
   display: flex;
   align-items: center;
@@ -403,93 +618,11 @@ a:hover {
   letter-spacing: 0;
 }
 
-.meal-card-placeholder {
-  height: 138px;
-  border-radius: 18px;
-  font-size: 3rem;
-}
-
-.compact-meal-card {
-  display: flex;
-  flex-direction: row;
-  align-items: stretch;
-  gap: 0.85rem;
-  min-height: 118px;
-  padding: 0.75rem;
-  border: 1px solid rgba(236, 229, 216, 0.8);
-  background: rgba(255, 254, 251, 0.98);
-  box-shadow: var(--shadow-soft);
-  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
-}
-
-.compact-meal-card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(242, 166, 90, 0.35);
-  box-shadow: 0 14px 30px rgba(72, 84, 64, 0.12);
-}
-
-.compact-meal-image,
-.meal-placeholder-thumb {
-  width: 86px;
-  height: 86px;
-  object-fit: cover;
-  border-radius: 18px;
-  flex: 0 0 86px;
-}
-
-.meal-placeholder-thumb {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: color-mix(in srgb, var(--category-color, #d59b45) 15%, #fffaf1);
-  color: var(--category-color, #9b7b4f);
-  font-size: 1.9rem;
-}
-
-.meal-card-body {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.85rem;
-  min-width: 0;
-  padding: 0.1rem 0.1rem 0.1rem 0;
-}
-
-.meal-card-main {
-  min-width: 0;
-  flex: 1 1 auto;
-}
-
-.meal-card-body .card-title {
-  color: #203227;
-  font-size: 1.02rem;
-  font-weight: 800;
-  line-height: 1.2;
-  margin-bottom: 0.35rem;
-  overflow-wrap: anywhere;
-}
-
-.meal-stat-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem 0.65rem;
-  color: #6d6a60;
-  font-size: 0.82rem;
-  line-height: 1.35;
-  margin-bottom: 0.45rem;
-}
-
-.meal-tag-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-}
-
 .soft-pill {
   border-radius: 999px;
   border: 1px solid transparent;
   color: #68645b !important;
-  font-size: 0.73rem;
+  font-size: 0.78rem;
   font-weight: 700;
   line-height: 1.1;
   padding: 0.35rem 0.55rem;
@@ -522,21 +655,12 @@ a:hover {
   color: var(--green-dark) !important;
 }
 
-.meal-card-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  align-content: flex-start;
-  gap: 0.4rem;
-  flex: 0 0 156px;
-}
-
-.meal-card-actions .btn {
+.action-wrap .btn {
   padding: 0.25rem 0.55rem;
-  font-size: 0.78rem;
+  font-size: 0.86rem;
 }
 
-.meal-card-actions .favourite-icon-button {
+.favourite-icon-button {
   width: 34px;
   height: 34px;
   min-width: 34px;
@@ -553,27 +677,26 @@ a:hover {
   text-decoration: none;
 }
 
-.meal-card-actions .favourite-icon-button:hover,
-.meal-card-actions .favourite-icon-button:focus {
+.favourite-icon-button:hover,
+.favourite-icon-button:focus {
   background: var(--orange-soft);
   border-color: var(--orange);
   color: #8e4f14;
   text-decoration: none;
 }
 
-.meal-card-actions .favourite-icon-button.active {
+.favourite-icon-button.active {
   background: var(--orange-soft);
   border-color: var(--orange);
   color: #cf5f37;
 }
 
-.meal-card-actions .favourite-icon-button:disabled {
+.favourite-icon-button:disabled {
   opacity: 0.65;
   pointer-events: none;
 }
 
-.category-icon,
-.component-icon {
+.category-icon {
   width: 48px;
   height: 48px;
   border-radius: 14px;
@@ -599,14 +722,8 @@ a:hover {
 .category-drinks { --category-color: #5b9a9f; }
 .category-other { --category-color: #7f8b78; }
 
-.category-icon,
-.component-icon {
+.category-icon {
   background-color: var(--category-color, #7f8b78);
-}
-
-.component-icon {
-  margin-bottom: 0;
-  flex: 0 0 48px;
 }
 
 .component-builder-card {
@@ -658,12 +775,6 @@ a:hover {
   padding: 0.45rem 0.65rem;
 }
 
-.component-stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
-  gap: 0.6rem;
-}
-
 .mini-stat {
   background: #f7f4ec;
   border: 1px solid #ece3d5;
@@ -674,7 +785,7 @@ a:hover {
 .mini-stat span {
   display: block;
   color: #72806e;
-  font-size: 0.75rem;
+  font-size: 0.78rem;
 }
 
 .mini-stat strong {
@@ -1127,10 +1238,6 @@ a:hover {
   }
 }
 
-.nutrition-summary-grid .col-md {
-  min-width: 150px;
-}
-
 .nutrition-table-card {
   padding: 0.35rem;
   box-shadow: var(--shadow-soft);
@@ -1157,62 +1264,6 @@ a:hover {
   padding: 0.75rem 0.8rem;
 }
 
-.nutrition-stat-card {
-  min-height: 94px;
-  border: 1px solid rgba(236, 229, 216, 0.7);
-  box-shadow: var(--shadow-soft);
-  padding: 1rem;
-}
-
-.nutrition-stat-content {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.nutrition-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 15px;
-  background: var(--green-soft);
-  color: var(--green-dark);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.25rem;
-  font-weight: 800;
-  flex: 0 0 44px;
-}
-
-.nutrition-stat-card h4 {
-  color: #223127;
-  font-size: 1.35rem;
-  font-weight: 800;
-  margin-bottom: 0;
-}
-
-.nutrition-calories .nutrition-icon {
-  background: var(--orange-soft);
-}
-
-.nutrition-protein .nutrition-icon {
-  background: var(--blue-soft);
-}
-
-.nutrition-carbs .nutrition-icon {
-  background: #fff6d9;
-}
-
-.nutrition-fats .nutrition-icon {
-  background: var(--green-soft);
-}
-
-.nutrition-sugar .nutrition-icon {
-  background: var(--pink-soft);
-}
-
-.goal-card h4,
-.quick-actions-card h4,
 .tracker-log-card h4,
 .page-card > h4 {
   color: #243328;
@@ -1261,7 +1312,7 @@ a:hover {
   border-radius: 999px;
   background-color: var(--green);
   color: rgba(255, 255, 255, 0.92);
-  font-size: 0.68rem;
+  font-size: 0.78rem;
   font-weight: 800;
 }
 
@@ -1286,7 +1337,6 @@ a:hover {
 }
 
 .tracker-select-meal-card,
-.tracker-selected-meal-card,
 .tracker-empty-picker-card {
   width: 100%;
   border: 1px solid rgba(236, 229, 216, 0.85);
@@ -1339,7 +1389,6 @@ a:hover {
   color: var(--muted);
 }
 
-.tracker-selected-meal-card,
 .meal-picker-card {
   display: flex;
   flex-direction: row;
@@ -1347,7 +1396,6 @@ a:hover {
   padding: 0.75rem;
 }
 
-.tracker-selected-meal-thumb,
 .meal-picker-thumb {
   width: 76px;
   height: 76px;
@@ -1356,14 +1404,12 @@ a:hover {
   border-radius: 16px;
 }
 
-.tracker-selected-meal-body,
 .meal-picker-card-body {
   padding: 0;
   min-width: 0;
   flex: 1 1 auto;
 }
 
-.tracker-selected-meal-header,
 .meal-picker-card-body {
   display: flex;
   align-items: flex-start;
@@ -1371,7 +1417,6 @@ a:hover {
   gap: 0.75rem;
 }
 
-.tracker-selected-meal-header h5,
 .meal-picker-card-title h6 {
   margin-bottom: 0.35rem;
   color: #203227;
@@ -1449,69 +1494,6 @@ a:hover {
   background: #fffefb;
 }
 
-.wellness-food-card {
-  border: 1px solid rgba(236, 229, 216, 0.72);
-  height: 100%;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.wellness-food-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 16px 36px rgba(72, 84, 64, 0.14);
-}
-
-.wellness-food-card .card-title {
-  color: #203227;
-  font-weight: 800;
-  line-height: 1.25;
-  margin-bottom: 0;
-}
-
-.food-card-body {
-  display: flex;
-  flex-direction: column;
-}
-
-.food-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 0.55rem;
-  margin-bottom: 0.55rem;
-}
-
-.category-pill,
-.metric-pill,
-.selected-pill {
-  border-radius: 999px;
-  border: 1px solid #ebe1d1;
-  background: #f4eee2 !important;
-  color: #68645b !important;
-  font-weight: 700;
-  white-space: normal;
-  text-align: left;
-}
-
-.metric-pill {
-  background: #fff8ea !important;
-  border-color: rgba(242, 166, 90, 0.2);
-  color: #6d614d !important;
-}
-
-.food-card-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  color: var(--muted);
-  font-size: 0.9rem;
-  margin-bottom: 1rem;
-}
-
-.food-card-meta span,
-.food-card-meta {
-  line-height: 1.45;
-}
-
 .filter-card {
   box-shadow: var(--shadow-soft);
   padding: 1rem;
@@ -1567,17 +1549,6 @@ a:hover {
   }
 }
 
-.food-card-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: auto;
-}
-
-.ingredient-amount {
-  margin-bottom: 0.5rem;
-}
-
 .dashboard-compact {
   display: grid;
   gap: 1rem;
@@ -1587,56 +1558,9 @@ a:hover {
   margin-bottom: 0;
 }
 
-.dashboard-stat-strip {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 0.55rem;
-  padding: 0.8rem;
-}
-
-.dashboard-stat-cell {
-  align-items: center;
-  background: #fffaf3;
-  border: 1px solid rgba(236, 229, 216, 0.88);
-  border-radius: 16px;
-  display: grid;
-  justify-items: center;
-  min-width: 0;
-  padding: 0.65rem 0.35rem;
-  text-align: center;
-}
-
-.dashboard-stat-icon {
-  font-size: 1.05rem;
-  line-height: 1;
-  margin-bottom: 0.18rem;
-}
-
-.dashboard-stat-label {
-  color: var(--muted);
-  font-size: 0.72rem;
-  font-weight: 800;
-  line-height: 1.1;
-  margin-bottom: 0.15rem;
-}
-
-.dashboard-stat-cell strong {
-  color: #203227;
-  font-size: 1rem;
-  font-weight: 900;
-  line-height: 1.05;
-}
-
-.dashboard-stat-cell small {
-  color: var(--muted);
-  font-size: 0.64rem;
-  font-weight: 800;
-  margin-left: 0.08rem;
-}
-
 .dashboard-grid,
 .tracker-layout,
-.food-card-grid {
+.mobile-card-grid {
   --bs-gutter-x: 1.5rem;
   --bs-gutter-y: 1.5rem;
   margin-top: 1.5rem;
@@ -1651,105 +1575,11 @@ a:hover {
   padding: 1.5rem;
 }
 
-.dashboard-goal-card,
-.dashboard-actions-compact {
-  padding: 1rem;
-}
-
-.dashboard-goal-card h4,
 .dashboard-actions-compact h4 {
   color: #243328;
   font-size: 1.05rem;
   font-weight: 900;
   margin-bottom: 0.75rem;
-}
-
-.dashboard-goal-list {
-  display: grid;
-  gap: 0.55rem;
-}
-
-.dashboard-goal-row {
-  background: #fffaf3;
-  border: 1px solid rgba(236, 229, 216, 0.9);
-  border-radius: 14px;
-  padding: 0.55rem 0.65rem;
-}
-
-.dashboard-goal-row-top {
-  align-items: center;
-  display: flex;
-  gap: 0.65rem;
-  justify-content: space-between;
-  margin-bottom: 0.35rem;
-}
-
-.dashboard-goal-row-top span,
-.dashboard-goal-row-top strong {
-  min-width: 0;
-}
-
-.dashboard-goal-row-top span {
-  align-items: center;
-  color: #26352c;
-  display: inline-flex;
-  font-size: 0.88rem;
-  font-weight: 850;
-  gap: 0.35rem;
-}
-
-.dashboard-goal-row-top strong {
-  color: var(--muted);
-  font-size: 0.78rem;
-  font-weight: 800;
-  text-align: right;
-  white-space: nowrap;
-}
-
-.dashboard-goal-icon {
-  line-height: 1;
-}
-
-.dashboard-goal-track {
-  background: #eee7dc;
-  border-radius: 999px;
-  height: 0.38rem;
-  overflow: hidden;
-}
-
-.dashboard-goal-track span {
-  background: var(--green);
-  border-radius: inherit;
-  display: block;
-  height: 100%;
-}
-
-.dashboard-goal-calories .dashboard-goal-track span {
-  background: var(--orange);
-}
-
-.dashboard-goal-protein .dashboard-goal-track span {
-  background: var(--blue);
-}
-
-.dashboard-goal-sugar .dashboard-goal-track span {
-  background: #d85b7b;
-}
-
-.dashboard-actions-compact {
-  display: grid;
-  gap: 0.55rem;
-}
-
-.quick-action-button {
-  width: 100%;
-  margin-bottom: 0.65rem;
-  min-height: 40px;
-  padding: 0.45rem 0.9rem;
-}
-
-.quick-action-button:last-child {
-  margin-bottom: 0;
 }
 
 .tracker-log-card,
@@ -1760,10 +1590,6 @@ a:hover {
 .tracker-form-section,
 .component-portion-section {
   margin-bottom: 1rem;
-}
-
-.daily-log-card h6 {
-  margin-bottom: 0.25rem;
 }
 
 .field-error {
@@ -1787,10 +1613,6 @@ a:hover {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-}
-
-.daily-log-card {
-  padding: 1rem;
 }
 
 .list-page-header {
@@ -1834,8 +1656,7 @@ a:hover {
   box-shadow: var(--shadow-soft);
 }
 
-.log-food-preview,
-.log-food-item-stats {
+.log-food-preview {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
@@ -1849,8 +1670,7 @@ a:hover {
   padding: 0.75rem;
 }
 
-.log-food-preview span,
-.log-food-item-stats span {
+.log-food-preview span {
   background: #fff;
   border: 1px solid rgba(95, 147, 104, 0.14);
   border-radius: 999px;
@@ -1858,32 +1678,6 @@ a:hover {
   font-size: 0.82rem;
   font-weight: 800;
   padding: 0.35rem 0.55rem;
-}
-
-.log-food-item {
-  align-items: flex-start;
-  border: 1px solid var(--border) !important;
-  border-radius: 18px;
-  display: flex;
-  gap: 0.75rem;
-  justify-content: space-between;
-  padding: 0.85rem;
-}
-
-.log-food-item-main {
-  cursor: default;
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.log-food-item-main[role="button"] {
-  cursor: pointer;
-}
-
-.log-food-item h6 {
-  color: #203227;
-  font-weight: 800;
-  margin: 0.4rem 0 0.1rem;
 }
 
 .quick-add-preview {
@@ -1946,24 +1740,6 @@ a:hover {
 .quick-add-total-card strong {
   display: block;
   margin-bottom: 0.6rem;
-}
-
-.daily-log-card {
-  cursor: pointer;
-  border: 1px solid var(--border) !important;
-  border-radius: 18px;
-  background: #fffefb;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
-}
-
-.daily-log-card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(95, 147, 104, 0.45) !important;
-  box-shadow: var(--shadow-soft);
-}
-
-.daily-log-card strong {
-  color: #203227;
 }
 
 .selected-ingredient-panel {
@@ -2118,6 +1894,87 @@ a:hover {
     background: linear-gradient(180deg, #fffaf3 0%, var(--app-bg) 18rem);
   }
 
+  .app-card,
+  .section-card,
+  .compact-card {
+    border-radius: 16px;
+  }
+
+  .section-card,
+  .compact-card,
+  .picker-row {
+    padding: 0.75rem;
+  }
+
+  .mobile-card-grid > [class*="col"] {
+    width: 100%;
+  }
+
+  .action-wrap {
+    gap: 0.45rem;
+  }
+
+  .action-wrap .btn:not(.favourite-icon-button),
+  .mobile-full-btn {
+    flex: 1 1 auto;
+  }
+
+  .thumb-md {
+    width: 64px;
+    height: 64px;
+  }
+
+  .thumb-sm {
+    width: 54px;
+    height: 54px;
+  }
+
+  .stat-strip {
+    gap: 0.35rem;
+    padding: 0.55rem;
+  }
+
+  .stat-cell {
+    padding: 0.55rem 0.25rem;
+  }
+
+  .stat-icon {
+    font-size: 1.08rem;
+  }
+
+  .stat-label {
+    font-size: 0.78rem;
+  }
+
+  .stat-cell strong {
+    font-size: 1rem;
+  }
+
+  .mini-stat-row {
+    font-size: 0.82rem;
+  }
+
+  .progress-row {
+    padding: 0.58rem 0.65rem;
+  }
+
+  .progress-row-top span {
+    font-size: 0.9rem;
+  }
+
+  .progress-row-top strong {
+    font-size: 0.8rem;
+  }
+
+  .picker-row {
+    gap: 0.65rem;
+  }
+
+  .picker-row-body {
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
   .app-shell {
     padding: 0.75rem 0.85rem calc(5rem + env(safe-area-inset-bottom));
   }
@@ -2176,36 +2033,6 @@ a:hover {
     font-size: 0.84rem;
   }
 
-  .dashboard-stat-strip {
-    gap: 0.28rem;
-    padding: 0.5rem;
-  }
-
-  .dashboard-stat-cell {
-    border-radius: 12px;
-    padding: 0.45rem 0.12rem;
-  }
-
-  .dashboard-stat-icon {
-    font-size: 0.9rem;
-    margin-bottom: 0.12rem;
-  }
-
-  .dashboard-stat-label {
-    font-size: 0.58rem;
-  }
-
-  .dashboard-stat-cell strong {
-    font-size: 0.78rem;
-  }
-
-  .dashboard-stat-cell small {
-    display: block;
-    font-size: 0.54rem;
-    margin-left: 0;
-    margin-top: 0.08rem;
-  }
-
   .list-page-header {
     display: block;
   }
@@ -2258,46 +2085,9 @@ a:hover {
     margin: 0;
   }
 
-  .nutrition-summary-grid {
-    --bs-gutter-x: 0.65rem;
-    --bs-gutter-y: 0.65rem;
-  }
-
-  .nutrition-summary-grid > [class*="col-"] {
-    width: 50%;
-    flex: 0 0 50%;
-  }
-
-  .nutrition-summary-grid > [class*="col-"]:last-child:nth-child(odd) {
-    width: 100%;
-    flex-basis: 100%;
-  }
-
-  .nutrition-stat-card {
-    min-height: 72px;
-    padding: 0.65rem;
-    border-radius: 16px;
-  }
-
-  .nutrition-stat-content {
-    gap: 0.55rem;
-  }
-
-  .nutrition-icon {
-    width: 34px;
-    height: 34px;
-    border-radius: 12px;
-    flex-basis: 34px;
-    font-size: 1rem;
-  }
-
-  .nutrition-stat-card h4 {
-    font-size: 1rem;
-  }
-
   .dashboard-grid,
   .tracker-layout,
-  .food-card-grid {
+  .mobile-card-grid {
     --bs-gutter-x: 0.8rem;
     --bs-gutter-y: 0.8rem;
     margin-top: 0.9rem;
@@ -2308,48 +2098,15 @@ a:hover {
     margin-top: 0;
   }
 
-  .dashboard-goal-card,
   .dashboard-actions-compact {
     padding: 0.75rem !important;
   }
 
-  .dashboard-goal-card h4,
   .dashboard-actions-compact h4 {
     font-size: 0.96rem;
     margin-bottom: 0.5rem;
   }
 
-  .dashboard-goal-list {
-    gap: 0.4rem;
-  }
-
-  .dashboard-goal-row {
-    border-radius: 12px;
-    padding: 0.44rem 0.5rem;
-  }
-
-  .dashboard-goal-row-top {
-    gap: 0.4rem;
-    margin-bottom: 0.25rem;
-  }
-
-  .dashboard-goal-row-top span {
-    font-size: 0.78rem;
-  }
-
-  .dashboard-goal-row-top strong {
-    font-size: 0.68rem;
-  }
-
-  .dashboard-goal-track {
-    height: 0.3rem;
-  }
-
-  .dashboard-actions-compact {
-    gap: 0.45rem;
-  }
-
-  .quick-action-button,
   .tracker-submit-button,
   .meal-builder-toolbar .btn,
   .empty-builder-card .btn,
@@ -2358,79 +2115,22 @@ a:hover {
     width: 100%;
   }
 
-  .quick-actions-card {
-    display: grid;
-    gap: 0.55rem;
-  }
-
-  .quick-actions-card .quick-action-button {
-    margin-bottom: 0;
-  }
-
-  .dashboard-actions-compact .quick-action-button {
-    min-height: 38px;
-    margin-bottom: 0;
-    padding: 0.38rem 0.75rem;
-  }
-
   .goal-progress {
     padding: 0.65rem 0.75rem;
     margin-bottom: 0.65rem;
   }
 
-  .goal-card h4,
-  .quick-actions-card h4,
   .tracker-log-card h4,
   .page-card > h4 {
     font-size: 1rem;
     margin-bottom: 0.7rem;
   }
 
-  .food-card-grid > [class*="col-"] {
-    width: 100%;
-  }
-
-  .compact-meal-card {
-    gap: 0.7rem;
-    padding: 0.65rem;
-    min-height: auto;
-  }
-
-  .compact-meal-image,
-  .meal-placeholder-thumb {
-    width: 72px;
-    height: 72px;
-    flex-basis: 72px;
-    border-radius: 16px;
-  }
-
-  .meal-card-body {
-    flex-direction: column;
-    gap: 0.65rem;
-  }
-
-  .meal-card-actions {
-    justify-content: flex-start;
-    flex-basis: auto;
-    width: 100%;
-  }
-
-  .meal-card-actions .btn:not(.favourite-icon-button) {
-    flex: 1 1 auto;
-  }
-
-  .meal-stat-row {
-    font-size: 0.78rem;
-    gap: 0.25rem 0.5rem;
-  }
-
-  .tracker-selected-meal-card,
   .meal-picker-card {
     gap: 0.65rem;
     padding: 0.65rem;
   }
 
-  .tracker-selected-meal-thumb,
   .meal-picker-thumb {
     width: 64px;
     height: 64px;
@@ -2438,17 +2138,11 @@ a:hover {
     border-radius: 14px;
   }
 
-  .tracker-selected-meal-header,
   .meal-picker-card-body,
   .meal-picker-card-title {
     gap: 0.5rem;
   }
 
-  .tracker-selected-meal-header {
-    flex-direction: column;
-  }
-
-  .tracker-selected-meal-header .btn,
   .meal-picker-card .btn {
     width: 100%;
   }
@@ -2719,13 +2413,13 @@ a:hover {
   }
 
   .ingredient-library-row-top .badge {
-    font-size: 0.68rem;
+    font-size: 0.78rem;
     padding: 0.28rem 0.45rem;
   }
 
   .ingredient-library-row-meta,
   .ingredient-library-row-nutrition {
-    font-size: 0.76rem;
+    font-size: 0.8rem;
   }
 
   .ingredient-library-img,
@@ -2781,10 +2475,6 @@ a:hover {
     padding: 0.5rem 0.75rem;
   }
 
-  .daily-log-card {
-    padding: 0.75rem;
-  }
-
   .component-portion-row {
     gap: 0.55rem;
   }
@@ -2813,21 +2503,6 @@ a:hover {
   .log-food-preview {
     margin-bottom: 0.75rem;
     padding: 0.65rem;
-  }
-
-  .log-food-item {
-    display: grid;
-    gap: 0.65rem;
-    padding: 0.75rem;
-  }
-
-  .log-food-item .btn {
-    width: 100%;
-  }
-
-  .log-food-item-stats span {
-    font-size: 0.78rem;
-    padding: 0.32rem 0.5rem;
   }
 
   .weekly-history-table-wrap {

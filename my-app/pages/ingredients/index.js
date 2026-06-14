@@ -41,7 +41,7 @@ export default function Inventory() {
 
       {ingredients.length === 0 && <EmptyMessage text="No ingredients yet. Add your first ingredient to start building meals." />}
       {ingredients.length > 0 && filtered.length === 0 && <EmptyMessage text="No ingredients match your search or filter." />}
-      <Row className="food-card-grid">{filtered.map(item => <Col lg={6} key={item._id}><IngredientCard ingredient={item} onDeleted={mutate} /></Col>)}</Row>
+      <Row className="mobile-card-grid">{filtered.map(item => <Col lg={6} key={item._id}><IngredientCard ingredient={item} onDeleted={mutate} /></Col>)}</Row>
     </>}
   </RouteGuard>;
 }
