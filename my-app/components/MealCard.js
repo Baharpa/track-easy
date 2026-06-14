@@ -7,7 +7,7 @@ import { normalizeMealCategory } from '../lib/mealCategoryHelpers';
 import FoodImage from './FoodImage';
 import ConfirmDeleteModal from './ConfirmDeleteModal';
 
-export default function MealCard({ meal, isFavourite = false, onFavouriteChange, onDeleted, onQuickAdd }) {
+export default function MealCard({ meal, isFavourite = false, onFavouriteChange, onDeleted, onQuickAdd, hideCategoryBadge = false }) {
   const [saving, setSaving] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const mealCategory = normalizeMealCategory(meal.category);
@@ -50,9 +50,11 @@ export default function MealCard({ meal, isFavourite = false, onFavouriteChange,
               <span>🥑 {formatMacro(meal.totalFats)}g</span>
               <span>🍬 {formatMacro(meal.totalSugar)}g</span>
             </div>
-            <div className="mini-stat-row">
-              <Badge className="soft-pill soft-pill-beige">{mealCategory}</Badge>
-            </div>
+            {!hideCategoryBadge && (
+              <div className="mini-stat-row">
+                <Badge className="soft-pill soft-pill-beige">{mealCategory}</Badge>
+              </div>
+            )}
           </div>
           <div className="action-wrap">
             <Button as={Link} href={`/meals/${meal._id}`} variant="success" size="sm">Details</Button>

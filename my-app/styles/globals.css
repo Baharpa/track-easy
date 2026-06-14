@@ -1629,6 +1629,57 @@ a:hover {
   gap: 0.55rem;
 }
 
+.favourites-grid {
+  align-items: stretch;
+}
+
+.favourite-section-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.favourite-section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-bottom: 1px solid rgba(236, 229, 216, 0.78);
+  padding-bottom: 0.7rem;
+}
+
+.favourite-section-header h4 {
+  color: #203227;
+  font-size: 1.05rem;
+  font-weight: 900;
+  margin-bottom: 0.2rem;
+}
+
+.favourite-section-header p {
+  color: var(--muted);
+  font-size: 0.88rem;
+  margin-bottom: 0;
+}
+
+.favourite-section-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.favourite-section-list .picker-row {
+  box-shadow: none;
+}
+
+.favourite-empty-state {
+  border: 1px dashed rgba(95, 147, 104, 0.28);
+  border-radius: 14px;
+  background: #fffaf3;
+  color: var(--muted);
+  font-size: 0.92rem;
+  padding: 0.8rem;
+}
+
 .log-food-tabs {
   background: #f6f1e8;
   border: 1px solid var(--border);
@@ -2050,6 +2101,30 @@ a:hover {
 
   .inventory-header-actions .btn {
     margin-bottom: 0;
+  }
+
+  .favourite-section-card {
+    gap: 0.65rem;
+  }
+
+  .favourite-section-header {
+    gap: 0.55rem;
+    padding-bottom: 0.6rem;
+  }
+
+  .favourite-section-header h4 {
+    font-size: 1rem;
+  }
+
+  .favourite-section-header p,
+  .favourite-empty-state {
+    font-size: 0.9rem;
+  }
+
+  .favourite-section-header .btn {
+    min-height: 36px;
+    padding: 0.35rem 0.65rem;
+    white-space: nowrap;
   }
 
   .form-group,
