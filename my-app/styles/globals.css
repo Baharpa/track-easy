@@ -1539,6 +1539,62 @@ a:hover {
   margin-bottom: 0.5rem;
 }
 
+.dashboard-compact {
+  display: grid;
+  gap: 1rem;
+}
+
+.dashboard-compact .page-header {
+  margin-bottom: 0;
+}
+
+.dashboard-stat-strip {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.55rem;
+  padding: 0.8rem;
+}
+
+.dashboard-stat-cell {
+  align-items: center;
+  background: #fffaf3;
+  border: 1px solid rgba(236, 229, 216, 0.88);
+  border-radius: 16px;
+  display: grid;
+  justify-items: center;
+  min-width: 0;
+  padding: 0.65rem 0.35rem;
+  text-align: center;
+}
+
+.dashboard-stat-icon {
+  font-size: 1.05rem;
+  line-height: 1;
+  margin-bottom: 0.18rem;
+}
+
+.dashboard-stat-label {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.1;
+  margin-bottom: 0.15rem;
+}
+
+.dashboard-stat-cell strong {
+  color: #203227;
+  font-size: 1rem;
+  font-weight: 900;
+  line-height: 1.05;
+}
+
+.dashboard-stat-cell small {
+  color: var(--muted);
+  font-size: 0.64rem;
+  font-weight: 800;
+  margin-left: 0.08rem;
+}
+
 .dashboard-grid,
 .tracker-layout,
 .food-card-grid {
@@ -1547,14 +1603,110 @@ a:hover {
   margin-top: 1.5rem;
 }
 
+.dashboard-home-grid {
+  margin-top: 0;
+}
+
 .dashboard-panel {
   height: 100%;
   padding: 1.5rem;
 }
 
+.dashboard-goal-card,
+.dashboard-actions-compact {
+  padding: 1rem;
+}
+
+.dashboard-goal-card h4,
+.dashboard-actions-compact h4 {
+  color: #243328;
+  font-size: 1.05rem;
+  font-weight: 900;
+  margin-bottom: 0.75rem;
+}
+
+.dashboard-goal-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.dashboard-goal-row {
+  background: #fffaf3;
+  border: 1px solid rgba(236, 229, 216, 0.9);
+  border-radius: 14px;
+  padding: 0.55rem 0.65rem;
+}
+
+.dashboard-goal-row-top {
+  align-items: center;
+  display: flex;
+  gap: 0.65rem;
+  justify-content: space-between;
+  margin-bottom: 0.35rem;
+}
+
+.dashboard-goal-row-top span,
+.dashboard-goal-row-top strong {
+  min-width: 0;
+}
+
+.dashboard-goal-row-top span {
+  align-items: center;
+  color: #26352c;
+  display: inline-flex;
+  font-size: 0.88rem;
+  font-weight: 850;
+  gap: 0.35rem;
+}
+
+.dashboard-goal-row-top strong {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.dashboard-goal-icon {
+  line-height: 1;
+}
+
+.dashboard-goal-track {
+  background: #eee7dc;
+  border-radius: 999px;
+  height: 0.38rem;
+  overflow: hidden;
+}
+
+.dashboard-goal-track span {
+  background: var(--green);
+  border-radius: inherit;
+  display: block;
+  height: 100%;
+}
+
+.dashboard-goal-calories .dashboard-goal-track span {
+  background: var(--orange);
+}
+
+.dashboard-goal-protein .dashboard-goal-track span {
+  background: var(--blue);
+}
+
+.dashboard-goal-sugar .dashboard-goal-track span {
+  background: #d85b7b;
+}
+
+.dashboard-actions-compact {
+  display: grid;
+  gap: 0.55rem;
+}
+
 .quick-action-button {
   width: 100%;
   margin-bottom: 0.65rem;
+  min-height: 40px;
+  padding: 0.45rem 0.9rem;
 }
 
 .quick-action-button:last-child {
@@ -1950,6 +2102,48 @@ a:hover {
     line-height: 1.35;
   }
 
+  .dashboard-compact {
+    gap: 0.7rem;
+  }
+
+  .dashboard-compact .page-header h1 {
+    font-size: 1.35rem;
+  }
+
+  .dashboard-compact .page-header p {
+    font-size: 0.84rem;
+  }
+
+  .dashboard-stat-strip {
+    gap: 0.28rem;
+    padding: 0.5rem;
+  }
+
+  .dashboard-stat-cell {
+    border-radius: 12px;
+    padding: 0.45rem 0.12rem;
+  }
+
+  .dashboard-stat-icon {
+    font-size: 0.9rem;
+    margin-bottom: 0.12rem;
+  }
+
+  .dashboard-stat-label {
+    font-size: 0.58rem;
+  }
+
+  .dashboard-stat-cell strong {
+    font-size: 0.78rem;
+  }
+
+  .dashboard-stat-cell small {
+    display: block;
+    font-size: 0.54rem;
+    margin-left: 0;
+    margin-top: 0.08rem;
+  }
+
   .list-page-header {
     display: block;
   }
@@ -2041,6 +2235,52 @@ a:hover {
     margin-top: 0.9rem;
   }
 
+  .dashboard-home-grid {
+    --bs-gutter-y: 0.7rem;
+    margin-top: 0;
+  }
+
+  .dashboard-goal-card,
+  .dashboard-actions-compact {
+    padding: 0.75rem !important;
+  }
+
+  .dashboard-goal-card h4,
+  .dashboard-actions-compact h4 {
+    font-size: 0.96rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .dashboard-goal-list {
+    gap: 0.4rem;
+  }
+
+  .dashboard-goal-row {
+    border-radius: 12px;
+    padding: 0.44rem 0.5rem;
+  }
+
+  .dashboard-goal-row-top {
+    gap: 0.4rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .dashboard-goal-row-top span {
+    font-size: 0.78rem;
+  }
+
+  .dashboard-goal-row-top strong {
+    font-size: 0.68rem;
+  }
+
+  .dashboard-goal-track {
+    height: 0.3rem;
+  }
+
+  .dashboard-actions-compact {
+    gap: 0.45rem;
+  }
+
   .quick-action-button,
   .tracker-submit-button,
   .meal-builder-toolbar .btn,
@@ -2057,6 +2297,12 @@ a:hover {
 
   .quick-actions-card .quick-action-button {
     margin-bottom: 0;
+  }
+
+  .dashboard-actions-compact .quick-action-button {
+    min-height: 38px;
+    margin-bottom: 0;
+    padding: 0.38rem 0.75rem;
   }
 
   .goal-progress {

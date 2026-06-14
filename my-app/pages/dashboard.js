@@ -1,68 +1,80 @@
 import useSWR from 'swr';
 import Link from 'next/link';
-import { Badge, Button, Card, Col, Row } from 'react-bootstrap';
+import { Button, Card, Col, Row } from 'react-bootstrap';
 import PageHeader from '../components/PageHeader';
 import RouteGuard from '../components/RouteGuard';
-import NutritionSummary from '../components/NutritionSummary';
-import GoalProgress from '../components/GoalProgress';
-import FoodImage from '../components/FoodImage';
-import { EmptyMessage, ErrorMessage, LoadingMessage } from '../components/StateMessage';
+import { ErrorMessage, LoadingMessage } from '../components/StateMessage';
 import { formatCalories, formatMacro } from '../lib/formatNutrition';
-import { normalizeMealCategory } from '../lib/mealCategoryHelpers';
+import { NUTRITION_ICONS } from '../lib/foodVisuals';
+
+function getNutritionStats(today) {
+  return [
+    { label: 'Calories', value: formatCalories(today?.totalCalories), unit: 'cal', current: today?.totalCalories, goalKey: 'calorieGoal' },
+    { label: 'Protein', value: formatMacro(today?.totalProtein), unit: 'g', current: today?.totalProtein, goalKey: 'proteinGoal' },
+    { label: 'Carbs', value: formatMacro(today?.totalCarbs), unit: 'g', current: today?.totalCarbs, goalKey: 'carbsGoal' },
+    { label: 'Fats', value: formatMacro(today?.totalFats), unit: 'g', current: today?.totalFats, goalKey: 'fatsGoal' },
+    { label: 'Sugar', value: formatMacro(today?.totalSugar), unit: 'g', current: today?.totalSugar, goalKey: 'sugarGoal' }
+  ];
+}
+
+function formatGoalValue(label, value) {
+  return label === 'Calories' ? formatCalories(value) : formatMacro(value);
+}
 
 export default function Dashboard() {
   const { data: today, error: todayError } = useSWR('/api/tracker/today');
   const { data: goals, error: goalsError } = useSWR('/api/user/goals');
-  const { data: meals, error: mealsError } = useSWR('/api/meals');
-  const recentMeals = (meals || []).slice(0, 3);
+  const stats = getNutritionStats(today);
 
   return <RouteGuard>
-    <PageHeader title="Dashboard" text="📊 Your food tracking overview for today." />
-    {(todayError || goalsError || mealsError) && <ErrorMessage text="Failed to load dashboard data." />}
-    {(!today || !goals || !meals) && !(todayError || goalsError || mealsError) && <LoadingMessage text="Loading dashboard..." />}
+    <div className="dashboard-compact">
+      <PageHeader title="Dashboard" text="📊 Today at a glance." />
+      {(todayError || goalsError) && <ErrorMessage text="Failed to load dashboard data." />}
+      {(!today || !goals) && !(todayError || goalsError) && <LoadingMessage text="Loading dashboard..." />}
 
-    {today && <NutritionSummary item={today} />}
-    {today && goals && meals && <Row className="dashboard-grid">
-      <Col md={5}>
-        <Card className="page-card dashboard-panel goal-card">
-          <h4>📊 Goal Progress</h4>
-          <GoalProgress label="Calories" current={today.totalCalories} goal={goals.calorieGoal} />
-          <GoalProgress label="Protein" current={today.totalProtein} goal={goals.proteinGoal} />
-          <GoalProgress label="Carbs" current={today.totalCarbs} goal={goals.carbsGoal} />
-          <GoalProgress label="Fats" current={today.totalFats} goal={goals.fatsGoal} />
-          <GoalProgress label="Sugar" current={today.totalSugar} goal={goals.sugarGoal} />
-        </Card>
-      </Col>
-      <Col md={3}>
-        <Card className="page-card dashboard-panel quick-actions-card">
-          <h4>Quick Actions</h4>
-          <Button as={Link} href="/ingredients/add" variant="success" className="quick-action-button">Add Ingredient</Button>
-          <Button as={Link} href="/create-meal-component" variant="warning" className="quick-action-button">Create Meal</Button>
-          <Button as={Link} href="/tracker" variant="outline-success" className="quick-action-button">Log Meal</Button>
-        </Card>
-      </Col>
-      <Col md={4}>
-        <Card className="page-card dashboard-panel recent-meals-card">
-          <h4>🍽️ Recent Meals</h4>
-          {recentMeals.length === 0 && <EmptyMessage text="No meals yet." />}
-          {recentMeals.length > 0 && <div className="recent-meal-list">{recentMeals.map(meal => {
-            const mealCategory = normalizeMealCategory(meal.category);
-            return (
-            <Link href={`/meals/${meal._id}`} className="recent-meal-card" key={meal._id}>
-              <FoodImage src={meal.imageUrl} alt={meal.name} category={mealCategory} className="recent-meal-thumb" placeholderClassName="meal-placeholder-thumb" />
-              <div>
-                <strong>{meal.name}</strong>
-                <div className="meal-stat-row">
-                  <span>🔥 {formatCalories(meal.totalCalories)} cal</span>
-                  <span>💪 {formatMacro(meal.totalProtein)}g</span>
-                  <span>🍬 {formatMacro(meal.totalSugar)}g</span>
-                </div>
-                <Badge className="soft-pill soft-pill-beige">{mealCategory}</Badge>
-              </div>
-            </Link>
-          );})}</div>}
-        </Card>
-      </Col>
-    </Row>}
+      {today && <Card className="page-card dashboard-stat-strip">
+        {stats.map(stat => (
+          <div className="dashboard-stat-cell" key={stat.label}>
+            <span className="dashboard-stat-icon">{NUTRITION_ICONS[stat.label]}</span>
+            <span className="dashboard-stat-label">{stat.label}</span>
+            <strong>{stat.value}<small>{stat.unit}</small></strong>
+          </div>
+        ))}
+      </Card>}
+
+      {today && goals && <Row className="dashboard-grid dashboard-home-grid">
+        <Col lg={8}>
+          <Card className="page-card dashboard-panel dashboard-goal-card">
+            <h4>{NUTRITION_ICONS.Calories} Goal Progress</h4>
+            <div className="dashboard-goal-list">
+              {stats.map(stat => {
+                const goal = Number(goals[stat.goalKey]) || 0;
+                const current = Number(stat.current) || 0;
+                const percent = goal > 0 ? Math.min(100, Math.round((current / goal) * 100)) : 0;
+                return (
+                  <div className={`dashboard-goal-row dashboard-goal-${stat.label.toLowerCase()}`} key={stat.label}>
+                    <div className="dashboard-goal-row-top">
+                      <span><span className="dashboard-goal-icon">{NUTRITION_ICONS[stat.label]}</span>{stat.label}</span>
+                      <strong>{goal > 0 ? `${formatGoalValue(stat.label, current)} / ${formatGoalValue(stat.label, goal)}${stat.unit === 'g' ? 'g' : ''}` : `${stat.value}${stat.unit} logged`}</strong>
+                    </div>
+                    <div className="dashboard-goal-track">
+                      <span style={{ width: `${percent}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        </Col>
+        <Col lg={4}>
+          <Card className="page-card dashboard-panel dashboard-actions-compact">
+            <h4>Quick Actions</h4>
+            <Button as={Link} href="/ingredients/add" variant="success" className="quick-action-button">Add Ingredient</Button>
+            <Button as={Link} href="/create-meal-component" variant="warning" className="quick-action-button">Create Meal</Button>
+            <Button as={Link} href="/tracker" variant="outline-success" className="quick-action-button">Log Meal</Button>
+          </Card>
+        </Col>
+      </Row>}
+    </div>
   </RouteGuard>;
 }
