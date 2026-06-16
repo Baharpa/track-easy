@@ -1,4 +1,4 @@
-export const MEAL_CATEGORIES = ['Breakfast', 'Lunch', 'Dinner', 'Snack', 'Beverage', 'Other'];
+export const MEAL_CATEGORIES = ['Breakfast', 'Lunch/Dinner', 'Snack', 'Beverage', 'Other'];
 
 export function normalizeMealCategory(category) {
   const cleanCategory = String(category || '').trim().toLowerCase();

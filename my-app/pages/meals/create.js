@@ -10,5 +10,5 @@ export default function CreateMealRedirect() {
     router.replace('/create-meal-component');
   }, [router]);
 
-  return <RouteGuard><LoadingMessage text="AAAAAAAAAAOpening meal builder..." /></RouteGuard>;
+  return <RouteGuard><LoadingMessage text="Opening meal builder..." /></RouteGuard>;
 }

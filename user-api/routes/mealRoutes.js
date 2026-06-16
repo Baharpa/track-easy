@@ -5,7 +5,7 @@ const Ingredient = require('../models/Ingredient');
 const { calculateNutritionWithUnit, addTotals, calculateComponentPortion, round } = require('../utils/nutrition');
 const { convertToGrams, getConversionWarning, isValidUnit, normalizeUnit } = require('../utils/unitConverter');
 const router = express.Router();
-const MEAL_CATEGORIES = ['Breakfast', 'Lunch', 'Dinner', 'Snack', 'Beverage', 'Other'];
+const MEAL_CATEGORIES = ['Breakfast', 'Lunch/Dinner', 'Snack', 'Beverage', 'Other'];
 
 function normalizeMealCategory(category) {
   const cleanCategory = String(category || '').trim().toLowerCase();

@@ -8,7 +8,6 @@ const CATEGORY_DATA = [
   { name: 'Grains', emoji: '🌾', description: 'Bread, oats, cereal', color: '#b58a4a' },
   { name: 'Nuts and Seeds', emoji: '🥜', description: 'Nuts, seeds, nut butters', color: '#9b7b4f' },
   { name: 'Spices', emoji: '🧂', description: 'Seasonings and herbs', color: '#c06c45' },
-  { name: 'Drinks', emoji: '🥤', description: 'Smoothies and drinks', color: '#5b9a9f' },
   { name: 'Other', emoji: '🍽️', description: 'Anything else', color: '#7f8b78' }
 ];
 

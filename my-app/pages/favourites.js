@@ -19,7 +19,7 @@ const FAVOURITE_SECTIONS = [
     key: 'foods',
     title: 'Favourite Foods',
     empty: 'No favourite foods yet.',
-    matches: category => ['Lunch', 'Dinner', 'Other'].includes(category)
+    matches: category => ['Lunch/Dinner', 'Other'].includes(category)
   },
   {
     key: 'snacks',
@@ -31,7 +31,7 @@ const FAVOURITE_SECTIONS = [
     key: 'beverages',
     title: 'Favourite Beverages',
     empty: 'No favourite beverages yet.',
-    matches: category => ['Beverage', 'Drinks'].includes(category)
+    matches: category => ['Beverage'].includes(category)
   }
 ];
 

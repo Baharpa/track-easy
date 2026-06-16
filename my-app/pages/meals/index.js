@@ -59,15 +59,23 @@ export default function SavedMeals() {
 
       {meals && (
         <>
-          <Link href="/favourites" className="favourite-meals-shortcut">
-            <Card className="app-card favourite-meals-shortcut-card">
-              <div className="favourite-meals-shortcut-icon">{'\u2605'}</div>
-              <div>
-                <strong>Favourite Meals</strong>
-                <span>Jump to your saved favourites and quick picks.</span>
-              </div>
-            </Card>
-          </Link>
+
+<Link href="/favourites" className="favourite-meals-shortcut">
+  <Card className="app-card favourite-meals-shortcut-card" role="button">
+    <div className="favourite-meals-shortcut-icon" aria-hidden="true">
+      ♥
+    </div>
+
+    <div className="favourite-meals-shortcut-copy">
+      <strong>Go to Favourites</strong>
+      <span>See your saved meals and quick picks.</span>
+    </div>
+
+    <div className="favourite-meals-shortcut-arrow" aria-hidden="true">
+      ›
+    </div>
+  </Card>
+</Link>
 
           <MealFilterBar
             search={search}

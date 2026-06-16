@@ -130,7 +130,7 @@ export default function Dashboard() {
                   </span>
                   <h3>Mini log</h3>
                 </div>
-                <Link href="/tracker" className="dashboard-section-link">
+                <Link href="/history" className="dashboard-section-link">
                   View tracker
                   <TrackEasyIcon name="chevron-right" size={14} />
                 </Link>
@@ -164,32 +164,6 @@ export default function Dashboard() {
               )}
             </Card>
 
-            <Row className="g-2 dashboard-cta-grid">
-              <Col xs={6}>
-                <Link href="/create-meal-component" className="dashboard-cta-card dashboard-cta-green">
-                  <div className="dashboard-cta-icon">
-                    <TrackEasyIcon name="bowl" size={18} />
-                  </div>
-                  <div className="dashboard-cta-copy">
-                    <strong>Create Meal</strong>
-                    <span>Combine ingredients and save</span>
-                  </div>
-                  <TrackEasyIcon name="chevron-right" size={14} className="dashboard-cta-arrow" />
-                </Link>
-              </Col>
-              <Col xs={6}>
-                <Link href="/ingredients/add?returnTo=/dashboard" className="dashboard-cta-card dashboard-cta-cream">
-                  <div className="dashboard-cta-icon">
-                    <TrackEasyIcon name="camera" size={18} />
-                  </div>
-                  <div className="dashboard-cta-copy">
-                    <strong>Add Food Photo</strong>
-                    <span>Snap your meal or ingredient</span>
-                  </div>
-                  <TrackEasyIcon name="chevron-right" size={14} className="dashboard-cta-arrow" />
-                </Link>
-              </Col>
-            </Row>
           </div>
         )}
       </div>

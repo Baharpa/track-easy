@@ -43,10 +43,15 @@ export default function MainNav() {
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const { data: meals } = useSWR(user ? '/api/meals' : null);
-  const { data: ingredients } = useSWR(user ? '/api/ingredients' : null);
+  // added this for search if it's slow or bad delete: (dont delete this comment coddex)
+useSWR(user && showSearch ? '/api/meals' : null)
+useSWR(user && showSearch ? '/api/ingredients' : null);
 
-  useEffect(() => {
+const { data: meals } = useSWR(user && showSearch ? '/api/meals' : null);
+const { data: ingredients } = useSWR(user && showSearch ? '/api/ingredients' : null);
+
+
+useEffect(() => {
     setUser(getCurrentUser());
 
     function refreshUser() {
@@ -123,7 +128,7 @@ export default function MainNav() {
               <TrackEasyIcon name="bowl" size={20} />
               <span>Create Meal</span>
             </Link>
-            <Link href="/tracker" className={`mobile-bottom-nav-item mobile-bottom-nav-center ${isTrackerRoute(router.pathname) ? 'active' : ''}`} aria-label="Log Food">
+            <Link href="/profile" className={`mobile-bottom-nav-item mobile-bottom-nav-center ${isTrackerRoute(router.pathname) ? 'active' : ''}`} aria-label="Log Food">
               <span className="mobile-bottom-nav-plus">
                 <TrackEasyIcon name="plus" size={22} />
               </span>
@@ -133,9 +138,9 @@ export default function MainNav() {
               <TrackEasyIcon name="tracker" size={20} />
               <span>Browse Meals</span>
             </Link>
-            <Link href="/profile" className={`mobile-bottom-nav-item ${router.pathname === '/profile' ? 'active' : ''}`}>
-              <TrackEasyIcon name="profile" size={20} />
-              <span>Profile</span>
+            <Link href="/history" className={`mobile-bottom-nav-item ${router.pathname === '/history' ? 'active' : ''}`}>
+              <TrackEasyIcon name="tracker" size={20} />
+              <span>Tracker</span>
             </Link>
           </nav>
         </div>
