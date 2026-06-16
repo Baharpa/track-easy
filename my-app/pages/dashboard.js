@@ -5,8 +5,6 @@ import { Card, Col, Row } from 'react-bootstrap';
 import RouteGuard from '../components/RouteGuard';
 import { ErrorMessage, LoadingMessage } from '../components/StateMessage';
 import DailyQuote from '../components/DailyQuote';
-import DashboardQuickLog from '../components/DashboardQuickLog';
-import { formatCalories, formatMacro } from '../lib/formatNutrition';
 import { TrackEasyIcon } from '../components/TrackEasyIcons';
 
 const nutritionConfig = [
@@ -17,20 +15,24 @@ const nutritionConfig = [
   { label: 'Sugar', key: 'totalSugar', goalKey: 'sugarGoal', icon: 'berry', color: 'pink', unit: 'g' }
 ];
 
-function formatGoalValue(label, value) {
-  return label === 'Calories' ? formatCalories(value) : formatMacro(value);
+function formatWholeNumber(value) {
+  return String(Math.round(Number(value) || 0));
+}
+
+function formatGoalValue(value) {
+  return formatWholeNumber(value);
 }
 
 function getNutritionStats(today) {
   return nutritionConfig.map(item => ({
     ...item,
-    value: item.label === 'Calories' ? formatCalories(today?.[item.key]) : formatMacro(today?.[item.key]),
+    value: formatWholeNumber(today?.[item.key]),
     current: Number(today?.[item.key]) || 0
   }));
 }
 
 export default function Dashboard() {
-  const { data: today, error: todayError, mutate: mutateToday } = useSWR('/api/tracker/today');
+  const { data: today, error: todayError } = useSWR('/api/tracker/today');
   const { data: goals, error: goalsError } = useSWR('/api/user/goals');
   const stats = useMemo(() => getNutritionStats(today), [today]);
   const todaysFood = (today?.meals || []).slice(0, 3);
@@ -63,8 +65,6 @@ export default function Dashboard() {
               </div>
               <div className="nutrition-strip">
                 {stats.map(stat => {
-                  const goal = Number(goals[stat.goalKey]) || 0;
-                  const percent = goal > 0 ? Math.min(100, Math.round((stat.current / goal) * 100)) : 0;
                   const accentClass = `nutrition-${stat.color}`;
                   return (
                     <Card className={`dashboard-nutrition-card ${accentClass}`} key={stat.label}>
@@ -74,9 +74,6 @@ export default function Dashboard() {
                       <span className="dashboard-stat-label">{stat.label}</span>
                       <strong className="dashboard-stat-value">{stat.value}</strong>
                       <span className="dashboard-stat-unit">{stat.unit}</span>
-                      <div className="dashboard-stat-track">
-                        <span style={{ width: `${percent}%` }} />
-                      </div>
                     </Card>
                   );
                 })}
@@ -92,7 +89,7 @@ export default function Dashboard() {
                   </span>
                   <h3>Stay on pace</h3>
                 </div>
-                <Link href="/profile" className="dashboard-section-link">
+                <Link href="/profile/goals" className="dashboard-section-link">
                   Edit goals
                   <TrackEasyIcon name="chevron-right" size={14} />
                 </Link>
@@ -112,7 +109,7 @@ export default function Dashboard() {
                         </span>
                         <div>
                           <strong>{stat.label}</strong>
-                          <span>{goal > 0 ? `${formatGoalValue(stat.label, current)} / ${formatGoalValue(stat.label, goal)} ${stat.unit}` : `${stat.value} ${stat.unit} logged`}</span>
+                          <span>{goal > 0 ? `${formatGoalValue(current)} / ${formatGoalValue(goal)} ${stat.unit}` : `${stat.value} ${stat.unit} logged`}</span>
                         </div>
                       </div>
                       <div className={`dashboard-progress-track ${progressClass}`}>
@@ -123,8 +120,6 @@ export default function Dashboard() {
                 })}
               </div>
             </Card>
-
-            <DashboardQuickLog onLogged={mutateToday} />
 
             <Card className="app-card dashboard-food-card">
               <div className="dashboard-section-header">
@@ -148,7 +143,7 @@ export default function Dashboard() {
                   </div>
                   <div>
                     <strong>No logs yet</strong>
-                    <span>Use Quick Log to add your first meal or ingredient.</span>
+                    <span>Open Log Food to add your first meal or ingredient.</span>
                   </div>
                 </div>
               ) : (
@@ -160,8 +155,8 @@ export default function Dashboard() {
                       </div>
                       <div className="dashboard-food-mini-copy">
                         <strong>{item.name}</strong>
-                        <span>{formatCalories(item.calories)} cal</span>
-                        <span>{formatMacro(item.protein)}g protein</span>
+                        <span>{formatWholeNumber(item.calories)} cal</span>
+                        <span>{formatWholeNumber(item.protein)}g protein</span>
                       </div>
                     </Card>
                   ))}

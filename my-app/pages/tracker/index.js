@@ -6,7 +6,6 @@ import { useForm } from 'react-hook-form';
 import { Alert, Badge, Button, Card, Col, Form, Modal, Row } from 'react-bootstrap';
 import PageHeader from '../../components/PageHeader';
 import RouteGuard from '../../components/RouteGuard';
-import NutritionSummary from '../../components/NutritionSummary';
 import PortionSelector from '../../components/PortionSelector';
 import UnitSelect from '../../components/UnitSelect';
 import FoodImage from '../../components/FoodImage';
@@ -150,7 +149,6 @@ export default function LogFood() {
     {(mealError || ingredientError || todayError) && <ErrorMessage text="Failed to load food tracker data." />}
     {(!meals || !ingredients || !today) && !(mealError || ingredientError || todayError) && <LoadingMessage text="Loading food tracker..." />}
 
-    {today && <NutritionSummary item={today} />}
     {meals && ingredients && today && <Row className="tracker-layout log-food-layout">
       <Col md={5}>
         <Card className="app-card section-card tracker-log-card log-food-card">

@@ -11,6 +11,19 @@ function todayString() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function dateString(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function currentMonday() {
+  const date = new Date();
+  const day = date.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  date.setDate(date.getDate() + diff);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
 function recalculate(log) {
   log.totalCalories = round(log.meals.reduce((sum, meal) => sum + (Number(meal.calories) || 0), 0));
   log.totalProtein = round(log.meals.reduce((sum, meal) => sum + (Number(meal.protein) || 0), 0));
@@ -146,17 +159,19 @@ function buildIngredientLog(ingredient, amount, unit) {
 
 router.post('/log', auth, async (req, res) => {
   try {
-    const isIngredientLog = req.body.type === 'ingredient' || req.body.ingredientId;
+    const isIngredientLog = req.body.type === 'ingredient' || (req.body.ingredientId && req.body.type !== 'meal');
     const date = req.body.date || todayString();
     let log = await DailyLog.findOne({ userId: req.user._id, date });
     if (!log) log = new DailyLog({ userId: req.user._id, date, meals: [] });
 
     let loggedMeal;
     if (isIngredientLog) {
+      if (!req.body.ingredientId) return res.status(400).json({ message: 'Ingredient is required.' });
       const ingredient = await Ingredient.findOne({ _id: req.body.ingredientId, userId: req.user._id });
       if (!ingredient) return res.status(404).json({ message: 'Ingredient not found.' });
       loggedMeal = buildIngredientLog(ingredient, req.body.amount || req.body.quantityUsed, req.body.unit);
     } else {
+      if (!req.body.mealId) return res.status(400).json({ message: 'Meal is required.' });
       const meal = await Meal.findOne({ _id: req.body.mealId, userId: req.user._id });
       if (!meal) return res.status(404).json({ message: 'Meal not found.' });
       const hasComponentAmounts = meal.components?.length > 0 && req.body.componentPortions?.length > 0;
@@ -185,11 +200,36 @@ router.get('/today', auth, async (req, res) => {
 });
 
 router.get('/week', auth, async (req, res) => {
-  const start = new Date();
-  start.setDate(start.getDate() - 6);
-  const startString = start.toISOString().slice(0, 10);
-  const logs = await DailyLog.find({ userId: req.user._id, date: { $gte: startString } }).sort({ date: 1 });
-  res.json(logs);
+  const start = currentMonday();
+  const days = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(start);
+    date.setDate(start.getDate() + index);
+    return date;
+  });
+  const startString = dateString(days[0]);
+  const endString = dateString(days[6]);
+  const logs = await DailyLog.find({ userId: req.user._id, date: { $gte: startString, $lte: endString } }).sort({ date: 1 });
+  const logsByDate = new Map(logs.map(log => [log.date, log]));
+
+  res.json(days.map(day => {
+    const date = dateString(day);
+    const log = logsByDate.get(date);
+    return log ? {
+      ...log.toObject(),
+      dayLabel: day.toLocaleDateString('en-US', { weekday: 'short' }),
+      hasLogs: (log.meals || []).length > 0
+    } : {
+      date,
+      dayLabel: day.toLocaleDateString('en-US', { weekday: 'short' }),
+      meals: [],
+      totalCalories: 0,
+      totalProtein: 0,
+      totalCarbs: 0,
+      totalFats: 0,
+      totalSugar: 0,
+      hasLogs: false
+    };
+  }));
 });
 
 // GET logged food by ID

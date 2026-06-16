@@ -104,9 +104,14 @@ export default function MainNav() {
               </span>
             </Link>
 
-            <Link href="/profile" className="mobile-shell-profile" aria-label="Profile">
-              <TrackEasyIcon name="profile" size={20} />
-            </Link>
+            <div className="mobile-shell-actions">
+              <button type="button" className="mobile-shell-icon-button" onClick={() => setShowSearch(true)} aria-label="Search meals and ingredients">
+                <TrackEasyIcon name="search" size={19} />
+              </button>
+              <Link href="/profile" className="mobile-shell-icon-button" aria-label="Profile">
+                <TrackEasyIcon name="profile" size={20} />
+              </Link>
+            </div>
           </div>
 
           <nav className="mobile-bottom-nav" aria-label="Mobile navigation">
@@ -124,13 +129,13 @@ export default function MainNav() {
               </span>
               <span>Log Food</span>
             </Link>
-            <button type="button" className="mobile-bottom-nav-item mobile-bottom-nav-button" onClick={() => setShowSearch(true)}>
-              <TrackEasyIcon name="search" size={20} />
-              <span>Search</span>
-            </button>
-            <Link href="/tracker" className={`mobile-bottom-nav-item ${isTrackerRoute(router.pathname) ? 'active' : ''}`}>
+            <Link href="/meals" className={`mobile-bottom-nav-item ${isMealRoute(router.pathname, '/meals') ? 'active' : ''}`}>
               <TrackEasyIcon name="tracker" size={20} />
-              <span>Tracker</span>
+              <span>Browse Meals</span>
+            </Link>
+            <Link href="/profile" className={`mobile-bottom-nav-item ${router.pathname === '/profile' ? 'active' : ''}`}>
+              <TrackEasyIcon name="profile" size={20} />
+              <span>Profile</span>
             </Link>
           </nav>
         </div>
@@ -176,7 +181,7 @@ export default function MainNav() {
             <Nav className="ms-auto align-items-lg-center">
               {!user && <Nav.Link as={Link} href="/login" active={router.pathname === '/login'} onClick={() => setExpanded(false)}>Login</Nav.Link>}
               {!user && <Nav.Link as={Link} href="/register" active={router.pathname === '/register'} onClick={() => setExpanded(false)}>Register</Nav.Link>}
-              {user && <Button variant="outline-success" size="sm" className="logout-button" onClick={logout}>Logout</Button>}
+              {user && <Button variant="outline-danger" size="sm" className="logout-button" onClick={logout}>Logout</Button>}
             </Nav>
           </Navbar.Collapse>
         </Container>
@@ -211,8 +216,8 @@ function MobileMenuDrawer({ show, onHide, links, onLogout, activePath }) {
             </Link>
           ))}
 
-          <button type="button" className="mobile-drawer-card mobile-drawer-button" onClick={onLogout}>
-            <span className="mobile-drawer-icon mobile-drawer-icon-warm">
+          <button type="button" className="mobile-drawer-card mobile-drawer-button mobile-drawer-logout" onClick={onLogout}>
+            <span className="mobile-drawer-icon mobile-drawer-icon-danger">
               <TrackEasyIcon name="profile" size={16} />
             </span>
             <span className="mobile-drawer-copy">

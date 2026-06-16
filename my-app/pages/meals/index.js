@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import useSWR from 'swr';
-import { Button, Col, Row } from 'react-bootstrap';
+import { Button, Card, Col, Row } from 'react-bootstrap';
 import PageHeader from '../../components/PageHeader';
 import RouteGuard from '../../components/RouteGuard';
 import MealCard from '../../components/MealCard';
@@ -35,7 +35,6 @@ export default function SavedMeals() {
   const [quickAddMeal, setQuickAddMeal] = useState(null);
 
   const favouriteIds = (favourites || []).map(meal => meal._id);
-  // Uses /api/tracker/week logs so this filter means meals actually eaten in the past week.
   const weekLogsLoaded = Array.isArray(weekLogs);
   const pastWeekMealIds = buildPastWeekMealIds(weekLogs || []);
   const filtered = (meals || []).filter(meal => {
@@ -48,30 +47,57 @@ export default function SavedMeals() {
     return matchesName && matchesCategory && matchesPastWeek;
   });
 
-  return <RouteGuard>
-    <div className="list-page-header">
-      <PageHeader title="Saved Meals" text="🍽️ Meals you created from your inventory." />
-      <Button as={Link} href="/create-meal-component" variant="success">Create Meal</Button>
-    </div>
+  return (
+    <RouteGuard>
+      <div className="list-page-header">
+        <PageHeader title="Browse Meals" text="Meals you created from your inventory." />
+        <Button as={Link} href="/create-meal-component" variant="success">Create Meal</Button>
+      </div>
 
-    {error && <ErrorMessage text="Failed to load meals." />}
-    {!meals && !error && <LoadingMessage text="Loading meals..." />}
+      {error && <ErrorMessage text="Failed to load meals." />}
+      {!meals && !error && <LoadingMessage text="Loading meals..." />}
 
-    {meals && <>
-      <MealFilterBar
-        search={search}
-        setSearch={setSearch}
-        category={category}
-        setCategory={setCategory}
-        showPastWeek={showPastWeek}
-        setShowPastWeek={setShowPastWeek}
-        className="page-card filter-card"
-      />
+      {meals && (
+        <>
+          <Link href="/favourites" className="favourite-meals-shortcut">
+            <Card className="app-card favourite-meals-shortcut-card">
+              <div className="favourite-meals-shortcut-icon">{'\u2605'}</div>
+              <div>
+                <strong>Favourite Meals</strong>
+                <span>Jump to your saved favourites and quick picks.</span>
+              </div>
+            </Card>
+          </Link>
 
-      {meals.length === 0 && <EmptyMessage text="No meals yet. Create your first meal from your ingredients." />}
-      {meals.length > 0 && filtered.length === 0 && <EmptyMessage text="No meals match your search or filter." />}
-      <Row className="mobile-card-grid">{filtered.map(meal => <Col lg={6} key={meal._id}><MealCard meal={meal} isFavourite={favouriteIds.includes(meal._id)} onFavouriteChange={mutateFavourites} onDeleted={mutate} onQuickAdd={setQuickAddMeal} /></Col>)}</Row>
-    </>}
-    <QuickAddMealModal meal={quickAddMeal} show={!!quickAddMeal} onHide={() => setQuickAddMeal(null)} />
-  </RouteGuard>;
+          <MealFilterBar
+            search={search}
+            setSearch={setSearch}
+            category={category}
+            setCategory={setCategory}
+            showPastWeek={showPastWeek}
+            setShowPastWeek={setShowPastWeek}
+            className="page-card filter-card"
+          />
+
+          {meals.length === 0 && <EmptyMessage text="No meals yet. Create your first meal from your ingredients." />}
+          {meals.length > 0 && filtered.length === 0 && <EmptyMessage text="No meals match your search or filter." />}
+          <Row className="mobile-card-grid">
+            {filtered.map(meal => (
+              <Col lg={6} key={meal._id}>
+                <MealCard
+                  meal={meal}
+                  isFavourite={favouriteIds.includes(meal._id)}
+                  onFavouriteChange={mutateFavourites}
+                  onDeleted={mutate}
+                  onQuickAdd={setQuickAddMeal}
+                />
+              </Col>
+            ))}
+          </Row>
+        </>
+      )}
+
+      <QuickAddMealModal meal={quickAddMeal} show={!!quickAddMeal} onHide={() => setQuickAddMeal(null)} />
+    </RouteGuard>
+  );
 }
