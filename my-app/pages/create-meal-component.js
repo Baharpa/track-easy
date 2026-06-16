@@ -139,6 +139,11 @@ export default function CreateMealComponentPage() {
     setShowClearDraft(false);
   }
 
+  function generateAutoImage() {
+    const query = meal.name || meal.category || 'healthy food';
+    setMeal({ ...meal, imageUrl: `https://loremflickr.com/800/600/${encodeURIComponent(query.replace(/\s+/g, ','))},food/all` });
+  }
+
   function closeLibrary() {
     setShowLibrary(false);
     resetLibraryForm();
@@ -312,7 +317,15 @@ export default function CreateMealComponentPage() {
                   </Form.Select>
                 </Form.Group>
               </Col>
-              <Col md={4}><Form.Group className="mb-3"><Form.Label>Image URL</Form.Label><Form.Control value={meal.imageUrl} onChange={e => setMeal({ ...meal, imageUrl: e.target.value })} placeholder="https://example.com/meal.jpg" /></Form.Group></Col>
+              <Col md={4}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Image URL</Form.Label>
+                  <div className="d-flex gap-2">
+                    <Form.Control value={meal.imageUrl} onChange={e => setMeal({ ...meal, imageUrl: e.target.value })} placeholder="https://example.com/meal.jpg" />
+                    <Button variant="outline-primary" onClick={generateAutoImage} title="Generate auto image">✨</Button>
+                  </div>
+                </Form.Group>
+              </Col>
             </Row>
           </Col>
           <Col lg={4}>
