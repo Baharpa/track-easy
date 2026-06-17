@@ -43,6 +43,10 @@ export function safeImageUrl(url) {
   if (!url || typeof url !== 'string') return '';
   const cleanUrl = url.trim();
   if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) return cleanUrl;
+  if (cleanUrl.startsWith('/uploads/')) {
+    const apiUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080').replace(/\/+$/, '');
+    return `${apiUrl}${cleanUrl}`;
+  }
   if (cleanUrl.startsWith('data:image/')) return cleanUrl;
   return '';
 }

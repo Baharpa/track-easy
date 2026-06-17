@@ -1,5 +1,6 @@
 import { useForm, Controller } from 'react-hook-form';
 import { Alert, Button, Card, Col, Form, Row } from 'react-bootstrap';
+import MealImageUpload from './MealImageUpload';
 import UnitSelect from './UnitSelect';
 import { CATEGORY_LIBRARY } from '../lib/foodVisuals';
 import { getIngredientServingNutrition } from '../lib/formatNutrition';
@@ -22,7 +23,8 @@ function buildDefaultValues(defaultValues) {
 }
 
 export default function IngredientForm({ defaultValues = {}, onSubmit, buttonText = 'Save Ingredient' }) {
-  const { register, handleSubmit, formState: { errors, isSubmitting }, control } = useForm({ defaultValues: buildDefaultValues(defaultValues) });
+  const { register, handleSubmit, formState: { errors, isSubmitting }, control, setValue, watch } = useForm({ defaultValues: buildDefaultValues(defaultValues) });
+  const imageUrl = watch('imageUrl');
 
   const positiveRule = {
     required: 'This field is required.',
@@ -109,6 +111,7 @@ export default function IngredientForm({ defaultValues = {}, onSubmit, buttonTex
         <Form.Group className="mb-3">
           <Form.Label>Image URL</Form.Label>
           <Form.Control {...register('imageUrl')} placeholder="https://example.com/food.jpg" />
+          <MealImageUpload imageUrl={imageUrl} onUploaded={uploadedUrl => setValue('imageUrl', uploadedUrl, { shouldDirty: true })} />
         </Form.Group>
 
         <Button type="submit" variant="success" className="ingredient-form-submit" disabled={isSubmitting}>{isSubmitting ? 'Saving...' : buttonText}</Button>

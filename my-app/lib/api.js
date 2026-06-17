@@ -15,7 +15,8 @@ export function removeToken() {
 
 export async function apiFetch(path, options = {}) {
   const token = getToken();
-  const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+  const headers = { ...(isFormData ? {} : { 'Content-Type': 'application/json' }), ...(options.headers || {}) };
   if (token) headers.Authorization = `Bearer ${token}`;
 
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
@@ -26,6 +27,12 @@ export async function apiFetch(path, options = {}) {
     throw new Error(detail || 'Something went wrong');
   }
   return data;
+}
+
+export async function uploadImage(file) {
+  const body = new FormData();
+  body.append('image', file);
+  return apiFetch('/api/uploads/image', { method: 'POST', body });
 }
 
 export const fetcher = (path) => apiFetch(path);

@@ -10,12 +10,13 @@ import { TrackEasyIcon } from './TrackEasyIcons';
 
 const loggedInLinks = [
   { label: 'Home', href: '/dashboard', icon: 'home', subtitle: 'Daily overview' },
-  { label: 'Log Food', href: '/tracker', icon: 'plus', subtitle: 'Log a meal or ingredient' },
-  { label: 'Inventory', href: '/ingredients', icon: 'leaf', subtitle: 'Your ingredients' },
+  { label: 'Browse Meals', href: '/meals', icon: 'bowl', subtitle: 'Browse meals' },
+  { label: 'Log Food', href: '/logs', icon: 'plus', subtitle: 'Log a meal or ingredient' },
+  { label: 'Add Ingredients', href: '/ingredients', icon: 'leaf', subtitle: 'Your ingredients' },
+  { label: 'Tracker', href: '/history', icon: 'tracker', subtitle: 'Your tracking history' },
   { label: 'Create Meal', href: '/create-meal-component', icon: 'bowl', subtitle: 'Build a meal' },
-  { label: 'Saved Meals', href: '/meals', icon: 'tracker', subtitle: 'Browse meals' },
-  { label: 'Favourites', href: '/favourites', icon: 'sparkle', subtitle: 'Your saved picks' },
-  { label: 'Profile', href: '/profile', icon: 'profile', subtitle: 'Account details' }
+  { label: 'Favourites', href: '/favourites', icon: 'saved', subtitle: 'Your saved picks' },
+  { label: 'Edit Goals', href: '/profile/goals', icon: 'profile', subtitle: 'Account details' }
 ];
 
 function isMealRoute(pathname, href) {
@@ -113,7 +114,7 @@ useEffect(() => {
               <button type="button" className="mobile-shell-icon-button" onClick={() => setShowSearch(true)} aria-label="Search meals and ingredients">
                 <TrackEasyIcon name="search" size={19} />
               </button>
-              <Link href="/profile" className="mobile-shell-icon-button" aria-label="Profile">
+              <Link href="/profile/goals" className="mobile-shell-icon-button" aria-label="Profile">
                 <TrackEasyIcon name="profile" size={20} />
               </Link>
             </div>
@@ -124,19 +125,19 @@ useEffect(() => {
               <TrackEasyIcon name="home" size={20} />
               <span>Home</span>
             </Link>
-            <Link href="/create-meal-component" className={`mobile-bottom-nav-item ${router.pathname === '/create-meal-component' ? 'active' : ''}`}>
+            <Link href="/meals" className={`mobile-bottom-nav-item ${router.pathname === '/meals' ? 'active' : ''}`}>
               <TrackEasyIcon name="bowl" size={20} />
-              <span>Create Meal</span>
+              <span>Browse meals</span>
             </Link>
-            <Link href="/profile" className={`mobile-bottom-nav-item mobile-bottom-nav-center ${isTrackerRoute(router.pathname) ? 'active' : ''}`} aria-label="Log Food">
+            <Link href="/tracker" className={`mobile-bottom-nav-item mobile-bottom-nav-center ${isTrackerRoute(router.pathname) ? 'active' : ''}`} aria-label="Log Food">
               <span className="mobile-bottom-nav-plus">
                 <TrackEasyIcon name="plus" size={22} />
               </span>
               <span>Log Food</span>
             </Link>
-            <Link href="/meals" className={`mobile-bottom-nav-item ${isMealRoute(router.pathname, '/meals') ? 'active' : ''}`}>
-              <TrackEasyIcon name="tracker" size={20} />
-              <span>Browse Meals</span>
+            <Link href="/ingredients" className={`mobile-bottom-nav-item ${isMealRoute(router.pathname, '/ingredients') ? 'active' : ''}`}>
+              <TrackEasyIcon name="leaf" size={20} />
+              <span>Add Ingredients</span>
             </Link>
             <Link href="/history" className={`mobile-bottom-nav-item ${router.pathname === '/history' ? 'active' : ''}`}>
               <TrackEasyIcon name="tracker" size={20} />

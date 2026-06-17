@@ -37,3 +37,4 @@ Thumbs.db
 
 *.log
 user-api/backend.log
+user-api/uploads/

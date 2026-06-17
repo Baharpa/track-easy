@@ -4,7 +4,6 @@ import useSWR from 'swr';
 import { useRouter } from 'next/router';
 import { useForm } from 'react-hook-form';
 import { Alert, Badge, Button, Card, Col, Form, Modal, Row } from 'react-bootstrap';
-import PageHeader from '../../components/PageHeader';
 import RouteGuard from '../../components/RouteGuard';
 import PortionSelector from '../../components/PortionSelector';
 import UnitSelect from '../../components/UnitSelect';
@@ -145,19 +144,24 @@ export default function LogFood() {
   }
 
   return <RouteGuard>
-    <PageHeader title="Log Food" text="Log saved meals or single ingredients." />
-    {(mealError || ingredientError || todayError) && <ErrorMessage text="Failed to load food tracker data." />}
-    {(!meals || !ingredients || !today) && !(mealError || ingredientError || todayError) && <LoadingMessage text="Loading food tracker..." />}
+    <div className="tracker-page">
+      <div className="mobile-page-header">
+        <div>
+          <h1 className="mobile-page-title">Log Food</h1>
+          <p className="mobile-page-subtitle">Log saved meals or single ingredients.</p>
+        </div>
+      </div>
+      <div className="segmented-control" role="tablist" aria-label="Log food type">
+        <button type="button" className={`segmented-control-button ${activeTab === 'meal' ? 'active' : ''}`} onClick={() => setActiveTab('meal')}>Log Meal</button>
+        <button type="button" className={`segmented-control-button ${activeTab === 'ingredient' ? 'active' : ''}`} onClick={() => setActiveTab('ingredient')}>Log Ingredient</button>
+      </div>
+      {(mealError || ingredientError || todayError) && <ErrorMessage text="Failed to load food tracker data." />}
+      {(!meals || !ingredients || !today) && !(mealError || ingredientError || todayError) && <LoadingMessage text="Loading food tracker..." />}
 
-    {meals && ingredients && today && <Row className="tracker-layout log-food-layout">
-      <Col md={5}>
-        <Card className="app-card section-card tracker-log-card log-food-card">
-          <div className="log-food-tabs">
-            <button type="button" className={activeTab === 'meal' ? 'active' : ''} onClick={() => setActiveTab('meal')}>Log Meal</button>
-            <button type="button" className={activeTab === 'ingredient' ? 'active' : ''} onClick={() => setActiveTab('ingredient')}>Log Ingredient</button>
-          </div>
-
-          {activeTab === 'meal' && <Form onSubmit={handleSubmit(logMeal)}>
+      {meals && ingredients && today && <Row className="tracker-layout log-food-layout">
+        <Col md={5}>
+          <Card className="app-card section-card tracker-log-card log-food-card">
+            {activeTab === 'meal' && <Form onSubmit={handleSubmit(logMeal)}>
             <input type="hidden" {...register('mealId', { required: 'Please choose a meal.' })} />
             <Form.Group className="tracker-form-section">
               <Form.Label>Choose Meal</Form.Label>
@@ -250,11 +254,11 @@ export default function LogFood() {
 
           <MealPickerModal show={showMealPicker} onHide={() => setShowMealPicker(false)} meals={meals} selectedMealId={selectedMealId} weekLogs={weekLogs} onSelect={selectMeal} />
           <IngredientPickerModal show={showIngredientPicker} onHide={() => setShowIngredientPicker(false)} ingredients={ingredients} onSelect={selectIngredient} />
-        </Card>
-      </Col>
+          </Card>
+        </Col>
 
-      <Col md={7}>
-        <Card className="app-card section-card tracker-today-card">
+        <Col md={7}>
+          <Card className="app-card section-card tracker-today-card">
           <h4>Logged Food Today</h4>
           {(today.meals || []).length === 0 && <EmptyMessage text="No logs yet. Log a meal or ingredient to see it here." />}
           {(today.meals || []).length > 0 && (
@@ -280,9 +284,10 @@ export default function LogFood() {
               ))}
             </div>
           )}
-        </Card>
-      </Col>
-    </Row>}
+          </Card>
+        </Col>
+      </Row>}
+    </div>
   </RouteGuard>;
 }
 

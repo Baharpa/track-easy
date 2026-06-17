@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import Link from 'next/link';
 import useSWR from 'swr';
 import { Button, Card } from 'react-bootstrap';
 import RouteGuard from '../components/RouteGuard';
@@ -82,12 +81,11 @@ export default function ProfileTracker() {
   return (
     <RouteGuard>
       <div className="tracker-page">
-        <div className="tracker-page-header">
+        <div className="mobile-page-header">
           <div>
-            <h1>Tracker</h1>
-            <p>Review your nutrition progress.</p>
+            <h1 className="mobile-page-title">Tracker</h1>
+            <p className="mobile-page-subtitle">Review your nutrition progress.</p>
           </div>
-          <Button as={Link} href="/profile/goals" variant="outline-success" size="sm">Edit Goals</Button>
         </div>
 
         {(todayError || weekError || goalsError) && <ErrorMessage text="Failed to load tracker data." />}
@@ -95,9 +93,9 @@ export default function ProfileTracker() {
 
         {today && weekLogs && goals && (
           <>
-            <div className="tracker-tabs" role="tablist" aria-label="Tracker view">
-              <button type="button" className={view === 'day' ? 'active' : ''} onClick={() => setView('day')}>Day</button>
-              <button type="button" className={view === 'week' ? 'active' : ''} onClick={() => setView('week')}>Week</button>
+            <div className="segmented-control" role="tablist" aria-label="Tracker view">
+              <button type="button" className={`segmented-control-button ${view === 'day' ? 'active' : ''}`} onClick={() => setView('day')}>Day</button>
+              <button type="button" className={`segmented-control-button ${view === 'week' ? 'active' : ''}`} onClick={() => setView('week')}>Week</button>
             </div>
 
             {view === 'day' && (

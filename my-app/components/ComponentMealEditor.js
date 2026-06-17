@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Badge, Button, Card, Col, Form, Modal, Row } from 'react-bootstrap';
 import FoodImage from './FoodImage';
+import MealImageUpload from './MealImageUpload';
 import UnitSelect from './UnitSelect';
 import { addTotals, buildPreviewComponents } from '../lib/mealMath';
 import {
@@ -309,6 +310,7 @@ export default function ComponentMealEditor({
                   <Form.Control value={meal.imageUrl} onChange={e => setMeal({ ...meal, imageUrl: e.target.value })} placeholder="https://example.com/meal.jpg" />
                   <Button variant="outline-primary" onClick={generateAutoImage} title="Generate auto image">✨</Button>
                 </div>
+                <MealImageUpload imageUrl={meal.imageUrl} onUploaded={imageUrl => setMeal({ ...meal, imageUrl })} />
               </Form.Group>
             </Col>
           </Row>

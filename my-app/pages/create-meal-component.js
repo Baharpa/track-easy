@@ -7,6 +7,7 @@ import PageHeader from '../components/PageHeader';
 import RouteGuard from '../components/RouteGuard';
 import UnitSelect from '../components/UnitSelect';
 import FoodImage from '../components/FoodImage';
+import MealImageUpload from '../components/MealImageUpload';
 import { ErrorMessage, LoadingMessage } from '../components/StateMessage';
 import { apiFetch } from '../lib/api';
 import { clearMealDraft, hasMealDraftContent, loadMealDraft, saveMealDraft } from '../lib/mealDraft';
@@ -324,6 +325,7 @@ export default function CreateMealComponentPage() {
                     <Form.Control value={meal.imageUrl} onChange={e => setMeal({ ...meal, imageUrl: e.target.value })} placeholder="https://example.com/meal.jpg" />
                     <Button variant="outline-primary" onClick={generateAutoImage} title="Generate auto image">✨</Button>
                   </div>
+                  <MealImageUpload imageUrl={meal.imageUrl} onUploaded={imageUrl => setMeal({ ...meal, imageUrl })} />
                 </Form.Group>
               </Col>
             </Row>

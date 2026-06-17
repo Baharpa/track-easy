@@ -24,7 +24,6 @@ export default function Inventory() {
       <PageHeader title="Inventory" text="🥗 Ingredients you have at home." />
       <div className="inventory-header-actions">
         <Button as={Link} href="/ingredients/add" variant="success">Add Ingredient</Button>
-        <Button as={Link} href="/tracker?tab=ingredient" variant="outline-success">Log Ingredient</Button>
       </div>
     </div>
 
