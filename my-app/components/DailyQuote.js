@@ -12,10 +12,9 @@ export default function DailyQuote() {
       <div className="dashboard-quote-glow dashboard-quote-glow-right" />
       <div className="dashboard-quote-top">
         <span className="dashboard-quote-icon">
-          <TrackEasyIcon name="sparkle" size={18} />
+          <TrackEasyIcon name="sparkle" size={14} />
         </span>
         <span className="dashboard-quote-kicker">Today&apos;s mindset</span>
-        <span className="dashboard-quote-category">{randomQuote.category}</span>
       </div>
       <p className="dashboard-quote-text">"{randomQuote.quote}"</p>
     </Card>

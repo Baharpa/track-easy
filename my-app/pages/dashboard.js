@@ -9,10 +9,10 @@ import { TrackEasyIcon } from '../components/TrackEasyIcons';
 
 const nutritionConfig = [
   { label: 'Calories', key: 'totalCalories', goalKey: 'calorieGoal', icon: 'flame', color: 'orange', unit: 'kcal' },
-  { label: 'Protein', key: 'totalProtein', goalKey: 'proteinGoal', icon: 'muscle', color: 'purple', unit: 'g' },
-  { label: 'Carbs', key: 'totalCarbs', goalKey: 'carbsGoal', icon: 'bread', color: 'blue', unit: 'g' },
-  { label: 'Fats', key: 'totalFats', goalKey: 'fatsGoal', icon: 'avocado', color: 'green', unit: 'g' },
-  { label: 'Sugar', key: 'totalSugar', goalKey: 'sugarGoal', icon: 'berry', color: 'pink', unit: 'g' }
+  { label: 'Protein', key: 'totalProtein', goalKey: 'proteinGoal', icon: 'egg', color: 'purple', unit: 'g' },
+  { label: 'Carbs', key: 'totalCarbs', goalKey: 'carbsGoal', icon: 'grain', color: 'blue', unit: 'g' },
+  { label: 'Fats', key: 'totalFats', goalKey: 'fatsGoal', icon: 'drop', color: 'green', unit: 'g' },
+  { label: 'Sugar', key: 'totalSugar', goalKey: 'sugarGoal', icon: 'candy', color: 'pink', unit: 'g' }
 ];
 
 function formatWholeNumber(value) {
@@ -69,7 +69,7 @@ export default function Dashboard() {
                   return (
                     <Card className={`dashboard-nutrition-card ${accentClass}`} key={stat.label}>
                       <div className="dashboard-stat-icon">
-                        <TrackEasyIcon name={stat.icon} size={17} />
+                        <TrackEasyIcon name={stat.icon} size={16} />
                       </div>
                       <span className="dashboard-stat-label">{stat.label}</span>
                       <strong className="dashboard-stat-value">{stat.value}</strong>

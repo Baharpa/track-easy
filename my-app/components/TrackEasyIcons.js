@@ -38,6 +38,16 @@ export function TrackEasyIcon({ name, size = 20, className = '', strokeWidth = 2
           <path d="M12 3.8l1.7 4.5 4.5 1.7-4.5 1.7-1.7 4.5-1.7-4.5-4.5-1.7 4.5-1.7L12 3.8z" />
         </svg>
       );
+    case 'logo':
+      return (
+        <svg {...common}>
+          {title ? <title>{title}</title> : null}
+          <path d="M12 4.4c-3.7 0-6.7 3-6.7 6.7 0 4.8 3.8 8.8 6.7 9.9 2.9-1.1 6.7-5.1 6.7-9.9 0-3.7-3-6.7-6.7-6.7z" />
+          <path d="M9.2 14.7c2.7-.5 4.9-2.4 5.9-5.1" />
+          <path d="M10.1 9.3c1.5.1 2.6.7 3.4 1.8" />
+          <circle cx="9.5" cy="9" r="1.1" />
+        </svg>
+      );
     case 'leaf':
       return (
         <svg {...common}>
@@ -72,6 +82,42 @@ export function TrackEasyIcon({ name, size = 20, className = '', strokeWidth = 2
           <path d="M9.4 9.2v1.8" />
           <path d="M12 8.7v2.3" />
           <path d="M14.6 9.2v1.8" />
+        </svg>
+      );
+    case 'egg':
+      return (
+        <svg {...common}>
+          {title ? <title>{title}</title> : null}
+          <path d="M12 4.6c-2.8 0-5.2 2.8-5.2 6.9 0 3.9 2.2 7.1 5.2 7.1s5.2-3.2 5.2-7.1c0-4.1-2.4-6.9-5.2-6.9z" />
+          <circle cx="12" cy="13" r="1.8" />
+        </svg>
+      );
+    case 'grain':
+      return (
+        <svg {...common}>
+          {title ? <title>{title}</title> : null}
+          <path d="M6 14.8c0-3.1 2.7-5.6 6-5.6s6 2.5 6 5.6v2.8H6v-2.8z" />
+          <path d="M8.3 11.3 12 7.9l3.7 3.4" />
+          <path d="M9.3 16.3h5.4" />
+        </svg>
+      );
+    case 'drop':
+      return (
+        <svg {...common}>
+          {title ? <title>{title}</title> : null}
+          <path d="M12 4.3c2.9 3.4 5 5.9 5 9.2a5 5 0 1 1-10 0c0-3.3 2.1-5.8 5-9.2z" />
+        </svg>
+      );
+    case 'candy':
+      return (
+        <svg {...common}>
+          {title ? <title>{title}</title> : null}
+          <path d="M8 8.2h8v8h-8z" />
+          <path d="M6.2 9.5 4.5 8.2" />
+          <path d="M17.8 9.5 19.5 8.2" />
+          <path d="M6.2 14.5 4.5 15.8" />
+          <path d="M17.8 14.5 19.5 15.8" />
+          <path d="M12 5.7v2.5" />
         </svg>
       );
     case 'avocado':
@@ -179,4 +225,3 @@ export function TrackEasyIcon({ name, size = 20, className = '', strokeWidth = 2
       );
   }
 }
-

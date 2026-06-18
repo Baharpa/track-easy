@@ -103,7 +103,7 @@ useEffect(() => {
 
             <Link href="/dashboard" className="mobile-shell-brand" aria-label="Track Easy home">
               <span className="mobile-shell-brand-mark">
-                <TrackEasyIcon name="leaf" size={18} />
+                <TrackEasyIcon name="logo" size={18} />
               </span>
               <span className="mobile-shell-brand-text">
                 <strong>Track</strong> Easy
@@ -166,7 +166,14 @@ useEffect(() => {
 
       <Navbar bg="light" expand="lg" expanded={expanded} onToggle={setExpanded} collapseOnSelect className="sticky-top main-navbar desktop-nav">
         <Container>
-          <Navbar.Brand as={Link} href={logoHref} className="brand-text" onClick={() => setExpanded(false)}>Track Easy</Navbar.Brand>
+          <Navbar.Brand as={Link} href={logoHref} className="brand-shell" onClick={() => setExpanded(false)}>
+            <span className="brand-shell-mark">
+              <TrackEasyIcon name="logo" size={18} />
+            </span>
+            <span className="brand-shell-text">
+              <strong>Track</strong> Easy
+            </span>
+          </Navbar.Brand>
           <Navbar.Toggle aria-label="Toggle navigation" />
           <Navbar.Collapse>
             <Nav className="me-auto">
