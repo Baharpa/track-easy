@@ -35,4 +35,10 @@ export async function uploadImage(file) {
   return apiFetch('/api/uploads/image', { method: 'POST', body });
 }
 
+export async function scanNutritionLabel(file) {
+  const body = new FormData();
+  body.append('image', file);
+  return apiFetch('/api/uploads/nutrition-scan', { method: 'POST', body });
+}
+
 export const fetcher = (path) => apiFetch(path);

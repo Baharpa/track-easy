@@ -12,6 +12,14 @@ const ingredientSchema = new mongoose.Schema({
   carbsPer100g: { type: Number, default: 0 },
   fatsPer100g: { type: Number, default: 0 },
   sugarPer100g: { type: Number, default: 0 },
+
+  // Nutrition label details (autofill support)
+  servingSize: { type: String, default: '' },
+  saturatedFat: { type: Number, default: 0 },
+  transFat: { type: Number, default: 0 },
+  fiber: { type: Number, default: 0 },
+  sodium: { type: Number, default: 0 },
+  cholesterol: { type: Number, default: 0 },
   
   // Legacy nutrition fields (for backwards compatibility, stores totals for original quantity)
   calories: { type: Number, default: 0 },

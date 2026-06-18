@@ -18,7 +18,8 @@
     "mongoose": "^8.24.0",
     "multer": "^2.2.0",
     "passport": "^0.7.0",
-    "passport-jwt": "^4.0.1"
+    "passport-jwt": "^4.0.1",
+    "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"

@@ -10,7 +10,23 @@ function validateIngredient(body) {
   if (Number(body.quantity) <= 0) return 'Quantity must be a positive number.';
   if (!isValidUnit(body.unit)) return 'Please choose a valid unit.';
 
-  const nutritionFields = ['calories', 'protein', 'carbs', 'fats', 'sugar', 'caloriesPer100g', 'proteinPer100g', 'carbsPer100g', 'fatsPer100g', 'sugarPer100g'];
+  const nutritionFields = [
+    'calories',
+    'protein',
+    'carbs',
+    'fats',
+    'sugar',
+    'caloriesPer100g',
+    'proteinPer100g',
+    'carbsPer100g',
+    'fatsPer100g',
+    'sugarPer100g',
+    'saturatedFat',
+    'transFat',
+    'fiber',
+    'sodium',
+    'cholesterol'
+  ];
   if (nutritionFields.some(field => Number(body[field]) < 0)) return 'Nutrition values cannot be negative.';
 
   const conversionFields = ['gramsPerTeaspoon', 'gramsPerTablespoon', 'gramsPerCup', 'gramsPerPiece'];
@@ -23,7 +39,7 @@ function validateIngredient(body) {
 
 function cleanIngredientBody(body) {
   const cleaned = { ...body, unit: normalizeUnit(body.unit) };
-  ['calories', 'protein', 'carbs', 'fats', 'sugar', 'caloriesPer100g', 'proteinPer100g', 'carbsPer100g', 'fatsPer100g', 'sugarPer100g', 'gramsPerTeaspoon', 'gramsPerTablespoon', 'gramsPerCup', 'gramsPerPiece', 'quantity'].forEach(field => {
+  ['servingSize', 'calories', 'protein', 'carbs', 'fats', 'sugar', 'caloriesPer100g', 'proteinPer100g', 'carbsPer100g', 'fatsPer100g', 'sugarPer100g', 'saturatedFat', 'transFat', 'fiber', 'sodium', 'cholesterol', 'gramsPerTeaspoon', 'gramsPerTablespoon', 'gramsPerCup', 'gramsPerPiece', 'quantity'].forEach(field => {
     if (cleaned[field] === '') cleaned[field] = undefined;
   });
   return cleaned;
