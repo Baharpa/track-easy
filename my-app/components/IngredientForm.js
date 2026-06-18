@@ -18,17 +18,11 @@ function buildDefaultValues(defaultValues) {
 
   return {
     ...defaultValues,
-    servingSize: hasValue(defaultValues.servingSize) ? defaultValues.servingSize : '',
     calories: valueOrServing('calories'),
     protein: valueOrServing('protein'),
     carbs: valueOrServing('carbs'),
     fats: valueOrServing('fats'),
-    sugar: valueOrServing('sugar'),
-    saturatedFat: hasValue(defaultValues.saturatedFat) ? defaultValues.saturatedFat : '',
-    transFat: hasValue(defaultValues.transFat) ? defaultValues.transFat : '',
-    fiber: hasValue(defaultValues.fiber) ? defaultValues.fiber : '',
-    sodium: hasValue(defaultValues.sodium) ? defaultValues.sodium : '',
-    cholesterol: hasValue(defaultValues.cholesterol) ? defaultValues.cholesterol : ''
+    sugar: valueOrServing('sugar')
   };
 }
 
@@ -47,17 +41,11 @@ export default function IngredientForm({ defaultValues = {}, onSubmit, buttonTex
 
   function applyDetectedNutrition(values) {
     const fieldMap = {
-      servingSize: 'servingSize',
       calories: 'calories',
       protein: 'protein',
       fat: 'fats',
       carbohydrates: 'carbs',
-      sugar: 'sugar',
-      saturatedFat: 'saturatedFat',
-      transFat: 'transFat',
-      fiber: 'fiber',
-      sodium: 'sodium',
-      cholesterol: 'cholesterol'
+      sugar: 'sugar'
     };
 
     Object.entries(fieldMap).forEach(([sourceField, targetField]) => {
@@ -134,31 +122,6 @@ export default function IngredientForm({ defaultValues = {}, onSubmit, buttonTex
               { field: 'sugar', label: 'Sugar', step: '0.1' }
             ].map(({ field, label, step }) => (
               <Col xs={6} md key={field}>
-                <Form.Group className="mb-3">
-                  <Form.Label>{label}</Form.Label>
-                  <Form.Control type="number" step={step} isInvalid={!!errors[field]} {...register(field, optionalPositiveRule)} />
-                  <Form.Control.Feedback type="invalid">{errors[field]?.message}</Form.Control.Feedback>
-                </Form.Group>
-              </Col>
-            ))}
-          </Row>
-
-          <Form.Label className="nutrition-label-subhead">Nutrition Label Details</Form.Label>
-          <Row className="g-3">
-            <Col xs={12} md={6}>
-              <Form.Group className="mb-3">
-                <Form.Label>Serving Size</Form.Label>
-                <Form.Control {...register('servingSize')} placeholder="e.g. 30g or 1 cup (30g)" />
-              </Form.Group>
-            </Col>
-            {[
-              { field: 'saturatedFat', label: 'Saturated Fat' },
-              { field: 'transFat', label: 'Trans Fat' },
-              { field: 'fiber', label: 'Fiber' },
-              { field: 'sodium', label: 'Sodium', step: '1' },
-              { field: 'cholesterol', label: 'Cholesterol', step: '1' }
-            ].map(({ field, label, step = '0.1' }) => (
-              <Col xs={6} md={4} key={field}>
                 <Form.Group className="mb-3">
                   <Form.Label>{label}</Form.Label>
                   <Form.Control type="number" step={step} isInvalid={!!errors[field]} {...register(field, optionalPositiveRule)} />

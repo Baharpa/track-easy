@@ -10,6 +10,7 @@ const { extractNutritionLabelFields, hasDetectedValues } = require('../utils/nut
 const router = express.Router();
 const uploadsDir = path.join(__dirname, '..', 'uploads');
 const scanUploadsDir = path.join(__dirname, '..', 'tmp', 'nutrition-scans');
+let ocrWorkerPromise = null;
 const allowedMimeTypes = new Map([
   ['image/jpeg', '.jpg'],
   ['image/png', '.png'],
@@ -57,24 +58,30 @@ const scanUpload = multer({
 });
 
 async function scanNutritionLabel(filePath) {
-  const worker = await Tesseract.createWorker('eng', 1, {
-    logger: () => {}
+  if (!ocrWorkerPromise) {
+    ocrWorkerPromise = (async () => {
+      const worker = await Tesseract.createWorker('eng', 1, {
+        logger: () => {}
+      });
+
+      await worker.setParameters({
+        preserve_interword_spaces: '1',
+        tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK
+      });
+
+      return worker;
+    })().catch(error => {
+      ocrWorkerPromise = null;
+      throw error;
+    });
+  }
+
+  const worker = await ocrWorkerPromise;
+  const result = await worker.recognize(filePath, {
+    rotateAuto: true
   });
 
-  try {
-    await worker.setParameters({
-      preserve_interword_spaces: '1',
-      tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK
-    });
-
-    const result = await worker.recognize(filePath, {
-      rotateAuto: true
-    });
-
-    return result?.data?.text || '';
-  } finally {
-    await worker.terminate().catch(() => {});
-  }
+  return result?.data?.text || '';
 }
 
 router.post('/image', auth, (req, res) => {
@@ -115,17 +122,11 @@ router.post('/nutrition-scan', auth, (req, res) => {
       }
 
       const response = {
-        servingSize: parsed.servingSize,
         calories: parsed.calories,
         protein: parsed.protein,
         fat: parsed.fat,
-        saturatedFat: parsed.saturatedFat,
-        transFat: parsed.transFat,
         carbohydrates: parsed.carbohydrates,
-        fiber: parsed.fiber,
-        sugar: parsed.sugar,
-        sodium: parsed.sodium,
-        cholesterol: parsed.cholesterol
+        sugar: parsed.sugar
       };
 
       res.status(200).json(response);

@@ -20,12 +20,7 @@ function validateIngredient(body) {
     'proteinPer100g',
     'carbsPer100g',
     'fatsPer100g',
-    'sugarPer100g',
-    'saturatedFat',
-    'transFat',
-    'fiber',
-    'sodium',
-    'cholesterol'
+    'sugarPer100g'
   ];
   if (nutritionFields.some(field => Number(body[field]) < 0)) return 'Nutrition values cannot be negative.';
 
@@ -39,7 +34,7 @@ function validateIngredient(body) {
 
 function cleanIngredientBody(body) {
   const cleaned = { ...body, unit: normalizeUnit(body.unit) };
-  ['servingSize', 'calories', 'protein', 'carbs', 'fats', 'sugar', 'caloriesPer100g', 'proteinPer100g', 'carbsPer100g', 'fatsPer100g', 'sugarPer100g', 'saturatedFat', 'transFat', 'fiber', 'sodium', 'cholesterol', 'gramsPerTeaspoon', 'gramsPerTablespoon', 'gramsPerCup', 'gramsPerPiece', 'quantity'].forEach(field => {
+  ['calories', 'protein', 'carbs', 'fats', 'sugar', 'caloriesPer100g', 'proteinPer100g', 'carbsPer100g', 'fatsPer100g', 'sugarPer100g', 'gramsPerTeaspoon', 'gramsPerTablespoon', 'gramsPerCup', 'gramsPerPiece', 'quantity'].forEach(field => {
     if (cleaned[field] === '') cleaned[field] = undefined;
   });
   return cleaned;
