@@ -8,11 +8,15 @@ import IngredientCard from '../../components/IngredientCard';
 import { EmptyMessage, ErrorMessage, LoadingMessage } from '../../components/StateMessage';
 
 export default function Inventory() {
+
   const { data: ingredients, error, mutate } = useSWR('/api/ingredients');
+
   const [search, setSearch] = useState('');
+
   const [category, setCategory] = useState('');
 
   const categories = [...new Set((ingredients || []).map(item => item.category || 'Other'))];
+  
   const filtered = (ingredients || []).filter(item => {
     const matchesName = item.name.toLowerCase().includes(search.toLowerCase());
     const matchesCategory = !category || (item.category || 'Other') === category;

@@ -3,18 +3,14 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
-const Tesseract = require('tesseract.js');
 const auth = require('../config/auth');
 const { extractNutritionLabelFields, hasDetectedValues } = require('../utils/nutritionLabelParser');
 
 const router = express.Router();
 const uploadsDir = path.join(__dirname, '..', 'uploads');
-<<<<<<< HEAD
 const scanUploadsDir = path.join(__dirname, '..', 'tmp', 'nutrition-scans');
-let ocrWorkerPromise = null;
-=======
 const maxUploadSize = 2 * 1024 * 1024;
->>>>>>> a093e1b (picture upload faster by downsizing pics first)
+let ocrWorkerPromise = null;
 const allowedMimeTypes = new Map([
   ['image/jpeg', '.jpg'],
   ['image/png', '.png'],
@@ -62,6 +58,13 @@ const scanUpload = multer({
 });
 
 async function scanNutritionLabel(filePath) {
+  let Tesseract;
+  try {
+    Tesseract = require('tesseract.js');
+  } catch (err) {
+    throw new Error('Nutrition scan is unavailable right now.');
+  }
+
   if (!ocrWorkerPromise) {
     ocrWorkerPromise = (async () => {
       const worker = await Tesseract.createWorker('eng', 1, {
