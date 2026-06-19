@@ -18,64 +18,104 @@ function toNumber(value) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function extractMetric(lines, compactText, patterns) {
-  for (const rawLine of lines) {
-    const line = rawLine.trim();
-    if (!line) continue;
+function cleanLine(line) {
+  return line
+    .replace(/\b\d+(?:[.,]\d+)?\s*%/g, ' ')
+    .replace(/\b(?:dv|daily value)\b/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
-    for (const pattern of patterns) {
-      const match = line.match(pattern);
-      if (match && match[1] !== undefined) {
-        const parsed = toNumber(match[1]);
-        if (parsed !== null) return parsed;
-      }
-    }
+function amountAfterLabel(line, labelPattern, { requireUnit = false } = {}) {
+  const match = line.match(labelPattern);
+  if (!match) return null;
+
+  const afterLabel = line.slice(match.index + match[0].length);
+  const amountPattern = requireUnit
+    ? /(?:^|[^0-9])(\d+(?:[.,]\d+)?)\s*(?:g|gram|grams|mg|milligram|milligrams)\b/i
+    : /(?:^|[^0-9])(\d+(?:[.,]\d+)?)(?!\s*%)/i;
+  const amountMatch = afterLabel.match(amountPattern);
+  return amountMatch ? toNumber(amountMatch[1]) : null;
+}
+
+function lineHasAny(line, patterns) {
+  return patterns.some(pattern => pattern.test(line));
+}
+
+function findCalories(lines) {
+  for (const line of lines) {
+    if (!/\b(?:calories?|energy)\b/i.test(line)) continue;
+    if (/\bcalories?\s+from\s+fat\b/i.test(line)) continue;
+    if (/\bserv(?:ing|ings?)\b/i.test(line)) continue;
+
+    const value = amountAfterLabel(line, /\b(?:calories?|energy)\b/i);
+    if (value !== null) return value;
   }
 
-  for (const pattern of patterns) {
-    const match = compactText.match(pattern);
-    if (match && match[1] !== undefined) {
-      const parsed = toNumber(match[1]);
-      if (parsed !== null) return parsed;
+  return null;
+}
+
+function findMacro(lines, labelPatterns, skipPatterns) {
+  for (const line of lines) {
+    if (lineHasAny(line, skipPatterns)) continue;
+
+    for (const labelPattern of labelPatterns) {
+      const withUnit = amountAfterLabel(line, labelPattern, { requireUnit: true });
+      if (withUnit !== null) return withUnit;
+
+      // OCR sometimes drops the "g"; only accept unitless values when no %DV remains.
+      if (!/%/.test(line)) {
+        const unitless = amountAfterLabel(line, labelPattern);
+        if (unitless !== null) return unitless;
+      }
     }
   }
 
   return null;
 }
 
+function findSugar(lines) {
+  const totalSugar = findMacro(
+    lines,
+    [/\btotal\s+sugars?\b/i, /\bsugars?\b/i, /\bsucres?\b/i],
+    [/\b(?:added|includes?|incl\.?)\s+\d*/i]
+  );
+  if (totalSugar !== null) return totalSugar;
+
+  // Added sugar is a fallback only when OCR did not expose a total sugar line.
+  return findMacro(
+    lines,
+    [/\b(?:includes?|incl\.?)\s*\d*(?:[.,]\d+)?\s*g?\s*added\s+sugars?\b/i, /\badded\s+sugars?\b/i],
+    []
+  );
+}
+
 function extractNutritionLabelFields(text) {
   const normalized = normalizeText(text);
   const lines = normalized
     .split('\n')
-    .map(line => line.replace(/\s+/g, ' ').trim())
+    .map(line => cleanLine(line))
     .filter(Boolean);
 
-  const compact = lines.join(' | ');
-
-  const calories = extractMetric(lines, compact, [
-    /(?:^|\b)(?:calories?|energy)\s*[:\-]?\s*(\d+(?:[.,]\d+)?)/i,
-    /\b(?:calories?|energy)\b[^0-9]{0,12}(\d+(?:[.,]\d+)?)/i
-  ]);
-
-  const protein = extractMetric(lines, compact, [
-    /\b(?:protein|proteins?|proteines?)\s*[:\-]?\s*(\d+(?:[.,]\d+)?)/i,
-    /\bprotein\b[^0-9]{0,10}(\d+(?:[.,]\d+)?)/i
-  ]);
-
-  const fat = extractMetric(lines, compact, [
-    /\b(?:total\s+fat|fat|lipides?)\s*[:\-]?\s*(\d+(?:[.,]\d+)?)/i,
-    /\b(?:total\s+fat|fat)\b[^0-9]{0,10}(\d+(?:[.,]\d+)?)/i
-  ]);
-
-  const carbohydrates = extractMetric(lines, compact, [
-    /\b(?:total\s+carbohydrate|carbohydrates?|carbs?|glucides?)\s*[:\-]?\s*(\d+(?:[.,]\d+)?)/i,
-    /\b(?:carbohydrates?|carbs?)\b[^0-9]{0,10}(\d+(?:[.,]\d+)?)/i
-  ]);
-
-  const sugar = extractMetric(lines, compact, [
-    /\b(?:sugars?|sugar|sucres?)\s*[:\-]?\s*(\d+(?:[.,]\d+)?)/i,
-    /\bsugars?\b[^0-9]{0,10}(\d+(?:[.,]\d+)?)/i
-  ]);
+  // Parse line by line so "% DV", serving size, saturated fat, and added sugar
+  // do not leak into the main nutrition fields.
+  const calories = findCalories(lines);
+  const fat = findMacro(
+    lines,
+    [/\btotal\s+fat\b/i, /\bfat\b/i, /\blipides?\b/i],
+    [/\b(?:saturated|trans|polyunsaturated|monounsaturated)\s+fat\b/i, /\bcalories?\s+from\s+fat\b/i]
+  );
+  const carbohydrates = findMacro(
+    lines,
+    [/\btotal\s+carbohydrate\b/i, /\bcarbohydrates?\b/i, /\bcarbs?\b/i, /\bglucides?\b/i],
+    [/\b(?:fiber|fibre|sugars?|added sugars?|sodium|cholesterol|potassium)\b/i]
+  );
+  const protein = findMacro(
+    lines,
+    [/\bproteins?\b/i, /\bproteines?\b/i],
+    []
+  );
+  const sugar = findSugar(lines);
 
   return {
     calories,

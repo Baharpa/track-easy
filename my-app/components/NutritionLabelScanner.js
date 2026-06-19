@@ -4,6 +4,9 @@ import { scanNutritionLabel } from '../lib/api';
 import { TrackEasyIcon } from './TrackEasyIcons';
 
 const MAX_IMAGE_SIZE = 8 * 1024 * 1024;
+const MAX_SCAN_DIMENSION = 1000;
+const SCAN_IMAGE_QUALITY = 0.72;
+const REQUIRED_FIELDS = ['calories', 'protein', 'fat', 'carbohydrates', 'sugar'];
 
 function isLikelyImageFile(file) {
   const fileName = file?.name?.toLowerCase() || '';
@@ -24,9 +27,66 @@ function buildToast(message, variant = 'success') {
   };
 }
 
+function getCanvasSize(width, height) {
+  const scale = Math.min(1, MAX_SCAN_DIMENSION / width, MAX_SCAN_DIMENSION / height);
+  return {
+    width: Math.max(1, Math.round(width * scale)),
+    height: Math.max(1, Math.round(height * scale))
+  };
+}
+
+function loadImage(file) {
+  return new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    const image = new Image();
+
+    image.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(image);
+    };
+
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error('Could not read this label photo.'));
+    };
+
+    image.src = objectUrl;
+  });
+}
+
+function canvasToBlob(canvas) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) resolve(blob);
+      else reject(new Error('Could not prepare this label photo.'));
+    }, 'image/jpeg', SCAN_IMAGE_QUALITY);
+  });
+}
+
+async function prepareScanImage(file) {
+  const image = await loadImage(file);
+  const size = getCanvasSize(image.naturalWidth, image.naturalHeight);
+  const canvas = document.createElement('canvas');
+  canvas.width = size.width;
+  canvas.height = size.height;
+
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('Could not prepare this label photo.');
+
+  context.drawImage(image, 0, 0, size.width, size.height);
+  const blob = await canvasToBlob(canvas);
+  const baseName = file.name.replace(/\.[^.]+$/, '') || 'nutrition-label';
+  return new File([blob], `${baseName}-scan.jpg`, { type: 'image/jpeg' });
+}
+
+function getMissingFields(result) {
+  return REQUIRED_FIELDS.filter(field => result?.[field] === null || result?.[field] === undefined || result?.[field] === '');
+}
+
 export default function NutritionLabelScanner({ onDetected }) {
   const inputRef = useRef(null);
   const [scanning, setScanning] = useState(false);
+  const [scanNote, setScanNote] = useState('');
   const [toast, setToast] = useState({ show: false, message: '', variant: 'success', key: 'idle', title: '' });
 
   async function handleFileChange(event) {
@@ -45,15 +105,36 @@ export default function NutritionLabelScanner({ onDetected }) {
       return;
     }
 
+    const logId = `nutrition-scan-${Date.now()}`;
+    console.time(`${logId}: total`);
     setScanning(true);
+    setScanNote('Preparing label photo...');
 
     try {
-      const result = await scanNutritionLabel(file);
+      console.time(`${logId}: frontend scan image preparation`);
+      const preparedFile = await prepareScanImage(file);
+      console.timeEnd(`${logId}: frontend scan image preparation`);
+      console.info(`${logId}: compressed scan file size ${(preparedFile.size / 1024).toFixed(1)} KB`);
+
+      setScanNote('Scanning label...');
+      console.time(`${logId}: scan upload request`);
+      const result = await scanNutritionLabel(preparedFile);
+      console.timeEnd(`${logId}: scan upload request`);
+
       onDetected?.(result);
-      setToast(buildToast('Nutrition values detected.', 'success'));
+      const missingFields = getMissingFields(result);
+      if (missingFields.length > 0) {
+        setScanNote(`Please double-check scanned values. Missing: ${missingFields.join(', ')}.`);
+        setToast(buildToast('Some values were not detected. Please review the form.', 'danger'));
+      } else {
+        setScanNote('Please double-check scanned values before saving.');
+        setToast(buildToast('Nutrition values detected. Please review them before saving.', 'success'));
+      }
     } catch (error) {
+      setScanNote('');
       setToast(buildToast(error.message || 'Nutrition scan failed.', 'danger'));
     } finally {
+      console.timeEnd(`${logId}: total`);
       setScanning(false);
     }
   }
@@ -86,13 +167,14 @@ export default function NutritionLabelScanner({ onDetected }) {
           </>
         )}
       </Button>
+      {scanNote && <small className="nutrition-scan-note">{scanNote}</small>}
 
       <ToastContainer position="top-end" className="nutrition-scan-toast-container">
         <Toast
           show={toast.show}
           onClose={() => setToast(current => ({ ...current, show: false }))}
           autohide
-          delay={3500}
+          delay={4500}
           className={`nutrition-scan-toast ${toast.variant}`}
           key={toast.key}
         >

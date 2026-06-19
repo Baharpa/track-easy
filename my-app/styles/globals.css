@@ -1071,6 +1071,12 @@ a:hover {
   display: none;
 }
 
+.nutrition-scan-note {
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
 .nutrition-scan-toast-container {
   padding-top: 3.75rem;
 }
