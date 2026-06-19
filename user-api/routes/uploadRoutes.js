@@ -9,8 +9,12 @@ const { extractNutritionLabelFields, hasDetectedValues } = require('../utils/nut
 
 const router = express.Router();
 const uploadsDir = path.join(__dirname, '..', 'uploads');
+<<<<<<< HEAD
 const scanUploadsDir = path.join(__dirname, '..', 'tmp', 'nutrition-scans');
 let ocrWorkerPromise = null;
+=======
+const maxUploadSize = 2 * 1024 * 1024;
+>>>>>>> a093e1b (picture upload faster by downsizing pics first)
 const allowedMimeTypes = new Map([
   ['image/jpeg', '.jpg'],
   ['image/png', '.png'],
@@ -31,7 +35,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: maxUploadSize },
   fileFilter(req, file, callback) {
     if (!allowedMimeTypes.has(file.mimetype)) {
       return callback(new Error('Only image files are allowed.'));
@@ -88,7 +92,7 @@ router.post('/image', auth, (req, res) => {
   upload.single('image')(req, res, (err) => {
     if (err) {
       const message = err.code === 'LIMIT_FILE_SIZE'
-        ? 'Image must be 5MB or smaller.'
+        ? 'Image must be 2MB or smaller.'
         : err.message || 'Image upload failed.';
       return res.status(400).json({ message });
     }

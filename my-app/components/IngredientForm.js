@@ -1,4 +1,5 @@
 import { useForm, Controller } from 'react-hook-form';
+import { useState } from 'react';
 import { Alert, Button, Card, Col, Form, Row } from 'react-bootstrap';
 import MealImageUpload from './MealImageUpload';
 import NutritionLabelScanner from './NutritionLabelScanner';
@@ -27,6 +28,7 @@ function buildDefaultValues(defaultValues) {
 }
 
 export default function IngredientForm({ defaultValues = {}, onSubmit, buttonText = 'Save Ingredient' }) {
+  const [imageUploading, setImageUploading] = useState(false);
   const { register, handleSubmit, formState: { errors, isSubmitting }, control, setValue, watch } = useForm({ defaultValues: buildDefaultValues(defaultValues) });
   const imageUrl = watch('imageUrl');
 
@@ -135,10 +137,10 @@ export default function IngredientForm({ defaultValues = {}, onSubmit, buttonTex
         <Form.Group className="mb-3">
           <Form.Label>Image URL</Form.Label>
           <Form.Control {...register('imageUrl')} placeholder="https://example.com/food.jpg" />
-          <MealImageUpload imageUrl={imageUrl} onUploaded={uploadedUrl => setValue('imageUrl', uploadedUrl, { shouldDirty: true })} />
+          <MealImageUpload imageUrl={imageUrl} onUploaded={uploadedUrl => setValue('imageUrl', uploadedUrl, { shouldDirty: true })} onUploadingChange={setImageUploading} />
         </Form.Group>
 
-        <Button type="submit" variant="success" className="ingredient-form-submit" disabled={isSubmitting}>{isSubmitting ? 'Saving...' : buttonText}</Button>
+        <Button type="submit" variant="success" className="ingredient-form-submit" disabled={isSubmitting || imageUploading}>{imageUploading ? 'Uploading photo...' : isSubmitting ? 'Saving...' : buttonText}</Button>
       </Form>
     </Card>
   );

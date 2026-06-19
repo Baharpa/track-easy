@@ -57,6 +57,7 @@ export default function CreateMealComponentPage() {
   const router = useRouter();
   const { data: ingredients, error } = useSWR('/api/ingredients');
   const [meal, setMeal] = useState({ name: '', category: '', imageUrl: '' });
+  const [imageUploading, setImageUploading] = useState(false);
   const [components, setComponents] = useState([]);
   const [message, setMessage] = useState('');
   const [showLibrary, setShowLibrary] = useState(false);
@@ -109,7 +110,7 @@ export default function CreateMealComponentPage() {
       amountLabel: getUsedAmountLabel(originalComponent?.ingredients[index], item)
     }));
   });
-  const canSave = meal.name.trim() && flatIngredients.length > 0;
+  const canSave = meal.name.trim() && flatIngredients.length > 0 && !imageUploading;
 
   function resetLibraryForm() {
     setSelectedCategory('');
@@ -325,7 +326,7 @@ export default function CreateMealComponentPage() {
                     <Form.Control value={meal.imageUrl} onChange={e => setMeal({ ...meal, imageUrl: e.target.value })} placeholder="https://example.com/meal.jpg" />
                     <Button variant="outline-primary" onClick={generateAutoImage} title="Generate auto image">✨</Button>
                   </div>
-                  <MealImageUpload imageUrl={meal.imageUrl} onUploaded={imageUrl => setMeal({ ...meal, imageUrl })} />
+                  <MealImageUpload imageUrl={meal.imageUrl} onUploaded={imageUrl => setMeal({ ...meal, imageUrl })} onUploadingChange={setImageUploading} />
                 </Form.Group>
               </Col>
             </Row>
@@ -494,7 +495,7 @@ export default function CreateMealComponentPage() {
       </>}
 
       <div className="meal-save-actions">
-        <Button variant="success" onClick={saveMeal} disabled={!canSave}>Save Meal</Button>
+        <Button variant="success" onClick={saveMeal} disabled={!canSave}>{imageUploading ? 'Uploading photo...' : 'Save Meal'}</Button>
       </div>
 
       <IngredientLibraryModal

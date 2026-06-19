@@ -97,6 +97,7 @@ export default function ComponentMealEditor({
 }) {
   const [meal, setMeal] = useState(initialMeal || { name: '', category: '', imageUrl: '' });
   const [components, setComponents] = useState(initialComponents || []);
+  const [imageUploading, setImageUploading] = useState(false);
   const [message, setMessage] = useState('');
   const [showLibrary, setShowLibrary] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -125,7 +126,7 @@ export default function ComponentMealEditor({
       amountLabel: getUsedAmountLabel(originalComponent?.ingredients[index], item)
     }));
   });
-  const canSave = meal.name.trim() && flatIngredients.length > 0 && !saving;
+  const canSave = meal.name.trim() && flatIngredients.length > 0 && !saving && !imageUploading;
   const ingredientsInCategory = ingredients.filter(ingredient => sameCategory(ingredient, selectedCategory));
 
   function resetLibraryForm() {
@@ -310,7 +311,7 @@ export default function ComponentMealEditor({
                   <Form.Control value={meal.imageUrl} onChange={e => setMeal({ ...meal, imageUrl: e.target.value })} placeholder="https://example.com/meal.jpg" />
                   <Button variant="outline-primary" onClick={generateAutoImage} title="Generate auto image">✨</Button>
                 </div>
-                <MealImageUpload imageUrl={meal.imageUrl} onUploaded={imageUrl => setMeal({ ...meal, imageUrl })} />
+                <MealImageUpload imageUrl={meal.imageUrl} onUploaded={imageUrl => setMeal({ ...meal, imageUrl })} onUploadingChange={setImageUploading} />
               </Form.Group>
             </Col>
           </Row>
@@ -467,7 +468,7 @@ export default function ComponentMealEditor({
 
     <div className="meal-save-actions">
       <Button variant="outline-secondary" onClick={onCancel} disabled={saving}>Cancel</Button>
-      <Button variant="success" onClick={saveMeal} disabled={!canSave}>{saving ? 'Saving...' : saveLabel}</Button>
+      <Button variant="success" onClick={saveMeal} disabled={!canSave}>{imageUploading ? 'Uploading photo...' : saving ? 'Saving...' : saveLabel}</Button>
     </div>
 
     <IngredientLibraryModal
