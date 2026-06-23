@@ -261,7 +261,7 @@ export default function CreateMealComponentPage() {
     const ingredient = ingredients.find(ingredientItem => ingredientItem._id === item?.ingredientId);
     if (!component || !item || !ingredient) return;
 
-    setSelectedCategory(ingredient.category || componentName || 'Other');
+    setSelectedCategory(getCategoryLabel(ingredient.category || componentName || 'Other'));
     setActiveIngredient(ingredient);
     setAmountUsed(item.quantityUsed);
     setUnitUsed(item.unit || ingredient.unit || 'grams');
@@ -619,11 +619,11 @@ function IngredientLibraryModal({
                 const isActive = activeIngredient?._id === ingredient._id;
                 return <Card className={`ingredient-library-card ${isActive ? 'selected' : ''}`} role="button" onClick={() => selectIngredient(ingredient)} key={ingredient._id}>
                   <div className="ingredient-library-row">
-                    <FoodImage src={getFoodImage(ingredient)} alt={ingredient.name} category={ingredient.category || selectedCategory} className="ingredient-library-img" placeholderClassName="ingredient-library-placeholder" />
+                    <FoodImage src={getFoodImage(ingredient)} alt={ingredient.name} category={getCategoryLabel(ingredient.category || selectedCategory)} className="ingredient-library-img" placeholderClassName="ingredient-library-placeholder" />
                     <Card.Body className="ingredient-library-row-body">
                       <div className="ingredient-library-row-top">
                         <h5>{ingredient.name}</h5>
-                        <Badge className="soft-pill soft-pill-beige">{ingredient.category || 'Other'}</Badge>
+                        <Badge className="soft-pill soft-pill-beige">{getCategoryLabel(ingredient.category)}</Badge>
                       </div>
                       <div className="ingredient-library-row-meta">{formatServingLabel(ingredient)}</div>
                       <div className="ingredient-library-row-nutrition">

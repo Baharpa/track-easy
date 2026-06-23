@@ -52,8 +52,6 @@ export default function Dashboard() {
 
         {today && goals && (
           <div className="dashboard-stack">
-            <DailyQuote />
-
             <section>
               <div className="dashboard-section-header dashboard-section-header-tight">
                 <div>
@@ -144,6 +142,7 @@ export default function Dashboard() {
                   <div>
                     <strong>No logs yet</strong>
                     <span>Open Log Food to add your first meal or ingredient.</span>
+                    <Link href="/tracker" className="dashboard-empty-log-link">Log food</Link>
                   </div>
                 </div>
               ) : (
@@ -164,6 +163,7 @@ export default function Dashboard() {
               )}
             </Card>
 
+            <DailyQuote />
           </div>
         )}
       </div>

@@ -25,6 +25,7 @@ export default function MealCard({
   const [saving, setSaving] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const mealCategory = normalizeMealCategory(meal.category);
+  const hasImage = Boolean(meal.imageUrl && String(meal.imageUrl).trim());
 
   async function toggleFavourite() {
     setSaving(true);
@@ -50,15 +51,17 @@ export default function MealCard({
   return (
     <>
       <Card className="app-card meal-display-card">
-        <div className="meal-display-image-wrap">
-          <FoodImage
-            src={meal.imageUrl}
-            alt={meal.name}
-            category={mealCategory}
-            className="meal-display-image"
-            placeholderClassName="meal-display-image meal-display-placeholder"
-          />
-        </div>
+        {hasImage && (
+          <div className="meal-display-image-wrap">
+            <FoodImage
+              src={meal.imageUrl}
+              alt={meal.name}
+              category={mealCategory}
+              className="meal-display-image"
+              placeholderClassName="meal-display-image"
+            />
+          </div>
+        )}
 
         <Card.Body className="meal-display-body">
           <div className="meal-display-top">

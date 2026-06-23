@@ -127,7 +127,7 @@ useEffect(() => {
             </Link>
             <Link href="/meals" className={`mobile-bottom-nav-item ${router.pathname === '/meals' ? 'active' : ''}`}>
               <TrackEasyIcon name="bowl" size={20} />
-              <span>Browse meals</span>
+              <span>Meals</span>
             </Link>
             <Link href="/tracker" className={`mobile-bottom-nav-item mobile-bottom-nav-center ${isTrackerRoute(router.pathname) ? 'active' : ''}`} aria-label="Log Food">
               <span className="mobile-bottom-nav-plus">
@@ -137,7 +137,7 @@ useEffect(() => {
             </Link>
             <Link href="/ingredients" className={`mobile-bottom-nav-item ${isMealRoute(router.pathname, '/ingredients') ? 'active' : ''}`}>
               <TrackEasyIcon name="leaf" size={20} />
-              <span>Add Ingredients</span>
+              <span>Ingredients</span>
             </Link>
             <Link href="/history" className={`mobile-bottom-nav-item ${router.pathname === '/history' ? 'active' : ''}`}>
               <TrackEasyIcon name="tracker" size={20} />

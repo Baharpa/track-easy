@@ -15,9 +15,10 @@ import { formatAmount, formatCalories, formatMacro, formatServingLabel, getIngre
 import { calculateNutritionWithUnit } from '../../lib/unitConverter';
 import { getFoodImage } from '../../lib/foodVisuals';
 import { normalizeMealCategory } from '../../lib/mealCategoryHelpers';
+import { APP_CATEGORIES, normalizeCategory } from '../../lib/categoryHelpers';
 
 function sameCategory(ingredient, category) {
-  return !category || (ingredient.category || 'Other') === category;
+  return !category || normalizeCategory(ingredient.category) === category;
 }
 
 function logTypeLabel(item) {
@@ -319,14 +320,15 @@ function SelectedMealPreview({ meal, onChange }) {
 
 function SelectedIngredientPreview({ ingredient, onChange }) {
   const nutrition = getIngredientServingNutrition(ingredient);
+  const category = normalizeCategory(ingredient.category);
   return (
     <Card className="compact-card picker-row">
-      <FoodImage src={getFoodImage(ingredient)} alt={ingredient.name} category={ingredient.category || 'Other'} className="thumb-sm" placeholderClassName="emoji-thumb thumb-sm" />
+      <FoodImage src={getFoodImage(ingredient)} alt={ingredient.name} category={category} className="thumb-sm" placeholderClassName="emoji-thumb thumb-sm" />
       <Card.Body className="picker-row-body">
         <div className="picker-row-header">
           <div>
             <h5>{ingredient.name}</h5>
-            <Badge className="soft-pill soft-pill-beige">{ingredient.category || 'Other'}</Badge>
+            <Badge className="soft-pill soft-pill-beige">{category}</Badge>
           </div>
           <Button variant="outline-success" size="sm" onClick={onChange}>Change</Button>
         </div>
@@ -342,7 +344,7 @@ function SelectedIngredientPreview({ ingredient, onChange }) {
 function IngredientPickerModal({ show, onHide, ingredients = [], onSelect }) {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
-  const categories = useMemo(() => [...new Set(ingredients.map(item => item.category || 'Other'))], [ingredients]);
+  const categories = APP_CATEGORIES;
   const filtered = ingredients.filter(ingredient => {
     const cleanSearch = search.trim().toLowerCase();
     return (!cleanSearch || ingredient.name.toLowerCase().includes(cleanSearch)) && sameCategory(ingredient, category);
@@ -367,12 +369,12 @@ function IngredientPickerModal({ show, onHide, ingredients = [], onSelect }) {
             const nutrition = getIngredientServingNutrition(ingredient);
             return (
               <Card className="meal-picker-card" key={ingredient._id}>
-                <FoodImage src={getFoodImage(ingredient)} alt={ingredient.name} category={ingredient.category || 'Other'} className="meal-picker-thumb" placeholderClassName="emoji-thumb meal-picker-thumb" />
+                <FoodImage src={getFoodImage(ingredient)} alt={ingredient.name} category={normalizeCategory(ingredient.category)} className="meal-picker-thumb" placeholderClassName="emoji-thumb meal-picker-thumb" />
                 <Card.Body className="meal-picker-card-body">
                   <div className="meal-picker-card-main">
                     <div className="meal-picker-card-title">
                       <h6>{ingredient.name}</h6>
-                      <Badge className="soft-pill soft-pill-beige">{ingredient.category || 'Other'}</Badge>
+                      <Badge className="soft-pill soft-pill-beige">{normalizeCategory(ingredient.category)}</Badge>
                     </div>
                     <div className="mini-stat-row">
                       <span>{formatServingLabel(ingredient)}</span>

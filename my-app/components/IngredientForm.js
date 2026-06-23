@@ -5,6 +5,7 @@ import MealImageUpload from './MealImageUpload';
 import NutritionLabelScanner from './NutritionLabelScanner';
 import UnitSelect from './UnitSelect';
 import { CATEGORY_LIBRARY } from '../lib/foodVisuals';
+import { normalizeCategory } from '../lib/categoryHelpers';
 import { getIngredientServingNutrition } from '../lib/formatNutrition';
 
 function hasValue(value) {
@@ -19,6 +20,7 @@ function buildDefaultValues(defaultValues) {
 
   return {
     ...defaultValues,
+    category: hasValue(defaultValues.category) ? normalizeCategory(defaultValues.category) : '',
     calories: valueOrServing('calories'),
     protein: valueOrServing('protein'),
     carbs: valueOrServing('carbs'),

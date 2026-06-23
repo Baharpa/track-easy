@@ -61,7 +61,7 @@ export default function SavedMeals() {
         <>
 
 <Link href="/favourites" className="favourite-meals-shortcut">
-  <Card className="app-card favourite-meals-shortcut-card" role="button">
+  <Card className="favourite-meals-shortcut-card" role="button">
     <div className="favourite-meals-shortcut-icon" aria-hidden="true">
       ♥
     </div>
