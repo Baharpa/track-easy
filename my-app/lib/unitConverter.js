@@ -1,17 +1,6 @@
 // Frontend Unit Conversion Utility
 // Mirror of backend unitConverter.js for client-side calculations
 
-const DEFAULT_CONVERSIONS = {
-  kilograms: { toGrams: 1000 },
-  grams: { toGrams: 1 },
-  liters: { toMilliliters: 1000 },
-  milliliters: { toMilliliters: 1 },
-  teaspoons: { toGrams: 5 },
-  tablespoons: { toGrams: 15 },
-  cups: { toGrams: 240 },
-  pieces: { toGrams: null }
-};
-
 const VALID_UNITS = [
   'grams',
   'kilograms',
@@ -54,23 +43,19 @@ function convertToGrams(amount, unit, ingredient = null) {
   }
   
   if (normalized === 'milliliters' || normalized === 'liters') {
-    const ml = normalized === 'milliliters' ? amount : amount * 1000;
-    return ml;
+    return null;
   }
   
   if (normalized === 'teaspoons') {
-    const gramsPerTsp = ingredient?.gramsPerTeaspoon || DEFAULT_CONVERSIONS.teaspoons.toGrams;
-    return amount * gramsPerTsp;
+    return ingredient?.gramsPerTeaspoon ? amount * ingredient.gramsPerTeaspoon : null;
   }
   
   if (normalized === 'tablespoons') {
-    const gramsPerTbsp = ingredient?.gramsPerTablespoon || DEFAULT_CONVERSIONS.tablespoons.toGrams;
-    return amount * gramsPerTbsp;
+    return ingredient?.gramsPerTablespoon ? amount * ingredient.gramsPerTablespoon : null;
   }
   
   if (normalized === 'cups') {
-    const gramsPerCup = ingredient?.gramsPerCup || DEFAULT_CONVERSIONS.cups.toGrams;
-    return amount * gramsPerCup;
+    return ingredient?.gramsPerCup ? amount * ingredient.gramsPerCup : null;
   }
   
   if (normalized === 'pieces') {
@@ -182,4 +167,14 @@ export function calculateNutritionWithUnit(quantityUsed, unit, ingredient) {
 
 export function convertToGramsExport(amount, unit, ingredient = null) {
   return convertToGrams(amount, unit, ingredient);
+}
+
+export function hasKnownConversion(quantityUsed, unit, ingredient) {
+  if (!quantityUsed || Number(quantityUsed) <= 0 || !unit || !ingredient) return true;
+  if (sameUnit(unit, ingredient.unit)) return true;
+  return convertToGrams(Number(quantityUsed), unit, ingredient) !== null;
+}
+
+export function getConversionWarning(quantityUsed, unit, ingredient) {
+  return hasKnownConversion(quantityUsed, unit, ingredient) ? '' : 'Add a custom conversion for this ingredient.';
 }

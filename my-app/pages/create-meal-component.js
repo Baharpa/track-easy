@@ -3,8 +3,11 @@ import { useRouter } from 'next/router';
 import Link from 'next/link';
 import useSWR from 'swr';
 import { Alert, Badge, Button, Card, Col, Form, Modal, Row } from 'react-bootstrap';
+import AppBackButton from '../components/AppBackButton';
 import PageHeader from '../components/PageHeader';
 import RouteGuard from '../components/RouteGuard';
+import ServingAmountSelector from '../components/ServingAmountSelector';
+import SmartFoodSuggestionCard from '../components/SmartFoodSuggestionCard';
 import UnitSelect from '../components/UnitSelect';
 import FoodImage from '../components/FoodImage';
 import MealImageUpload from '../components/MealImageUpload';
@@ -23,7 +26,8 @@ import {
 import { CATEGORY_LIBRARY, getCategoryClass, getCategoryIcon, getFoodImage } from '../lib/foodVisuals';
 import { getCategoryLabel } from '../lib/categoryHelpers';
 import { MEAL_CATEGORIES, normalizeMealCategory } from '../lib/mealCategoryHelpers';
-import { calculateNutritionWithUnit } from '../lib/unitConverter';
+import { getSmartFoodSuggestion } from '../lib/smartFoodBuilder';
+import { calculateNutritionWithUnit, getConversionWarning } from '../lib/unitConverter';
 
 function sameCategory(ingredient, categoryName) {
   const ingredientCategory = getCategoryLabel(ingredient.category || 'Other').toLowerCase();
@@ -111,6 +115,10 @@ export default function CreateMealComponentPage() {
     }));
   });
   const canSave = meal.name.trim() && flatIngredients.length > 0 && !imageUploading;
+  const smartMealQuery = typeof router.query.smartMeal === 'string'
+    ? router.query.smartMeal
+    : typeof router.query.name === 'string' ? router.query.name : '';
+  const smartMealSuggestion = useMemo(() => getSmartFoodSuggestion(smartMealQuery), [smartMealQuery]);
 
   function resetLibraryForm() {
     setSelectedCategory('');
@@ -141,14 +149,20 @@ export default function CreateMealComponentPage() {
     setShowClearDraft(false);
   }
 
-  function generateAutoImage() {
-    const query = meal.name || meal.category || 'healthy food';
-    setMeal({ ...meal, imageUrl: `https://loremflickr.com/800/600/${encodeURIComponent(query.replace(/\s+/g, ','))},food/all` });
-  }
-
   function closeLibrary() {
     setShowLibrary(false);
     resetLibraryForm();
+  }
+
+  function applySmartMealSuggestion() {
+    if (!smartMealSuggestion) return;
+
+    setMeal(currentMeal => ({
+      ...currentMeal,
+      name: currentMeal.name || smartMealSuggestion.name,
+      category: currentMeal.category || normalizeMealCategory(smartMealSuggestion.category || 'Other')
+    }));
+    setMessage('Review the suggested components, then add matching ingredients from your library before saving.');
   }
 
   function chooseLibraryCategory(categoryName) {
@@ -162,7 +176,7 @@ export default function CreateMealComponentPage() {
 
   function selectIngredient(ingredient) {
     setActiveIngredient(ingredient);
-    setAmountUsed('');
+    setAmountUsed(ingredient.quantity || '');
     setUnitUsed(ingredient.unit || 'grams');
     setLibraryError('');
     setLibrarySuccess('');
@@ -291,12 +305,19 @@ export default function CreateMealComponentPage() {
   const ingredientsInCategory = ingredients?.filter(ingredient => sameCategory(ingredient, selectedCategory)) || [];
 
   return <RouteGuard>
+    <AppBackButton href="/meals" label="Back to Meals" />
     <PageHeader title="Build Component Meal" text="Create one meal and organize its ingredients into simple groups." />
     {error && <ErrorMessage text="Failed to load ingredients." />}
     {!ingredients && !error && <LoadingMessage text="Loading ingredients..." />}
 
     {ingredients && <>
       {message && <Alert variant="warning">{message}</Alert>}
+
+      <SmartFoodSuggestionCard
+        suggestion={smartMealSuggestion}
+        primaryLabel="Use meal name"
+        onPrimary={applySmartMealSuggestion}
+      />
 
       <Card className="page-card p-4 mb-4 meal-setup-card">
         <Row className="g-4 align-items-stretch">
@@ -322,10 +343,7 @@ export default function CreateMealComponentPage() {
               <Col md={4}>
                 <Form.Group className="mb-3">
                   <Form.Label>Image URL</Form.Label>
-                  <div className="d-flex gap-2">
-                    <Form.Control value={meal.imageUrl} onChange={e => setMeal({ ...meal, imageUrl: e.target.value })} placeholder="https://example.com/meal.jpg" />
-                    <Button variant="outline-primary" onClick={generateAutoImage} title="Generate auto image">✨</Button>
-                  </div>
+                  <Form.Control value={meal.imageUrl} onChange={e => setMeal({ ...meal, imageUrl: e.target.value })} placeholder="https://example.com/meal.jpg" />
                   <MealImageUpload imageUrl={meal.imageUrl} onUploaded={imageUrl => setMeal({ ...meal, imageUrl })} onUploadingChange={setImageUploading} />
                 </Form.Group>
               </Col>
@@ -555,6 +573,9 @@ function IngredientLibraryModal({
   const selectedPreview = activeIngredient
     ? calculateNutritionWithUnit(Number(amountUsed), unitUsed, activeIngredient)
     : null;
+  const conversionWarning = activeIngredient
+    ? getConversionWarning(amountUsed, unitUsed, activeIngredient)
+    : '';
   const addIngredientHref = {
     pathname: '/ingredients/add',
     query: { category: selectedCategory, returnTo: '/create-meal-component' }
@@ -640,16 +661,16 @@ function IngredientLibraryModal({
               {libraryError && <Alert variant="warning" className="library-status-alert">{libraryError}</Alert>}
               {activeIngredient ? <>
                 <Form onSubmit={handleSelectedIngredientSubmit}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Amount used</Form.Label>
-                    <div className="selected-ingredient-inputs">
-                      <Form.Control type="number" inputMode="decimal" enterKeyHint="done" min="0.1" step="0.1" value={amountUsed} onChange={e => setAmountUsed(e.target.value)} placeholder="Amount" />
-                      <UnitSelect value={unitUsed} onChange={e => setUnitUsed(e.target.value)} />
-                    </div>
-                  </Form.Group>
-                  <div className="selected-ingredient-preview">
-                    Preview: {formatCalories(selectedPreview?.calories || 0)} cal · {formatMacro(selectedPreview?.protein || 0)}g protein
-                  </div>
+                  <ServingAmountSelector
+                    amount={amountUsed}
+                    onAmountChange={setAmountUsed}
+                    unit={unitUsed}
+                    onUnitChange={setUnitUsed}
+                    amountLabel="Amount used"
+                    nutrition={selectedPreview}
+                    conversionWarning={conversionWarning}
+                    className="selected-ingredient-amount-selector"
+                  />
 
                   <Button type="submit" variant="success">{isEditing ? `Update in ${targetGroup}` : `Add to ${targetGroup}`}</Button>
                 </Form>
@@ -660,3 +681,4 @@ function IngredientLibraryModal({
     </Modal.Body>
   </Modal>;
 }
+

@@ -1,18 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import useSWR from 'swr';
+import useSWR, { useSWRConfig } from 'swr';
 import { useRouter } from 'next/router';
 import { useForm } from 'react-hook-form';
 import { Alert, Badge, Button, Card, Col, Form, Modal, Row } from 'react-bootstrap';
 import RouteGuard from '../../components/RouteGuard';
 import PortionSelector from '../../components/PortionSelector';
+import ServingAmountSelector from '../../components/ServingAmountSelector';
 import UnitSelect from '../../components/UnitSelect';
 import FoodImage from '../../components/FoodImage';
 import MealPickerModal from '../../components/MealPickerModal';
-import { EmptyMessage, ErrorMessage, LoadingMessage } from '../../components/StateMessage';
+import { ErrorMessage, LoadingMessage } from '../../components/StateMessage';
 import { apiFetch } from '../../lib/api';
 import { formatAmount, formatCalories, formatMacro, formatServingLabel, getIngredientServingNutrition } from '../../lib/formatNutrition';
-import { calculateNutritionWithUnit } from '../../lib/unitConverter';
+import { calculateNutritionWithUnit, getConversionWarning } from '../../lib/unitConverter';
 import { getFoodImage } from '../../lib/foodVisuals';
 import { normalizeMealCategory } from '../../lib/mealCategoryHelpers';
 import { APP_CATEGORIES, normalizeCategory } from '../../lib/categoryHelpers';
@@ -21,20 +22,11 @@ function sameCategory(ingredient, category) {
   return !category || normalizeCategory(ingredient.category) === category;
 }
 
-function logTypeLabel(item) {
-  return item.type === 'ingredient' ? 'Ingredient' : 'Meal';
-}
-
-function logAmountLabel(item) {
-  if (item.type === 'ingredient') return `${formatAmount(item.amount || item.quantityUsed)} ${item.unit || ''}`;
-  return item.portionLabel || `${item.servings || item.portion || 1} serving`;
-}
-
 export default function LogFood() {
   const router = useRouter();
+  const { mutate } = useSWRConfig();
   const { data: meals, error: mealError } = useSWR('/api/meals');
   const { data: ingredients, error: ingredientError } = useSWR('/api/ingredients');
-  const { data: today, error: todayError, mutate } = useSWR('/api/tracker/today');
   const { data: weekLogs } = useSWR('/api/tracker/week');
   const { register, handleSubmit, reset, watch, setValue, formState: { errors, isSubmitting } } = useForm();
   const [activeTab, setActiveTab] = useState('meal');
@@ -57,6 +49,9 @@ export default function LogFood() {
   const ingredientPreview = selectedIngredient && ingredientAmount
     ? calculateNutritionWithUnit(Number(ingredientAmount), ingredientUnit, selectedIngredient)
     : getIngredientServingNutrition(selectedIngredient || {});
+  const ingredientConversionWarning = selectedIngredient
+    ? getConversionWarning(ingredientAmount, ingredientUnit, selectedIngredient)
+    : '';
 
   function selectMeal(meal) {
     setValue('mealId', meal._id, { shouldValidate: true });
@@ -100,7 +95,8 @@ export default function LogFood() {
     reset({ mealId: '' });
     setPortionInfo({ portion: 1, portionLabel: '1 whole meal' });
     setComponentPortions({});
-    mutate();
+    mutate('/api/tracker/today');
+    mutate('/api/tracker/week');
   }
 
   async function logIngredient(event) {
@@ -131,17 +127,8 @@ export default function LogFood() {
     setSelectedIngredient(null);
     setIngredientAmount('');
     setIngredientUnit('grams');
-    mutate();
-  }
-
-  async function deleteLog(logId) {
-    await apiFetch(`/api/tracker/log/${logId}`, { method: 'DELETE' });
-    mutate();
-  }
-
-  function openLog(logItem) {
-    if (logItem.type === 'ingredient') return;
-    router.push(`/logs/${logItem._id}`);
+    mutate('/api/tracker/today');
+    mutate('/api/tracker/week');
   }
 
   return <RouteGuard>
@@ -156,11 +143,11 @@ export default function LogFood() {
         <button type="button" className={`segmented-control-button ${activeTab === 'meal' ? 'active' : ''}`} onClick={() => setActiveTab('meal')}>Log Meal</button>
         <button type="button" className={`segmented-control-button ${activeTab === 'ingredient' ? 'active' : ''}`} onClick={() => setActiveTab('ingredient')}>Log Ingredient</button>
       </div>
-      {(mealError || ingredientError || todayError) && <ErrorMessage text="Failed to load food tracker data." />}
-      {(!meals || !ingredients || !today) && !(mealError || ingredientError || todayError) && <LoadingMessage text="Loading food tracker..." />}
+      {(mealError || ingredientError) && <ErrorMessage text="Failed to load food tracker data." />}
+      {(!meals || !ingredients) && !(mealError || ingredientError) && <LoadingMessage text="Loading food tracker..." />}
 
-      {meals && ingredients && today && <Row className="tracker-layout log-food-layout">
-        <Col md={5}>
+      {meals && ingredients && <Row className="tracker-layout log-food-layout">
+        <Col md={8} lg={7}>
           <Card className="app-card section-card tracker-log-card log-food-card">
             {activeTab === 'meal' && <Form onSubmit={handleSubmit(logMeal)}>
             <input type="hidden" {...register('mealId', { required: 'Please choose a meal.' })} />
@@ -227,27 +214,14 @@ export default function LogFood() {
             </Form.Group>
 
             {selectedIngredient && <>
-              <Row className="component-portion-row">
-                <Col md={6}>
-                  <Form.Group>
-                    <Form.Label>Amount</Form.Label>
-                    <Form.Control type="number" min="0.1" step="0.1" value={ingredientAmount} onChange={e => setIngredientAmount(e.target.value)} />
-                  </Form.Group>
-                </Col>
-                <Col md={6}>
-                  <Form.Group>
-                    <Form.Label>Unit</Form.Label>
-                    <UnitSelect value={ingredientUnit} onChange={e => setIngredientUnit(e.target.value)} />
-                  </Form.Group>
-                </Col>
-              </Row>
-              <div className="log-food-preview">
-                <span>{formatCalories(ingredientPreview.calories)} cal</span>
-                <span>{formatMacro(ingredientPreview.protein)}g protein</span>
-                <span>{formatMacro(ingredientPreview.carbs)}g carbs</span>
-                <span>{formatMacro(ingredientPreview.fats)}g fats</span>
-                <span>{formatMacro(ingredientPreview.sugar)}g sugar</span>
-              </div>
+              <ServingAmountSelector
+                amount={ingredientAmount}
+                onAmountChange={setIngredientAmount}
+                unit={ingredientUnit}
+                onUnitChange={setIngredientUnit}
+                nutrition={ingredientPreview}
+                conversionWarning={ingredientConversionWarning}
+              />
             </>}
 
             <Button type="submit" variant="success" disabled={!selectedIngredient} className="tracker-submit-button">Log Ingredient</Button>
@@ -255,36 +229,6 @@ export default function LogFood() {
 
           <MealPickerModal show={showMealPicker} onHide={() => setShowMealPicker(false)} meals={meals} selectedMealId={selectedMealId} weekLogs={weekLogs} onSelect={selectMeal} />
           <IngredientPickerModal show={showIngredientPicker} onHide={() => setShowIngredientPicker(false)} ingredients={ingredients} onSelect={selectIngredient} />
-          </Card>
-        </Col>
-
-        <Col md={7}>
-          <Card className="app-card section-card tracker-today-card">
-          <h4>Logged Food Today</h4>
-          {(today.meals || []).length === 0 && <EmptyMessage text="No logs yet. Log a meal or ingredient to see it here." />}
-          {(today.meals || []).length > 0 && (
-            <div className="daily-log-list">
-              {(today.meals || []).map(item => (
-                <Card key={item._id} className={`compact-card picker-row ${item.type === 'ingredient' ? 'ingredient' : 'meal'}`}>
-                  <div className="picker-row-main" onClick={() => openLog(item)} role={item.type === 'ingredient' ? undefined : 'button'}>
-                    <div>
-                      <Badge className="soft-pill soft-pill-beige">{logTypeLabel(item)}</Badge>
-                      <h6>{item.name}</h6>
-                      <small className="text-muted">{logAmountLabel(item)}</small>
-                    </div>
-                    <div className="mini-stat-row">
-                      <span>{formatCalories(item.calories)} cal</span>
-                      <span>{formatMacro(item.protein)}g protein</span>
-                      <span>{formatMacro(item.carbs)}g carbs</span>
-                      <span>{formatMacro(item.fats)}g fats</span>
-                      <span>{formatMacro(item.sugar)}g sugar</span>
-                    </div>
-                  </div>
-                  <Button variant="outline-danger" size="sm" onClick={() => deleteLog(item._id)}>Remove</Button>
-                </Card>
-              ))}
-            </div>
-          )}
           </Card>
         </Col>
       </Row>}

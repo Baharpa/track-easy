@@ -11,7 +11,7 @@ import { TrackEasyIcon } from './TrackEasyIcons';
 const loggedInLinks = [
   { label: 'Home', href: '/dashboard', icon: 'home', subtitle: 'Daily overview' },
   { label: 'Browse Meals', href: '/meals', icon: 'bowl', subtitle: 'Browse meals' },
-  { label: 'Log Food', href: '/logs', icon: 'plus', subtitle: 'Log a meal or ingredient' },
+  { label: 'Log Food', href: '/tracker', icon: 'plus', subtitle: 'Log a meal or ingredient' },
   { label: 'Add Ingredients', href: '/ingredients', icon: 'leaf', subtitle: 'Your ingredients' },
   { label: 'Tracker', href: '/history', icon: 'tracker', subtitle: 'Your tracking history' },
   { label: 'Create Meal', href: '/create-meal-component', icon: 'bowl', subtitle: 'Build a meal' },

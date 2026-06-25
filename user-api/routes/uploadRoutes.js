@@ -3,14 +3,16 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
+const Tesseract = require('tesseract.js');
 const auth = require('../config/auth');
 const { extractNutritionLabelFields, hasDetectedValues } = require('../utils/nutritionLabelParser');
 
 const router = express.Router();
 const uploadsDir = path.join(__dirname, '..', 'uploads');
+
 const scanUploadsDir = path.join(__dirname, '..', 'tmp', 'nutrition-scans');
-const maxUploadSize = 2 * 1024 * 1024;
 let ocrWorkerPromise = null;
+const maxUploadSize = 2 * 1024 * 1024;
 const allowedMimeTypes = new Map([
   ['image/jpeg', '.jpg'],
   ['image/png', '.png'],
@@ -58,13 +60,6 @@ const scanUpload = multer({
 });
 
 async function scanNutritionLabel(filePath) {
-  let Tesseract;
-  try {
-    Tesseract = require('tesseract.js');
-  } catch (err) {
-    throw new Error('Nutrition scan is unavailable right now.');
-  }
-
   if (!ocrWorkerPromise) {
     ocrWorkerPromise = (async () => {
       const worker = await Tesseract.createWorker('eng', 1, {
@@ -108,12 +103,7 @@ router.post('/image', auth, (req, res) => {
 });
 
 router.post('/nutrition-scan', auth, (req, res) => {
-  const logId = `nutrition-scan-${Date.now()}`;
-  console.time(`${logId}: backend total`);
-  console.time(`${logId}: multer processing`);
-
   scanUpload.single('image')(req, res, async (err) => {
-    console.timeEnd(`${logId}: multer processing`);
     const uploadedPath = req.file?.path;
 
     try {
@@ -126,22 +116,8 @@ router.post('/nutrition-scan', auth, (req, res) => {
 
       if (!req.file) return res.status(400).json({ message: 'Please choose an image to scan.' });
 
-      console.info(`${logId}: file save complete ${(req.file.size / 1024).toFixed(1)} KB`);
-      console.time(`${logId}: backend OCR`);
-      let ocrText;
-      try {
-        ocrText = await scanNutritionLabel(uploadedPath);
-      } finally {
-        console.timeEnd(`${logId}: backend OCR`);
-      }
-
-      console.time(`${logId}: parser`);
-      let parsed;
-      try {
-        parsed = extractNutritionLabelFields(ocrText);
-      } finally {
-        console.timeEnd(`${logId}: parser`);
-      }
+      const ocrText = await scanNutritionLabel(uploadedPath);
+      const parsed = extractNutritionLabelFields(ocrText);
 
       if (!hasDetectedValues(parsed)) {
         return res.status(422).json({ message: 'No nutrition values were detected. Try a clearer photo.' });
@@ -162,7 +138,6 @@ router.post('/nutrition-scan', auth, (req, res) => {
       if (uploadedPath) {
         await fs.promises.unlink(uploadedPath).catch(() => {});
       }
-      console.timeEnd(`${logId}: backend total`);
     }
   });
 });

@@ -1,16 +1,23 @@
 import { useState } from 'react';
 import Link from 'next/link';
-import { Badge, Button, Card } from 'react-bootstrap';
+import { Button } from 'react-bootstrap';
 import { apiFetch } from '../lib/api';
 import ConfirmDeleteModal from './ConfirmDeleteModal';
-import { formatAmount, formatIngredientServingNutrition } from '../lib/formatNutrition';
-import FoodImage from './FoodImage';
+import { formatAmount, formatCalories, formatMacro } from '../lib/formatNutrition';
 import { normalizeCategory } from '../lib/categoryHelpers';
+import FoodInfoCard from './FoodInfoCard';
+import { TrackEasyIcon } from './TrackEasyIcons';
 
 export default function IngredientCard({ ingredient, onDeleted }) {
   const [showDelete, setShowDelete] = useState(false);
-  const hasImage = Boolean(ingredient.imageUrl && String(ingredient.imageUrl).trim());
   const category = normalizeCategory(ingredient.category);
+  const nutritionRows = [
+    { label: 'Calories', value: `${formatCalories(ingredient.calories)} cal` },
+    { label: 'Protein', value: `${formatMacro(ingredient.protein)}g` },
+    { label: 'Carbs', value: `${formatMacro(ingredient.carbs)}g` },
+    { label: 'Sugar', value: `${formatMacro(ingredient.sugar)}g` },
+    { label: 'Fats', value: `${formatMacro(ingredient.fats)}g` }
+  ];
 
   async function deleteIngredient() {
     await apiFetch(`/api/ingredients/${ingredient._id}`, { method: 'DELETE' });
@@ -20,50 +27,37 @@ export default function IngredientCard({ ingredient, onDeleted }) {
 
   return (
     <>
-      <Card className="ingredient-card">
-        {hasImage && (
-          <FoodImage
-            src={ingredient.imageUrl}
-            alt={ingredient.name}
-            category={category}
-            className="ingredient-card-thumb"
-            placeholderClassName="ingredient-card-thumb"
-          />
-        )}
-
-        <Card.Body className="ingredient-card-body">
-          <div className="ingredient-card-main">
-            <div className="ingredient-card-top">
-              <Card.Title className="ingredient-card-title">{ingredient.name}</Card.Title>
-            </div>
-
-            <div className="ingredient-card-meta">
-              <span>{formatAmount(ingredient.quantity)} {ingredient.unit}</span>
-              <span>{formatIngredientServingNutrition(ingredient)}</span>
-            </div>
-
-            <Badge className="ingredient-card-badge">{category}</Badge>
-          </div>
-
-          <div className="ingredient-card-actions">
+      <FoodInfoCard
+        title={ingredient.name}
+        subtitle={`${formatAmount(ingredient.quantity)} ${ingredient.unit}`}
+        imageSrc={ingredient.imageUrl}
+        category={category}
+        nutritionRows={nutritionRows}
+        className="ingredient-card"
+        actions={(
+          <>
             <Button
               as={Link}
               href={`/ingredients/${ingredient._id}`}
-              className="ingredient-edit-btn"
+              variant="link"
+              className="food-info-action"
               size="sm"
+              aria-label={`Edit ${ingredient.name}`}
             >
-              Edit
+              <TrackEasyIcon name="pen" size={21} />
             </Button>
             <Button
-              className="ingredient-delete-btn"
+              variant="link"
+              className="food-info-action food-info-action--danger"
               size="sm"
+              aria-label={`Delete ${ingredient.name}`}
               onClick={() => setShowDelete(true)}
             >
-              Delete
+              <TrackEasyIcon name="trash" size={21} />
             </Button>
-          </div>
-        </Card.Body>
-      </Card>
+          </>
+        )}
+      />
 
       <ConfirmDeleteModal
         show={showDelete}

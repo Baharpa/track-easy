@@ -15,11 +15,12 @@ function dateString(date) {
   return date.toISOString().slice(0, 10);
 }
 
-function currentMonday() {
+function currentMonday(offsetWeeks = 0) {
   const date = new Date();
   const day = date.getDay();
   const diff = day === 0 ? -6 : 1 - day;
   date.setDate(date.getDate() + diff);
+  date.setDate(date.getDate() - (Number(offsetWeeks) || 0) * 7);
   date.setHours(0, 0, 0, 0);
   return date;
 }
@@ -200,7 +201,8 @@ router.get('/today', auth, async (req, res) => {
 });
 
 router.get('/week', auth, async (req, res) => {
-  const start = currentMonday();
+  const offset = Math.max(0, Math.min(3, Number(req.query.offset) || 0));
+  const start = currentMonday(offset);
   const days = Array.from({ length: 7 }, (_, index) => {
     const date = new Date(start);
     date.setDate(start.getDate() + index);

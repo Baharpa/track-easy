@@ -1,12 +1,14 @@
 import { useForm, Controller } from 'react-hook-form';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Alert, Button, Card, Col, Form, Row } from 'react-bootstrap';
 import MealImageUpload from './MealImageUpload';
 import NutritionLabelScanner from './NutritionLabelScanner';
+import SmartFoodSuggestionCard from './SmartFoodSuggestionCard';
 import UnitSelect from './UnitSelect';
 import { CATEGORY_LIBRARY } from '../lib/foodVisuals';
 import { normalizeCategory } from '../lib/categoryHelpers';
 import { getIngredientServingNutrition } from '../lib/formatNutrition';
+import { getSmartFoodMatch, normalizeFoodQuery } from '../lib/smartFoodBuilder';
 
 function hasValue(value) {
   return value !== undefined && value !== null && value !== '';
@@ -31,8 +33,19 @@ function buildDefaultValues(defaultValues) {
 
 export default function IngredientForm({ defaultValues = {}, onSubmit, buttonText = 'Save Ingredient' }) {
   const [imageUploading, setImageUploading] = useState(false);
+  const [dismissedSmartQuery, setDismissedSmartQuery] = useState('');
   const { register, handleSubmit, formState: { errors, isSubmitting }, control, setValue, watch } = useForm({ defaultValues: buildDefaultValues(defaultValues) });
   const imageUrl = watch('imageUrl');
+  const nameValue = watch('name') || '';
+  const normalizedName = normalizeFoodQuery(nameValue);
+  const smartFoodMatch = useMemo(() => getSmartFoodMatch(nameValue), [nameValue]);
+  const smartSuggestion = smartFoodMatch.suggestion && normalizedName !== dismissedSmartQuery
+    ? smartFoodMatch.suggestion
+    : null;
+  const smartMealHref = smartSuggestion ? {
+    pathname: '/create-meal-component',
+    query: { smartMeal: smartSuggestion.id, name: nameValue }
+  } : null;
 
   const positiveRule = {
     required: 'This field is required.',
@@ -85,6 +98,12 @@ export default function IngredientForm({ defaultValues = {}, onSubmit, buttonTex
             </Form.Group>
           </Col>
         </Row>
+
+        <SmartFoodSuggestionCard
+          suggestion={smartSuggestion}
+          primaryHref={smartMealHref}
+          onDismiss={() => setDismissedSmartQuery(normalizedName)}
+        />
 
         <Row>
           <Col md={6}>

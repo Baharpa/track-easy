@@ -133,24 +133,19 @@ function convertToGrams(amount, unit, ingredient = null) {
   }
   
   if (normalized === 'milliliters' || normalized === 'liters') {
-    // ML to grams assumes 1:1 for water, close approximation for most liquids
-    const ml = normalized === 'milliliters' ? amount : amount * 1000;
-    return ml;
+    return null;
   }
   
   if (normalized === 'teaspoons') {
-    const gramsPerTsp = ingredient?.gramsPerTeaspoon || DEFAULT_CONVERSIONS.teaspoons.toGrams;
-    return amount * gramsPerTsp;
+    return ingredient?.gramsPerTeaspoon ? amount * ingredient.gramsPerTeaspoon : null;
   }
   
   if (normalized === 'tablespoons') {
-    const gramsPerTbsp = ingredient?.gramsPerTablespoon || DEFAULT_CONVERSIONS.tablespoons.toGrams;
-    return amount * gramsPerTbsp;
+    return ingredient?.gramsPerTablespoon ? amount * ingredient.gramsPerTablespoon : null;
   }
   
   if (normalized === 'cups') {
-    const gramsPerCup = ingredient?.gramsPerCup || DEFAULT_CONVERSIONS.cups.toGrams;
-    return amount * gramsPerCup;
+    return ingredient?.gramsPerCup ? amount * ingredient.gramsPerCup : null;
   }
   
   if (normalized === 'pieces') {
@@ -167,19 +162,19 @@ function getConversionWarning(unit, ingredient = null) {
   const normalized = normalizeUnit(unit);
 
   if (normalized === 'teaspoons' && !ingredient?.gramsPerTeaspoon) {
-    return 'Default estimate used: 1 teaspoon = 5g.';
+    return 'Add a custom conversion for this ingredient.';
   }
 
   if (normalized === 'tablespoons' && !ingredient?.gramsPerTablespoon) {
-    return 'Default estimate used: 1 tablespoon = 15g.';
+    return 'Add a custom conversion for this ingredient.';
   }
 
   if (normalized === 'cups' && !ingredient?.gramsPerCup) {
-    return 'Default estimate used: 1 cup = 240g.';
+    return 'Add a custom conversion for this ingredient.';
   }
 
   if (normalized === 'milliliters' || normalized === 'liters') {
-    return 'Default estimate used: 1ml = 1g.';
+    return 'Add a custom conversion for this ingredient.';
   }
 
   return '';

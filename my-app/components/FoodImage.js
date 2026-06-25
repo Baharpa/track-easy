@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Image } from 'react-bootstrap';
-import { getCategoryClass, getCategoryIcon, safeImageUrl } from '../lib/foodVisuals';
+import { getCategoryClass, safeImageUrl } from '../lib/foodVisuals';
+import { TrackEasyIcon } from './TrackEasyIcons';
 
 export default function FoodImage({ src, alt = 'Food', category = 'Other', className = 'food-thumb', placeholderClassName = 'food-placeholder' }) {
   const [failed, setFailed] = useState(false);
@@ -13,8 +14,8 @@ export default function FoodImage({ src, alt = 'Food', category = 'Other', class
   }
 
   return (
-    <div className={`${placeholderClassName} ${className} emoji-placeholder ${categoryClass}`}>
-      {getCategoryIcon(category)}
+    <div className={`${placeholderClassName} ${className} food-image-placeholder ${categoryClass}`}>
+      <TrackEasyIcon name="leaf" size={34} strokeWidth={1.8} />
     </div>
   );
 }

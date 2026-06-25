@@ -2,6 +2,7 @@ import { Card, Table } from 'react-bootstrap';
 import { formatAmount, formatCalories, formatMacro } from '../lib/formatNutrition';
 import FoodImage from './FoodImage';
 import { normalizeMealCategory } from '../lib/mealCategoryHelpers';
+import NutritionRows from './NutritionRows';
 
 function nutritionValue(item, totalKey, directKey) {
   return item?.[totalKey] ?? item?.[directKey] ?? 0;
@@ -14,11 +15,11 @@ function amountUsedLabel(item) {
 export default function MealDetails({ meal }) {
   const mealCategory = normalizeMealCategory(meal.category);
   const nutritionStats = [
-    ['Calories', formatCalories(nutritionValue(meal, 'totalCalories', 'calories')), 'cal'],
-    ['Protein', formatMacro(nutritionValue(meal, 'totalProtein', 'protein')), 'g'],
-    ['Carbs', formatMacro(nutritionValue(meal, 'totalCarbs', 'carbs')), 'g'],
-    ['Fats', formatMacro(nutritionValue(meal, 'totalFats', 'fats')), 'g'],
-    ['Sugar', formatMacro(nutritionValue(meal, 'totalSugar', 'sugar')), 'g']
+    { label: 'Calories', value: `${formatCalories(nutritionValue(meal, 'totalCalories', 'calories'))} cal` },
+    { label: 'Protein', value: `${formatMacro(nutritionValue(meal, 'totalProtein', 'protein'))}g` },
+    { label: 'Carbs', value: `${formatMacro(nutritionValue(meal, 'totalCarbs', 'carbs'))}g` },
+    { label: 'Sugar', value: `${formatMacro(nutritionValue(meal, 'totalSugar', 'sugar'))}g` },
+    { label: 'Fats', value: `${formatMacro(nutritionValue(meal, 'totalFats', 'fats'))}g` }
   ];
   const components = meal.components || [];
   const ingredients = meal.ingredients || [];
@@ -38,14 +39,7 @@ export default function MealDetails({ meal }) {
           <div className="meal-detail-section-heading">
             <h4>Total Nutrition</h4>
           </div>
-          <div className="meal-detail-nutrition-grid">
-            {nutritionStats.map(([label, value, unit]) => (
-              <div className="meal-detail-nutrition-chip" key={label}>
-                <span>{label}</span>
-                <strong>{value}{unit}</strong>
-              </div>
-            ))}
-          </div>
+          <NutritionRows rows={nutritionStats} />
         </section>
 
         {components.length > 0 && (

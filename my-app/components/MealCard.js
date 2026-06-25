@@ -1,134 +1,97 @@
 import { useState } from 'react';
 import Link from 'next/link';
-import { Button, Card } from 'react-bootstrap';
+import { Button } from 'react-bootstrap';
 import { apiFetch } from '../lib/api';
 import { formatCalories, formatMacro } from '../lib/formatNutrition';
 import { normalizeMealCategory } from '../lib/mealCategoryHelpers';
-import FoodImage from './FoodImage';
 import ConfirmDeleteModal from './ConfirmDeleteModal';
+import FoodInfoCard from './FoodInfoCard';
+import { TrackEasyIcon } from './TrackEasyIcons';
 
 const mealStats = [
-  { label: 'Calories', icon: '🔥', color: 'orange', getValue: meal => `${formatCalories(meal.totalCalories)} cal` },
-  { label: 'Protein', icon: '💪', color: 'green', getValue: meal => `${formatMacro(meal.totalProtein)}g` },
-  { label: 'Carbs', icon: '🍯', color: 'yellow', getValue: meal => `${formatMacro(meal.totalCarbs)}g` },
-  { label: 'Fats', icon: '💜', color: 'purple', getValue: meal => `${formatMacro(meal.totalFats)}g` },
-  { label: 'Sugar', icon: '🍬', color: 'pink', getValue: meal => `${formatMacro(meal.totalSugar)}g` }
+  { label: 'Calories', getValue: meal => `${formatCalories(meal.totalCalories)} cal` },
+  { label: 'Protein', getValue: meal => `${formatMacro(meal.totalProtein)}g` },
+  { label: 'Carbs', getValue: meal => `${formatMacro(meal.totalCarbs)}g` },
+  { label: 'Sugar', getValue: meal => `${formatMacro(meal.totalSugar)}g` },
+  { label: 'Fats', getValue: meal => `${formatMacro(meal.totalFats)}g` }
 ];
 
-export default function MealCard({
-  meal,
-  isFavourite = false,
-  onFavouriteChange,
-  onDeleted,
-  onQuickAdd
-}) {
+export default function MealCard({ meal, isFavourite = false, onFavouriteChange, onQuickAdd }) {
   const [saving, setSaving] = useState(false);
-  const [showDelete, setShowDelete] = useState(false);
+  const [showFavouriteRemove, setShowFavouriteRemove] = useState(false);
   const mealCategory = normalizeMealCategory(meal.category);
-  const hasImage = Boolean(meal.imageUrl && String(meal.imageUrl).trim());
+  const nutritionRows = mealStats.map(stat => ({ label: stat.label, value: stat.getValue(meal) }));
 
   async function toggleFavourite() {
-    setSaving(true);
-
     if (isFavourite) {
-      await apiFetch(`/api/user/favourites/${meal._id}`, { method: 'DELETE' });
-    } else {
-      await apiFetch(`/api/user/favourites/${meal._id}`, { method: 'PUT' });
+      setShowFavouriteRemove(true);
+      return;
     }
 
+    setSaving(true);
+    await apiFetch(`/api/user/favourites/${meal._id}`, { method: 'PUT' });
     setSaving(false);
     if (onFavouriteChange) onFavouriteChange();
   }
 
-  async function deleteMeal() {
-    await apiFetch(`/api/meals/${meal._id}`, { method: 'DELETE' });
-    setShowDelete(false);
-
-    if (onDeleted) onDeleted();
+  async function removeFavourite() {
+    setSaving(true);
+    await apiFetch(`/api/user/favourites/${meal._id}`, { method: 'DELETE' });
+    setSaving(false);
+    setShowFavouriteRemove(false);
     if (onFavouriteChange) onFavouriteChange();
   }
 
   return (
     <>
-      <Card className="app-card meal-display-card">
-        {hasImage && (
-          <div className="meal-display-image-wrap">
-            <FoodImage
-              src={meal.imageUrl}
-              alt={meal.name}
-              category={mealCategory}
-              className="meal-display-image"
-              placeholderClassName="meal-display-image"
-            />
-          </div>
-        )}
-
-        <Card.Body className="meal-display-body">
-          <div className="meal-display-top">
-            <div className="meal-display-title-wrap">
-              <Card.Title className="meal-display-title">{meal.name}</Card.Title>
-            </div>
-
-            <Button
-              as={Link}
-              href={`/meals/${meal._id}`}
-              variant="link"
-              size="sm"
-              className="meal-more-button"
-            >
-              more
-            </Button>
-          </div>
-
-          <div className="meal-display-stats">
-            {mealStats.map(stat => (
-              <div className="meal-display-stat" key={stat.label}>
-                <span className={`meal-display-stat-icon meal-stat-${stat.color}`}>
-                  {stat.icon}
-                </span>
-
-                <span className="meal-display-stat-label">{stat.label}</span>
-
-                <strong className="meal-display-stat-value">
-                  {stat.getValue(meal)}
-                </strong>
-              </div>
-            ))}
-          </div>
-
-          <div className="meal-display-actions">
-            {onQuickAdd && (
-              <Button
-                variant="success"
-                size="sm"
-                className="meal-quick-add-button"
-                onClick={() => onQuickAdd(meal)}
-              >
-                Quick Add
-              </Button>
-            )}
-
+      <FoodInfoCard
+        title={meal.name}
+        subtitle={mealCategory}
+        imageSrc={meal.imageUrl}
+        category={mealCategory}
+        nutritionRows={nutritionRows}
+        className="meal-display-card"
+        actions={(
+          <>
             <Button
               variant="link"
               size="sm"
-              className={`meal-favourite-button ${isFavourite ? 'active' : ''}`}
+              className={`food-info-action food-info-action--heart ${isFavourite ? 'active' : ''}`}
               onClick={toggleFavourite}
               disabled={saving}
               aria-label={isFavourite ? 'Remove from favourites' : 'Add to favourites'}
               title={isFavourite ? 'Remove from favourites' : 'Add to favourites'}
             >
-              <span aria-hidden="true">{isFavourite ? '♥' : '♡'}</span>
+              <TrackEasyIcon name={isFavourite ? 'heart' : 'heart-outline'} size={22} />
             </Button>
-          </div>
-        </Card.Body>
-      </Card>
+            <Button
+              as={Link}
+              href={`/meals/edit/${meal._id}`}
+              variant="link"
+              size="sm"
+              className="food-info-action"
+              aria-label={`Edit ${meal.name}`}
+            >
+              <TrackEasyIcon name="pen" size={21} />
+            </Button>
+          </>
+        )}
+        footer={onQuickAdd && (
+          <Button variant="success" size="sm" className="food-info-quick-add" onClick={() => onQuickAdd(meal)}>
+            <TrackEasyIcon name="plus" size={18} />
+            <span>Quick Add</span>
+          </Button>
+        )}
+      />
 
       <ConfirmDeleteModal
-        show={showDelete}
-        title="Delete Meal"
-        message={`Delete ${meal.name}? This cannot be undone.`}
-        onCancel={() => setShowDelete(false)}
-        onConfirm={deleteMeal}
+        show={showFavouriteRemove}
+        title="Remove from favourites?"
+        message="This meal will be removed from your favourites."
+        confirmLabel="Remove"
+        confirmVariant="danger"
+        onCancel={() => setShowFavouriteRemove(false)}
+        onConfirm={removeFavourite}
       />
     </>
   );

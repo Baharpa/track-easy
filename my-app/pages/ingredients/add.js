@@ -1,4 +1,5 @@
 import { useRouter } from 'next/router';
+import AppBackButton from '../../components/AppBackButton';
 import PageHeader from '../../components/PageHeader';
 import RouteGuard from '../../components/RouteGuard';
 import IngredientForm from '../../components/IngredientForm';
@@ -17,6 +18,7 @@ export default function AddIngredient() {
   }
 
   return <RouteGuard>
+    <AppBackButton href="/ingredients" label="Back to Ingredients" />
     <PageHeader title="Add Ingredient" text="Add nutrition values for the full quantity you have." />
     <IngredientForm key={category || 'new'} defaultValues={{ category }} onSubmit={submit} />
   </RouteGuard>;

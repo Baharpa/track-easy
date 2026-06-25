@@ -1,5 +1,6 @@
 import { useRouter } from 'next/router';
 import useSWR from 'swr';
+import AppBackButton from '../../components/AppBackButton';
 import PageHeader from '../../components/PageHeader';
 import RouteGuard from '../../components/RouteGuard';
 import IngredientForm from '../../components/IngredientForm';
@@ -17,6 +18,7 @@ export default function EditIngredient() {
   }
 
   return <RouteGuard>
+    <AppBackButton href="/ingredients" label="Back to Ingredients" />
     <PageHeader title="Edit Ingredient" text="Update this ingredient." />
     {error && <ErrorMessage text="Failed to load ingredient." />}
     {!ingredient && !error && <LoadingMessage text="Loading ingredient..." />}

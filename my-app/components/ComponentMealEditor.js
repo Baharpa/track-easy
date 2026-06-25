@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Badge, Button, Card, Col, Form, Modal, Row } from 'react-bootstrap';
 import FoodImage from './FoodImage';
 import MealImageUpload from './MealImageUpload';
+import ServingAmountSelector from './ServingAmountSelector';
 import UnitSelect from './UnitSelect';
 import { addTotals, buildPreviewComponents } from '../lib/mealMath';
 import {
@@ -15,7 +16,7 @@ import {
 import { CATEGORY_LIBRARY, getCategoryClass, getCategoryIcon, getFoodImage } from '../lib/foodVisuals';
 import { getCategoryLabel } from '../lib/categoryHelpers';
 import { MEAL_CATEGORIES, normalizeMealCategory } from '../lib/mealCategoryHelpers';
-import { calculateNutritionWithUnit } from '../lib/unitConverter';
+import { calculateNutritionWithUnit, getConversionWarning } from '../lib/unitConverter';
 
 function sameCategory(ingredient, categoryName) {
   const ingredientCategory = getCategoryLabel(ingredient.category || 'Other').toLowerCase();
@@ -144,11 +145,6 @@ export default function ComponentMealEditor({
     setShowLibrary(true);
   }
 
-  function generateAutoImage() {
-    const query = meal.name || meal.category || 'healthy food';
-    setMeal({ ...meal, imageUrl: `https://loremflickr.com/800/600/${encodeURIComponent(query.replace(/\s+/g, ','))},food/all` });
-  }
-
   function closeLibrary() {
     setShowLibrary(false);
     resetLibraryForm();
@@ -165,7 +161,7 @@ export default function ComponentMealEditor({
 
   function selectIngredient(ingredient) {
     setActiveIngredient(ingredient);
-    setAmountUsed('');
+    setAmountUsed(ingredient.quantity || '');
     setUnitUsed(ingredient.unit || 'grams');
     setLibraryError('');
     setLibrarySuccess('');
@@ -307,10 +303,7 @@ export default function ComponentMealEditor({
             <Col md={4}>
               <Form.Group className="mb-3">
                 <Form.Label>Image URL</Form.Label>
-                <div className="d-flex gap-2">
-                  <Form.Control value={meal.imageUrl} onChange={e => setMeal({ ...meal, imageUrl: e.target.value })} placeholder="https://example.com/meal.jpg" />
-                  <Button variant="outline-primary" onClick={generateAutoImage} title="Generate auto image">✨</Button>
-                </div>
+                <Form.Control value={meal.imageUrl} onChange={e => setMeal({ ...meal, imageUrl: e.target.value })} placeholder="https://example.com/meal.jpg" />
                 <MealImageUpload imageUrl={meal.imageUrl} onUploaded={imageUrl => setMeal({ ...meal, imageUrl })} onUploadingChange={setImageUploading} />
               </Form.Group>
             </Col>
@@ -514,6 +507,9 @@ function IngredientLibraryModal({
   const selectedPreview = activeIngredient
     ? calculateNutritionWithUnit(Number(amountUsed), unitUsed, activeIngredient)
     : null;
+  const conversionWarning = activeIngredient
+    ? getConversionWarning(amountUsed, unitUsed, activeIngredient)
+    : '';
   const addIngredientHref = {
     pathname: '/ingredients/add',
     query: { category: selectedCategory }
@@ -599,16 +595,16 @@ function IngredientLibraryModal({
               {libraryError && <Alert variant="warning" className="library-status-alert">{libraryError}</Alert>}
               {activeIngredient ? <>
                 <Form onSubmit={handleSelectedIngredientSubmit}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Amount used</Form.Label>
-                    <div className="selected-ingredient-inputs">
-                      <Form.Control type="number" inputMode="decimal" enterKeyHint="done" min="0.1" step="0.1" value={amountUsed} onChange={e => setAmountUsed(e.target.value)} placeholder="Amount" />
-                      <UnitSelect value={unitUsed} onChange={e => setUnitUsed(e.target.value)} />
-                    </div>
-                  </Form.Group>
-                  <div className="selected-ingredient-preview">
-                    Preview: {formatCalories(selectedPreview?.calories || 0)} cal · {formatMacro(selectedPreview?.protein || 0)}g protein
-                  </div>
+                  <ServingAmountSelector
+                    amount={amountUsed}
+                    onAmountChange={setAmountUsed}
+                    unit={unitUsed}
+                    onUnitChange={setUnitUsed}
+                    amountLabel="Amount used"
+                    nutrition={selectedPreview}
+                    conversionWarning={conversionWarning}
+                    className="selected-ingredient-amount-selector"
+                  />
 
                   <Button type="submit" variant="success">{isEditing ? `Update in ${targetGroup}` : `Add to ${targetGroup}`}</Button>
                 </Form>

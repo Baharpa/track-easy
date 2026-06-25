@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/router';
 import useSWR from 'swr';
 import { Alert, Button, Card, Col, Form, Modal, Row, Table } from 'react-bootstrap';
-import Link from 'next/link';
+import AppBackButton from '../../components/AppBackButton';
 import PageHeader from '../../components/PageHeader';
 import RouteGuard from '../../components/RouteGuard';
 import { ErrorMessage, LoadingMessage } from '../../components/StateMessage';
@@ -78,6 +78,7 @@ export default function LoggedMealDetail() {
   }
 
   return <RouteGuard>
+    <AppBackButton href="/tracker" label="Back to Tracker" />
     <PageHeader
       title={loggedFood.name}
       text={`Logged ${isIngredientLog ? 'ingredient' : 'meal'}: ${loggedFood.portionLabel || loggedFood.servings || `${formatAmount(loggedFood.amount || 0)} ${loggedFood.unit || ''}`}`}
@@ -206,11 +207,6 @@ export default function LoggedMealDetail() {
       <p className="text-muted">Once you delete this logged food, it cannot be recovered.</p>
       <Button variant="danger" onClick={() => setShowDeleteModal(true)}>Delete Logged Food</Button>
     </Card>
-
-    {/* Back Button */}
-    <Link href="/tracker">
-      <Button variant="outline-secondary">Back to Log Food</Button>
-    </Link>
 
     {/* Delete Confirmation Modal */}
     <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>

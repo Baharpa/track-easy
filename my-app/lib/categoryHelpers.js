@@ -23,6 +23,7 @@ export const CATEGORY_MAP = {
   Poultry: 'Protein',
   Fish: 'Protein',
   Seafood: 'Protein',
+  'Fish & Seafood': 'Protein',
   Protein: 'Protein',
 
   Grains: 'Grains, Seeds & Legumes',

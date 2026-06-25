@@ -173,6 +173,48 @@ export function TrackEasyIcon({ name, size = 20, className = '', strokeWidth = 2
           <path d="M5 12h14" />
         </svg>
       );
+    case 'trash':
+      return (
+        <svg {...common}>
+          {title ? <title>{title}</title> : null}
+          <path d="M5 7h14" />
+          <path d="M10 11v6" />
+          <path d="M14 11v6" />
+          <path d="M8 7l.6 12.2c.1 1 1 1.8 2 1.8h2.8c1 0 1.9-.8 2-1.8L16 7" />
+          <path d="M9.5 7V5.8c0-.9.7-1.6 1.6-1.6h1.8c.9 0 1.6.7 1.6 1.6V7" />
+        </svg>
+      );
+    case 'pen':
+      return (
+        <svg {...common}>
+          {title ? <title>{title}</title> : null}
+          <path d="M4.5 19.5 8.2 18l9.7-9.7a2.1 2.1 0 0 0-3-3L5.2 15 4.5 19.5z" />
+          <path d="m13.7 6.5 3.1 3.1" />
+        </svg>
+      );
+    case 'heart':
+      return (
+        <svg {...common} fill="currentColor" stroke="currentColor">
+          {title ? <title>{title}</title> : null}
+          <path d="M12 20.2s-7.2-4.4-8.8-9.2C2.1 7.6 4.2 4.8 7.4 4.8c1.8 0 3.5 1 4.6 2.6 1.1-1.6 2.8-2.6 4.6-2.6 3.2 0 5.3 2.8 4.2 6.2-1.6 4.8-8.8 9.2-8.8 9.2z" />
+        </svg>
+      );
+    case 'heart-outline':
+      return (
+        <svg {...common}>
+          {title ? <title>{title}</title> : null}
+          <path d="M12 20.2s-7.2-4.4-8.8-9.2C2.1 7.6 4.2 4.8 7.4 4.8c1.8 0 3.5 1 4.6 2.6 1.1-1.6 2.8-2.6 4.6-2.6 3.2 0 5.3 2.8 4.2 6.2-1.6 4.8-8.8 9.2-8.8 9.2z" />
+        </svg>
+      );
+    case 'ellipsis':
+      return (
+        <svg {...common}>
+          {title ? <title>{title}</title> : null}
+          <circle cx="6" cy="12" r="1.4" fill="currentColor" stroke="none" />
+          <circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none" />
+          <circle cx="18" cy="12" r="1.4" fill="currentColor" stroke="none" />
+        </svg>
+      );
     case 'camera':
       return (
         <svg {...common}>
@@ -188,6 +230,13 @@ export function TrackEasyIcon({ name, size = 20, className = '', strokeWidth = 2
           {title ? <title>{title}</title> : null}
           <circle cx="11" cy="11" r="5.5" />
           <path d="M16 16l4 4" />
+        </svg>
+      );
+    case 'chevron-left':
+      return (
+        <svg {...common}>
+          {title ? <title>{title}</title> : null}
+          <path d="M15 6.5 9.5 12 15 17.5" />
         </svg>
       );
     case 'home':

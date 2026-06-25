@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import Link from 'next/link';
 import useSWR from 'swr';
 import { Button } from 'react-bootstrap';
+import AppBackButton from '../../components/AppBackButton';
 import PageHeader from '../../components/PageHeader';
 import RouteGuard from '../../components/RouteGuard';
 import MealDetails from '../../components/MealDetails';
@@ -27,6 +28,7 @@ export default function MealDetailsPage() {
     {error && <ErrorMessage text="Failed to load meal details." />}
     {!meal && !error && <LoadingMessage text="Loading meal details..." />}
     {meal && <>
+      <AppBackButton href="/meals" label="Back to Meals" />
       <div className="meal-details-page-header">
         <PageHeader title={meal.name} text={normalizeMealCategory(meal.category)} />
         <div className="meal-details-page-actions">

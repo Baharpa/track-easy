@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import useSWR, { useSWRConfig } from 'swr';
+import AppBackButton from '../../../components/AppBackButton';
 import PageHeader from '../../../components/PageHeader';
 import RouteGuard from '../../../components/RouteGuard';
 import ComponentMealEditor, { mealToEditorState } from '../../../components/ComponentMealEditor';
@@ -39,6 +40,7 @@ export default function EditMeal() {
   const editorState = meal ? mealToEditorState(meal) : null;
 
   return <RouteGuard>
+    <AppBackButton href={id ? `/meals/${id}` : '/meals'} label="Back" />
     <PageHeader title="Edit Meal" text="Update meal details and ingredient amounts." />
     {(mealError || ingredientsError) && <ErrorMessage text="Failed to load meal editor data." />}
     {(!meal || !ingredients) && !(mealError || ingredientsError) && <LoadingMessage text="Loading meal editor..." />}

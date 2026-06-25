@@ -3,61 +3,29 @@ const auth = require('../config/auth');
 const Meal = require('../models/Meal');
 const Ingredient = require('../models/Ingredient');
 const { calculateNutritionWithUnit, addTotals, calculateComponentPortion, round } = require('../utils/nutrition');
-const { convertToGrams, getConversionWarning, isValidUnit, normalizeUnit } = require('../utils/unitConverter');
 const router = express.Router();
-const MEAL_CATEGORIES = ['Breakfast', 'Lunch/Dinner', 'Snack', 'Beverage', 'Other'];
-
-function normalizeMealCategory(category) {
-  const cleanCategory = String(category || '').trim().toLowerCase();
-  return MEAL_CATEGORIES.find(item => item.toLowerCase() === cleanCategory) || 'Other';
-}
 
 async function buildMealIngredients(userId, selectedIngredients) {
   const built = [];
 
   for (const item of selectedIngredients || []) {
-    const ingredientId = item.ingredientId?._id || item.ingredientId || item._id;
+    const ingredient = await Ingredient.findOne({ _id: item.ingredientId, userId });
 
-    if (!ingredientId) {
-      throw new Error('Ingredient id is required.');
+    if (ingredient) {
+      const quantityUsed = Number(item.quantityUsed);
+      const unit = item.unit || 'grams';
+      
+      // Use new per-100g calculation with unit conversion
+      const nutrition = calculateNutritionWithUnit(quantityUsed, unit, ingredient);
+
+      built.push({
+        ingredientId: ingredient._id,
+        name: ingredient.name,
+        quantityUsed,
+        unit,
+        ...nutrition
+      });
     }
-
-    const ingredient = await Ingredient.findOne({ _id: ingredientId, userId });
-
-    if (!ingredient) {
-      throw new Error('Ingredient not found.');
-    }
-
-    const quantityUsed = Number(item.quantityUsed);
-    const unit = normalizeUnit(item.unit || 'grams');
-
-    if (!quantityUsed || quantityUsed <= 0) {
-      throw new Error('Ingredient amounts must be positive numbers.');
-    }
-
-    if (!isValidUnit(unit)) {
-      throw new Error('Please choose a valid unit.');
-    }
-
-    const convertedGrams = convertToGrams(quantityUsed, unit, ingredient);
-    const gramsUsed = convertedGrams || (unit === 'pieces' && normalizeUnit(ingredient.unit) === 'pieces' ? quantityUsed : 0);
-    if (!gramsUsed || gramsUsed <= 0) {
-      throw new Error(`Cannot convert ${ingredient.name}. Pieces need grams per piece.`);
-    }
-
-    const nutrition = calculateNutritionWithUnit(quantityUsed, unit, ingredient);
-
-    built.push({
-      ingredientId: ingredient._id,
-      name: ingredient.name,
-      quantityUsed: round(gramsUsed),
-      unit: 'grams',
-      originalQuantityUsed: quantityUsed,
-      originalUnit: unit,
-      gramsUsed: round(gramsUsed),
-      conversionWarning: getConversionWarning(unit, ingredient),
-      ...nutrition
-    });
   }
 
   return built;
@@ -69,19 +37,39 @@ async function buildMealComponents(userId, components) {
 
   for (const component of components || []) {
     const originalIngredients = await buildMealIngredients(userId, component.ingredients || []);
-    if (originalIngredients.length === 0) {
-      throw new Error('A component must have at least one ingredient.');
+    const totalWeight = originalIngredients.reduce((sum, item) => sum + Number(item.quantityUsed || 0), 0);
+    const consumedWeight = Number(component.consumedWeight || totalWeight);
+
+    // This is the proportional logic from the planning sheet.
+    // Example: 300g carrots + 50g parsley, eaten 100g total => 85.7g and 14.3g.
+    const proportionalAmounts = calculateComponentPortion(originalIngredients, consumedWeight);
+    const consumedIngredients = [];
+
+    for (const item of proportionalAmounts) {
+      const ingredient = await Ingredient.findOne({ _id: item.ingredientId, userId });
+      if (ingredient) {
+        // Use new per-100g calculation with unit conversion
+        const nutrition = calculateNutritionWithUnit(item.quantityUsed, item.unit, ingredient);
+        
+        consumedIngredients.push({
+          ingredientId: ingredient._id,
+          name: ingredient.name,
+          quantityUsed: item.quantityUsed,
+          unit: item.unit,
+          ...nutrition
+        });
+      }
     }
 
-    const totalWeight = originalIngredients.reduce((sum, item) => sum + Number(item.gramsUsed || 0), 0);
-    const totals = addTotals(originalIngredients);
-    allConsumedIngredients.push(...originalIngredients);
+    const totals = addTotals(consumedIngredients);
+    allConsumedIngredients.push(...consumedIngredients);
 
     builtComponents.push({
       name: component.name || 'Component',
       category: component.category || 'Other',
-      ingredients: originalIngredients,
+      ingredients: consumedIngredients,
       totalWeight: round(totalWeight),
+      consumedWeight: round(consumedWeight),
       nutritionTotals: totals
     });
   }
@@ -101,15 +89,11 @@ async function buildMealBody(req) {
     ingredients = await buildMealIngredients(req.user._id, req.body.ingredients);
   }
 
-  if (ingredients.length === 0 && components.length === 0) {
-    throw new Error('Meal must have at least one ingredient or component.');
-  }
-
   const totals = addTotals(ingredients);
 
   return {
     name: req.body.name,
-    category: normalizeMealCategory(req.body.category),
+    category: req.body.category || 'Meal',
     imageUrl: req.body.imageUrl || '',
     components,
     ingredients,
