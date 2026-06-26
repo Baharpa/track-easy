@@ -56,7 +56,7 @@ export default function Inventory() {
   }
 
   return <RouteGuard>
-    <div className="">
+    <div className="list-section-page">
       <div className="list-page-header">
         <PageHeader title="Ingredients" text="Ingredients you have at home." />
         <div className="inventory-header-actions">
@@ -67,7 +67,7 @@ export default function Inventory() {
       <AppShortcutCard
         href="/ingredients/library"
         title="Go to Library"
-        subtitle="Browse natural foods and add them."
+        subtitle="Browse natural foods and add them to your inventory."
         icon="+"
         variant="library"
       />

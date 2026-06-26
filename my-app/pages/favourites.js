@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import useSWR from 'swr';
 import { Button, Card, Col, Row } from 'react-bootstrap';
+import AppBackButton from '../components/AppBackButton';
 import PageHeader from '../components/PageHeader';
 import RouteGuard from '../components/RouteGuard';
 import MealCard from '../components/MealCard';
@@ -53,13 +54,15 @@ export default function Favourites() {
   }
 
   return <RouteGuard>
-    <PageHeader title="Favourites" text="Your saved favourite foods and meals." />
-    {error && <ErrorMessage text="Failed to load favourites." />}
-    {!favourites && !error && <LoadingMessage text="Loading favourites..." />}
+    <div className="favourites-page">
+      <AppBackButton href="/meals" label="Back to Meals" />
+      <PageHeader title="Favourites" text="Your saved favourite foods and meals." />
+      {error && <ErrorMessage text="Failed to load favourites." />}
+      {!favourites && !error && <LoadingMessage text="Loading favourites..." />}
 
-    {favourites && (
-      <Row className="favourites-grid mobile-card-grid">
-        {FAVOURITE_SECTIONS.map(section => {
+      {favourites && (
+        <Row className="favourites-grid mobile-card-grid">
+          {FAVOURITE_SECTIONS.map(section => {
           const sectionItems = grouped[section.key] || [];
           const isExpanded = expandedSections[section.key];
           const visibleItems = isExpanded ? sectionItems : sectionItems.slice(0, 3);
@@ -100,10 +103,11 @@ export default function Favourites() {
               </Card>
             </Col>
           );
-        })}
-      </Row>
-    )}
+          })}
+        </Row>
+      )}
 
-    <QuickAddMealModal meal={quickAddMeal} show={!!quickAddMeal} onHide={() => setQuickAddMeal(null)} />
+      <QuickAddMealModal meal={quickAddMeal} show={!!quickAddMeal} onHide={() => setQuickAddMeal(null)} />
+    </div>
   </RouteGuard>;
 }

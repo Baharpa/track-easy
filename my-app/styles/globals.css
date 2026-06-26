@@ -1860,6 +1860,19 @@ Purpose: Keep meal-building forms and component summaries together.
 
 
 
+.list-page-header {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.inventory-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
 .list-section-page .list-page-header,
 .list-section-page .page-header {
   margin-bottom: 0;
@@ -2378,19 +2391,6 @@ Purpose: Keep logging workflow layout separate from reusable logged-food cards.
   margin-top: 1rem;
 }
 
-.list-page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.inventory-header-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.55rem;
-}
-
 .favourites-grid {
   align-items: stretch;
 }
@@ -2741,7 +2741,6 @@ Purpose: Keep logging workflow layout separate from reusable logged-food cards.
   }
 
 
-  /* this is it */
   .inventory-header-actions {
     display: grid;
     gap: 0.55rem;
