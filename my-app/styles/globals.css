@@ -1,26 +1,29 @@
 /*
-TRACK EASY GLOBAL CSS TABLE OF CONTENTS
+Track Easy Global CSS Reference
 
-Lines 1-24: Table of contents
-Lines 27-105: Base variables, reset, typography
-Lines 106-247: App shell, layout, page spacing
-Lines 248-585: Header / top navigation
-Lines 586-677: Bottom navigation
-Lines 678-872: Shared cards, buttons, inputs
-Lines 873-1067: Meals page and meal library basics
-Lines 1068-2081: Build Meal page and shared responsive form layouts
-Lines 2082-2336: Tracker page
-Lines 2337-3236: Log Food page, favourites, and builder forms
-Lines 3237-3398: Ingredients / Inventory page
-Lines 3399-3582: Shared food display, cards, and legacy page polish
-Lines 3583-4020: Dashboard / Home page
-Lines 4021-4170: Home + Log Food + Tracker logged-food cards
-Lines 4171-4227: Home + Log Food + Tracker empty logged-food states
-Lines 4228-4292: Modals
-Lines 4293-end: Responsive/mobile adjustments for logged-food cards
+1. Theme variables, reset, and typography
+2. App shell, shared page layout, and page headers
+3. Shared buttons, pills, form controls, and AppBackButton
+4. Top navigation and mobile search overlay
+5. Bottom mobile navigation
+6. Shared cards, thumbnails, picker rows, and empty states
+7. Meals, meal filters, and meal cards
+8. Build Meal / component meal editor
+9. Log Food and picker modals
+10. Tracker day/week progress and weekly analysis
+11. Ingredients / Inventory shared layout
+12. Shared Food UI system: FoodInfoCard, nutrition rows, and actions
+13. Food Library search-first flow and serving selector
+14. Dashboard / Home cards and goal progress
+15. Logged food cards and empty logged states
+16. Shared confirmation modals
+17. AppSearchBar shared search input system
+18. Mobile responsive adjustments and utilities
 
-Note:
-Line ranges are approximate and should be updated when large CSS sections move.
+Maintenance notes:
+- Keep shared components as the source of truth before adding page-specific CSS.
+- Delete old page-specific overrides when a shared class replaces them.
+- Search the project before removing a selector that may be rendered dynamically.
 */
 
 /* ============================================================
@@ -108,19 +111,21 @@ Used by: All pages rendered inside the shared Layout component
 Purpose: Control global page gutters, app-level grids, and headings.
 ============================================================ */
 
+/* App shell spacing used by the shared Layout wrapper around every page. */
 .app-shell {
   padding-top: 0.35rem;
   padding-bottom: 3rem;
 }
 
+/* Legacy page wrappers that still need bottom padding for the fixed mobile nav. */
 .tracker-page,
-.library-page,
-.inventory-page {
+.library-page {
   display: grid;
   gap: 1rem;
   padding-bottom: calc(120px + env(safe-area-inset-bottom));
 }
 
+/* Shared PageHeader spacing used by Meals, Ingredients, Dashboard, and detail pages. */
 .page-header {
   margin: 0 0 0.85rem;
 }
@@ -143,6 +148,7 @@ Purpose: Control global page gutters, app-level grids, and headings.
   margin: 0;
 }
 
+/* Shared card surfaces used across dashboard, tracker, forms, filters, and lists. */
 .app-card,
 .page-card,
 .compact-card {
@@ -156,11 +162,13 @@ Purpose: Control global page gutters, app-level grids, and headings.
   box-shadow: none;
 }
 
+/* Shared pill rounding for Bootstrap badges and custom soft pills. */
 .soft-pill,
 .badge {
   border-radius: 999px;
 }
 
+/* Buttons: primary green Bootstrap button override used for main app actions. */
 .btn-success {
   background: var(--brand-green) !important;
   border-color: var(--brand-green) !important;
@@ -170,6 +178,7 @@ Purpose: Control global page gutters, app-level grids, and headings.
   min-height: 42px;
 }
 
+/* Buttons: shared Bootstrap outline button overrides used across forms, filters, and small actions. */
 .btn-outline-success,
 .btn-outline-secondary {
   background: rgba(255, 254, 251, 0.92) !important;
@@ -180,6 +189,7 @@ Purpose: Control global page gutters, app-level grids, and headings.
   min-height: 42px;
 }
 
+/* Buttons: soft destructive outline style used for delete/remove actions. */
 .btn-outline-danger {
   background: var(--danger-soft) !important;
   border-color: transparent !important;
@@ -188,6 +198,7 @@ Purpose: Control global page gutters, app-level grids, and headings.
   font-weight: 800;
 }
 
+/* AppBackButton: reusable rounded back pill for nested pages only. */
 .app-back-button {
   align-items: center;
   background: rgba(255, 254, 251, 0.92);
@@ -220,6 +231,7 @@ Purpose: Control global page gutters, app-level grids, and headings.
   outline-offset: 2px;
 }
 
+/* Forms: Bootstrap input/select base styling used by forms and filter panels. */
 .form-control,
 .form-select {
   background-color: rgba(255, 254, 251, 0.98);
@@ -235,6 +247,7 @@ Purpose: Control global page gutters, app-level grids, and headings.
   box-shadow: 0 0 0 0.22rem rgba(95, 147, 104, 0.14);
 }
 
+/* Segmented controls: pill group used for tab-like choices such as tracker day/week. */
 .segmented-control {
   background: #f2ede5;
   border: 1px solid var(--border-soft);
@@ -289,6 +302,7 @@ Purpose: Keep app navigation controls grouped and easy to edit.
   box-shadow: var(--shadow-soft);
   margin-bottom: 1.5rem;
   z-index: 1020;
+  padding-right: 1cm;
 }
 
 .desktop-nav {
@@ -707,7 +721,7 @@ Purpose: Keep fixed bottom navigation styling separate from page content.
 }
 
 /* ============================================================
-05. SHARED CARDS, BUTTONS, INPUTS, AND THUMBNAILS
+06. SHARED CARDS, THUMBNAILS, PICKER ROWS, AND EMPTY STATES
 Used by: Multiple app pages and reusable components
 Purpose: Store common surfaces and controls that should stay consistent.
 ============================================================ */
@@ -902,7 +916,7 @@ Purpose: Store common surfaces and controls that should stay consistent.
 }
 
 /* ============================================================
-09. MEALS PAGE AND MEAL LIBRARY BASICS
+07. MEALS PAGE, MEAL FILTERS, AND MEAL CARDS
 Used by: Meals list, meal category cards, and meal picker surfaces
 Purpose: Group meal browsing and selection styles before builder styles.
 ============================================================ */
@@ -1092,7 +1106,7 @@ Purpose: Group meal browsing and selection styles before builder styles.
 }
 
 /* ============================================================
-10. BUILD MEAL PAGE
+08. BUILD MEAL / COMPONENT MEAL EDITOR
 Used by: Create meal, component meal editor, and meal setup forms
 Purpose: Keep meal-building forms and component summaries together.
 ============================================================ */
@@ -1859,7 +1873,6 @@ Purpose: Keep meal-building forms and component summaries together.
 }
 
 
-
 .list-page-header {
   align-items: center;
   display: flex;
@@ -1954,10 +1967,6 @@ Purpose: Keep meal-building forms and component summaries together.
   --bs-gutter-y: 0.65rem;
   margin-top: 0;
 }
-
-
-
-
 
 
 .app-shortcut-card-link {
@@ -2067,26 +2076,6 @@ Purpose: Keep meal-building forms and component summaries together.
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 .tracker-page {
   display: grid;
   gap: 0.85rem;
@@ -2095,7 +2084,7 @@ Purpose: Keep meal-building forms and component summaries together.
 }
 
 /* ============================================================
-13. TRACKER PAGE
+10. TRACKER DAY/WEEK PROGRESS AND ANALYSIS
 Used by: Tracker day/week views, progress rows, week selector, analysis
 Purpose: Keep tracker-only layout and progress visualization styles together.
 ============================================================ */
@@ -2222,9 +2211,6 @@ Purpose: Keep tracker-only layout and progress visualization styles together.
   gap: 0.2rem;
 }
 
-.analysis-stat-wide {
-  grid-column: 1 / -1;
-}
 
 .analysis-stat span {
   color: var(--muted);
@@ -2360,7 +2346,7 @@ Purpose: Keep tracker-only layout and progress visualization styles together.
 }
 
 /* ============================================================
-12. LOG FOOD PAGE
+09. LOG FOOD AND PICKER MODALS
 Used by: Log Food forms and selected meal/ingredient previews
 Purpose: Keep logging workflow layout separate from reusable logged-food cards.
 ============================================================ */
@@ -2558,12 +2544,6 @@ Purpose: Keep logging workflow layout separate from reusable logged-food cards.
   min-height: 42px;
 }
 
-.selected-ingredient-preview {
-  color: #365f3d;
-  font-size: 0.9rem;
-  font-weight: 800;
-  margin: -0.2rem 0 0.75rem;
-}
 
 .selected-ingredient-panel .btn-success {
   border-radius: 999px;
@@ -2674,7 +2654,6 @@ Purpose: Keep logging workflow layout separate from reusable logged-food cards.
   .app-shell {
     padding: 0.75rem 0.85rem calc(8rem + env(safe-area-inset-bottom));
   }
-
   .page-card {
     border-radius: 16px;
     box-shadow: var(--shadow-soft);
@@ -3169,11 +3148,6 @@ Purpose: Keep logging workflow layout separate from reusable logged-food cards.
     padding-top: 0.45rem;
   }
 
-  .selected-ingredient-preview {
-    font-size: 0.82rem;
-    margin-bottom: 0.55rem;
-  }
-
   .selected-ingredient-panel .btn-success {
     min-height: 42px;
     padding: 0.5rem 0.75rem;
@@ -3223,7 +3197,7 @@ Purpose: Keep logging workflow layout separate from reusable logged-food cards.
 }
 
 /* ============================================================
-14. INGREDIENTS / INVENTORY PAGE
+11. INGREDIENTS / INVENTORY SHARED LAYOUT
 Used by: Ingredient inventory cards and ingredient management pages
 Purpose: Keep ingredient-specific cards separate from meal and tracker cards.
 ============================================================ */
@@ -3231,13 +3205,13 @@ Purpose: Keep ingredient-specific cards separate from meal and tracker cards.
 /* Ingredient cards now use the shared FoodInfoCard system in section 16 */
 
 /* ============================================================
-15. SHARED FOOD DISPLAY AND LEGACY PAGE POLISH
+12A. SHARED FOOD DISPLAY BRIDGE
 Used by: Meal display cards, picker rows, modal surfaces, page polish
-Purpose: Group shared visual refinements that are not tied to logged-food cards.
+Purpose: Bridge older shared visual refinements into the current FoodInfoCard-based UI. TODO: remove when all legacy pages are confirmed migrated.
 ============================================================ */
 
 /* ============================================================
-16. FOOD UI SYSTEM
+12B. SHARED FOOD UI SYSTEM
 Shared reusable styles for meal cards, logged food cards,
 ingredient cards, nutrition rows, and food actions.
 ============================================================ */
@@ -3572,7 +3546,6 @@ ingredient cards, nutrition rows, and food actions.
   }
 }
 
-.library-category-card,
 .category-card,
 .tracker-card,
 .tracker-log-card,
@@ -3582,7 +3555,6 @@ ingredient cards, nutrition rows, and food actions.
   box-shadow: var(--shadow-card) !important;
 }
 
-.library-food-row,
 .library-option-card,
 .meal-picker-card,
 .mobile-search-card {
@@ -3591,7 +3563,7 @@ ingredient cards, nutrition rows, and food actions.
   box-shadow: none !important;
 }
 
-.library-food-row,
+/* Food Library variation options are button-like cards, so Bootstrap button defaults are reset here. */
 .library-option-card {
   background: transparent !important;
   border: 0 !important;
@@ -3601,7 +3573,7 @@ ingredient cards, nutrition rows, and food actions.
   width: 100%;
 }
 
-.library-food-row + .library-food-row,
+/* Vertical rhythm between Food Library variation option cards. */
 .library-option-card + .library-option-card {
   margin-top: 0.9rem;
 }
@@ -3614,83 +3586,7 @@ ingredient cards, nutrition rows, and food actions.
 }
 
 
-
-
-
-.library-search-prompt {
-  background: #fffaf3;
-  border: 1px dashed rgba(95, 147, 104, 0.32);
-  border-radius: 18px;
-  display: grid;
-  gap: 0.25rem;
-  padding: 1rem;
-  text-align: center;
-}
-
-.library-search-prompt strong {
-  color: #203227;
-  font-size: 1rem;
-  font-weight: 950;
-}
-
-.library-search-prompt span {
-  color: var(--muted);
-  font-size: 0.9rem;
-  font-weight: 750;
-}
-
-/* Clean category cards for the Food Library root view */
-.library-page-category-grid {
-  display: grid;
-  gap: 0.75rem;
-  grid-template-columns: repeat(auto-fit, minmax(138px, 1fr));
-}
-
-.library-category-card {
-  align-items: center;
-  background: linear-gradient(180deg, #fffefb, #fbfaf5) !important;
-  border: 1px solid rgba(222, 218, 205, 0.9) !important;
-  border-radius: 18px !important;
-  box-shadow: 0 10px 22px rgba(35, 58, 42, 0.08) !important;
-  color: #203227;
-  display: grid;
-  gap: 0.34rem;
-  justify-items: center;
-  min-height: 118px;
-  padding: 0.95rem 0.75rem;
-  text-align: center;
-  width: 100%;
-}
-
-.library-category-card span {
-  align-items: center;
-  background: #f4ead7;
-  border-radius: 999px;
-  color: var(--green-dark);
-  display: inline-flex;
-  font-size: 1.35rem;
-  height: 44px;
-  justify-content: center;
-  line-height: 1;
-  width: 44px;
-}
-
-.library-category-card strong {
-  color: #203227;
-  font-size: 0.98rem;
-  font-weight: 950;
-  line-height: 1.1;
-}
-
-.library-category-card small {
-  color: var(--muted);
-  font-size: 0.78rem;
-  font-weight: 800;
-  line-height: 1.1;
-}
-
-/* Food Library rows intentionally reuse FoodInfoCard and only change spacing/action tone */
-.library-food-list,
+/* Food Library variation option list spacing; food result rows now use FoodInfoCard directly. */
 .library-option-list {
   display: grid;
   gap: 0.9rem;
@@ -4147,7 +4043,7 @@ ingredient cards, nutrition rows, and food actions.
 }
 
 /* ============================================================
-06. DASHBOARD / HOME PAGE
+14. DASHBOARD / HOME PAGE
 Used by: Dashboard hero, mindset card, nutrition cards, goal card
 Purpose: Keep the latest home-page visual treatment grouped together.
 ============================================================ */
@@ -4160,12 +4056,15 @@ Purpose: Keep the latest home-page visual treatment grouped together.
 }
 
 .dashboard-home {
+  display: grid;
   gap: 22px;
-  padding-bottom: calc(124px + env(safe-area-inset-bottom));
+  padding-top: 0.7rem;
+  padding-bottom: calc(142px + env(safe-area-inset-bottom));
 }
 
 .dashboard-stack {
-  gap: 22px;
+  display: grid;
+  gap: 24px;
 }
 
 .dashboard-hero {
@@ -4489,10 +4388,12 @@ Purpose: Keep the latest home-page visual treatment grouped together.
 
 @media (min-width: 769px) {
   .dashboard-home {
-    padding-bottom: 4rem;
+    padding-bottom: 4.5rem;
   }
 
   .dashboard-stack {
+    align-items: start;
+    gap: 26px;
     grid-template-columns: minmax(0, 0.92fr) minmax(340px, 1.08fr);
   }
 
@@ -4512,12 +4413,6 @@ Purpose: Keep the latest home-page visual treatment grouped together.
 }
 
 @media (max-width: 575.98px) {
-  .app-shell {
-    padding-left: 1rem;
-    padding-right: 1rem;
-  }
-
-
 /* track your day title */
 
   .dashboard-hero h1 {
@@ -4527,8 +4422,14 @@ Purpose: Keep the latest home-page visual treatment grouped together.
     /* Write below title */
 
   .dashboard-home {
-    gap: 20px;
+    gap: 22px;
     margin-top: 0;
+    padding-top: 0.45rem;
+    padding-bottom: calc(148px + env(safe-area-inset-bottom));
+  }
+
+  .dashboard-stack {
+    gap: 22px;
   }
 
   .mindset-card {
@@ -4586,7 +4487,7 @@ Purpose: Keep the latest home-page visual treatment grouped together.
 }
 
 /* ============================================================
-07. HOME + LOG FOOD + TRACKER - LOGGED FOOD CARDS
+15A. LOGGED FOOD CARDS
 Used by: Home Today's Food and Tracker Foods Logged Today
 Purpose: One shared logged-food card design across the app.
 ============================================================ */
@@ -4603,7 +4504,7 @@ Purpose: One shared logged-food card design across the app.
 }
 
 /* ============================================================
-08. HOME + LOG FOOD + TRACKER - EMPTY LOGGED FOOD STATES
+15B. EMPTY LOGGED FOOD STATES
 Used by: Home Today's Food and Tracker Foods Logged Today
 Purpose: One shared empty state whenever no food is logged.
 ============================================================ */
@@ -4659,7 +4560,7 @@ Purpose: One shared empty state whenever no food is logged.
 }
 
 /* ============================================================
-18. MODALS - SHARED CONFIRMATION DIALOGS
+16. MODALS - SHARED CONFIRMATION DIALOGS
 Used by: Logged food removal and existing delete confirmations
 Purpose: Keep destructive confirmations consistent across the app.
 ============================================================ */
@@ -4708,8 +4609,13 @@ Purpose: Keep destructive confirmations consistent across the app.
   width: 100%;
 }
 
+/* ============================================================
+17. APP SEARCH BAR - SHARED SEARCH INPUT SYSTEM
+Used by: Meals, Ingredients, Food Library, picker modals, and any normal app search
+Purpose: One reusable search style with green outer focus and no black inner browser outline.
+============================================================ */
 
-/* Shared premium search input used across Food Library, Meals, Inventory, and picker modals */
+/* Shared premium search input used across Food Library, Meals, Inventory, and picker modals. */
 .app-search-bar {
   align-items: center;
   background: #fffefb;
@@ -4804,7 +4710,14 @@ Purpose: Keep destructive confirmations consistent across the app.
   margin-bottom: 0;
 }
 
-/* Apple Screen Time style Tracker week navigation and chart */
+
+/* ============================================================
+10B. TRACKER WEEK NAVIGATION AND APPLE-STYLE WEEK CHART
+Used by: Tracker/History week view
+Purpose: Keeps week arrows, weekly progress bars, and compact analysis visually grouped.
+============================================================ */
+
+/* Apple Screen Time style Tracker week navigation shell. */
 .week-screen-time-nav {
   align-items: center;
   background: rgba(255, 254, 249, 0.86);
@@ -4860,60 +4773,6 @@ Purpose: Keep destructive confirmations consistent across the app.
   font-weight: 800;
 }
 
-.week-progress-card {
-  background: rgba(255, 254, 249, 0.92) !important;
-  overflow: hidden;
-  padding-bottom: 1rem;
-}
-
-.week-progress-bars {
-  align-items: flex-end;
-  display: grid;
-  gap: 0.7rem;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  min-height: 170px;
-  padding: 0.55rem 0.15rem 0;
-}
-
-.week-progress-day {
-  align-items: center;
-  display: grid;
-  gap: 0.34rem;
-  justify-items: center;
-  min-width: 0;
-}
-
-.week-progress-track {
-  align-items: flex-end;
-  background: #eee8dc;
-  border-radius: 999px;
-  display: flex;
-  height: 116px;
-  justify-content: center;
-  overflow: hidden;
-  width: 18px;
-}
-
-.week-progress-track span {
-  background: linear-gradient(180deg, #d1a0ff, #ac63ff);
-  border-radius: inherit;
-  display: block;
-  min-height: 4px;
-  width: 100%;
-}
-
-.week-progress-day strong {
-  color: var(--te-green-dark);
-  font-size: 0.7rem;
-  font-weight: 900;
-}
-
-.week-progress-day small {
-  color: var(--muted);
-  font-size: 0.68rem;
-  font-weight: 850;
-}
-
 .compact-week-analysis-card {
   padding: 0.95rem !important;
 }
@@ -4937,52 +4796,220 @@ Purpose: Keep destructive confirmations consistent across the app.
 .compact-analysis-grid .analysis-stat strong {
   font-size: 0.95rem;
 }
+/********************* TRACKER WEEK CLEAN METRIC SELECTOR START *********************/
 
-/* Dashboard spacing polish */
-.dashboard-home {
-  gap: 26px;
-  padding-top: 0.7rem;
-  padding-bottom: calc(132px + env(safe-area-inset-bottom));
+/* Tracker metric selector: clean segmented control with simple premium transition and no worm artifacts. */
+.tracker-week-metric-form {
+  --metric-index: 0;
+  background: linear-gradient(180deg, #f7f0e6, #efe6da);
+  border: 1px solid rgba(222, 211, 195, 0.95);
+  border-radius: 999px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78), 0 10px 22px rgba(80, 59, 38, 0.07);
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0.55rem 0 1.15rem;
+  min-height: 46px;
+  overflow: hidden;
+  padding: 0.28rem;
+  position: relative;
 }
 
-.dashboard-stack {
-  gap: 26px;
+.tracker-week-metric-form[data-selected="calories"] { --metric-index: 0; }
+.tracker-week-metric-form[data-selected="protein"] { --metric-index: 1; }
+.tracker-week-metric-form[data-selected="carbs"] { --metric-index: 2; }
+.tracker-week-metric-form[data-selected="fats"] { --metric-index: 3; }
+
+.tracker-week-metric-indicator {
+  background: linear-gradient(180deg, #fffdf8, #ffeeda);
+  border: 1px solid rgba(226, 178, 129, 0.48);
+  border-radius: 999px;
+  box-shadow: 0 8px 18px rgba(186, 102, 58, 0.14);
+  height: calc(100% - 0.56rem);
+  left: 0.28rem;
+  position: absolute;
+  top: 0.28rem;
+  transform: translateX(calc(var(--metric-index) * 100%));
+  transition: transform 260ms cubic-bezier(0.34, 1, 0.64, 1), box-shadow 220ms ease;
+  width: calc((100% - 0.56rem) / 4);
+  z-index: 1;
 }
 
-.dashboard-hero {
-  padding-top: 0.45rem;
-  margin-bottom: 0.15rem;
+.tracker-week-metric-choice {
+  min-width: 0;
+  position: relative;
+  z-index: 2;
 }
 
-.nutrition-section,
-.goal-progress-card,
-.mini-log-card {
-  margin-top: 0;
+.tracker-week-metric-radio {
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+  position: absolute;
+  width: 1px;
 }
 
-@media (max-width: 575.98px) {
-  .dashboard-home {
-    gap: 20px;
-    padding-top: 0.45rem;
-    padding-bottom: calc(142px + env(safe-area-inset-bottom));
-  }
+.tracker-week-metric-label {
+  align-items: center;
+  border-radius: 999px;
+  color: #7a6d61;
+  cursor: pointer;
+  display: flex;
+  font-size: 0.78rem;
+  font-weight: 900;
+  gap: 0.28rem;
+  height: 100%;
+  justify-content: center;
+  line-height: 1;
+  min-height: 38px;
+  padding: 0.42rem 0.28rem;
+  position: relative;
+  transition: color 180ms ease, transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  user-select: none;
+  white-space: nowrap;
+}
 
-  .dashboard-stack {
-    gap: 20px;
-  }
+.tracker-week-metric-dot {
+  background: rgba(152, 126, 104, 0.24);
+  border: 2px solid rgba(152, 126, 104, 0.28);
+  border-radius: 999px;
+  flex: 0 0 7px;
+  height: 7px;
+  transition: background 180ms ease, border-color 180ms ease, transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  width: 7px;
+}
 
-  .dashboard-hero {
-    padding-top: 0.15rem;
-  }
+.tracker-week-metric-radio:checked + .tracker-week-metric-label {
+  color: #173328;
+  transform: scale(1.035);
+}
 
-  .dashboard-hero h1 {
-    margin-top: 0.4rem;
-  }
+.tracker-week-metric-radio:checked + .tracker-week-metric-label .tracker-week-metric-dot {
+  background: #74eaff;
+  border-color: #4d0cff;
+  transform: scale(1.22);
+}
 
-  .mindset-card,
-  .goal-progress-card,
-  .mini-log-card {
-    margin-bottom: 0;
+.tracker-week-metric-radio:focus-visible + .tracker-week-metric-label {
+  box-shadow: inset 0 0 0 2px rgba(217, 118, 83, 0.3);
+}
+
+/* Tracker line chart: higher-contrast weekly nutrition chart with goal reference line. */
+.tracker-line-chart-card {
+  background:
+    radial-gradient(circle at 18% 6%, rgba(217, 118, 83, 0.1), transparent 34%),
+    rgba(255, 254, 249, 0.96) !important;
+  overflow: hidden;
+}
+
+.tracker-week-line-chart {
+  display: grid;
+  gap: 0.78rem;
+  padding-top: 0.25rem;
+}
+
+.tracker-week-line-chart-svg {
+  display: block;
+  height: 176px;
+  overflow: visible;
+  width: 100%;
+}
+
+.tracker-line-axis {
+  stroke: rgba(110, 91, 75, 0.24);
+  stroke-linecap: round;
+  stroke-width: 2;
+}
+
+.tracker-goal-line {
+  stroke: rgba(51, 119, 132, 0.5);
+  stroke-dasharray: 5 6;
+  stroke-linecap: round;
+  stroke-width: 2;
+}
+
+.tracker-goal-label {
+  fill: rgba(43, 91, 101, 0.82);
+  font-size: 9.5px;
+  font-weight: 950;
+  text-anchor: end;
+}
+
+.tracker-line-path-shadow {
+  fill: none;
+  stroke: rgba(138, 175, 255, 0.2);
+  stroke-linecap: round;
+  stroke-width: 10;
+}
+
+.tracker-line-path {
+  fill: none;
+  stroke: #3e82ff;
+  stroke-linecap: round;
+  stroke-width: 4.8;
+}
+
+.tracker-line-dot {
+  fill: #fffefb;
+  stroke: #2f2bff;
+  stroke-width: 3.4;
+}
+
+.tracker-line-chart-labels {
+  display: grid;
+  gap: 0.35rem;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.tracker-line-day {
+  display: grid;
+  gap: 0.26rem;
+  min-width: 0;
+  text-align: center;
+}
+
+.tracker-line-day strong {
+  color: #172b25;
+  font-size: 0.88rem;
+  font-weight: 950;
+  line-height: 1.05;
+}
+
+.tracker-line-day span {
+  color: #5d5148;
+  font-size: 0.83rem;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tracker-week-metric-indicator,
+  .tracker-week-metric-label,
+  .tracker-week-metric-dot {
+    transition: none;
   }
 }
 
+@media (max-width: 390px) {
+  .tracker-week-metric-label {
+    font-size: 0.7rem;
+    gap: 0.18rem;
+    padding-left: 0.16rem;
+    padding-right: 0.16rem;
+  }
+
+  .tracker-week-metric-dot {
+    flex-basis: 6px;
+    height: 6px;
+    width: 6px;
+  }
+
+  .tracker-line-day strong {
+    font-size: 0.78rem;
+  }
+
+  .tracker-line-day span {
+    font-size: 0.7rem;
+  }
+}
+
+/********************* TRACKER WEEK CLEAN METRIC SELECTOR END *********************/

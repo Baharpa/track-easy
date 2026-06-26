@@ -15,6 +15,13 @@ const nutrients = [
   { label: 'Sugar', key: 'totalSugar', shortKey: 'sugar', goalKey: 'sugarGoal', icon: 'berry', className: 'tracker-sugar', unit: 'g' }
 ];
 
+const weeklyMetrics = {
+  calories: { label: 'Calories', key: 'totalCalories', goalKey: 'calorieGoal', unit: 'cal' },
+  protein: { label: 'Protein', key: 'totalProtein', goalKey: 'proteinGoal', unit: 'g' },
+  carbs: { label: 'Carbs', key: 'totalCarbs', goalKey: 'carbsGoal', unit: 'g' },
+  fats: { label: 'Fats', key: 'totalFats', goalKey: 'fatsGoal', unit: 'g' }
+};
+
 function whole(value) {
   return Math.round(Number(value) || 0);
 }
@@ -41,6 +48,19 @@ function formatFoodStat(value, unit = '') {
   const numeric = Number(value) || 0;
   const rounded = Math.round(numeric * 10) / 10;
   return `${Number.isInteger(rounded) ? rounded.toLocaleString() : rounded.toLocaleString(undefined, { maximumFractionDigits: 1 })}${unit}`;
+}
+
+function buildSmoothPath(points) {
+  if (!points.length) return '';
+  if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
+
+  return points.reduce((path, point, index) => {
+    if (index === 0) return `M ${point.x} ${point.y}`;
+
+    const previous = points[index - 1];
+    const controlX = (previous.x + point.x) / 2;
+    return `${path} C ${controlX} ${previous.y}, ${controlX} ${point.y}, ${point.x} ${point.y}`;
+  }, '');
 }
 
 function getWeekRange(days = []) {
@@ -150,7 +170,7 @@ export default function ProfileTracker() {
             {view === 'week' && weekDays.length > 0 && analysis && (
               <>
                 <WeekSelector selectedOffset={selectedWeekOffset} onSelect={setSelectedWeekOffset} range={formatShortRange(weekDays)} />
-                <WeekProgress days={weekDays} />
+                <WeekProgress days={weekDays} goals={goals} />
                 <WeekAnalysis analysis={analysis} />
                 <WeeklyMealsByDay days={weekDays} />
               </>
@@ -216,29 +236,86 @@ function WeekSelector({ selectedOffset, onSelect, range }) {
   );
 }
 
-function WeekProgress({ days }) {
-  const maxCalories = Math.max(1, ...days.map(day => Number(day.totalCalories) || 0));
+function WeekProgress({ days, goals }) {
+  const [selectedMetric, setSelectedMetric] = useState('calories');
+  const metricKeys = Object.keys(weeklyMetrics);
+  const metric = weeklyMetrics[selectedMetric];
+  const values = days.map(day => Number(day[metric.key]) || 0);
+  const goalValue = Number(goals?.[metric.goalKey]) || 0;
+  const hasGoal = goalValue > 0;
+  const maxValue = Math.max(1, goalValue, ...values);
+  const chartWidth = 320;
+  const chartHeight = 148;
+  const chartPadding = 24;
+  const innerWidth = chartWidth - chartPadding * 2;
+  const innerHeight = 90;
+  const baseY = chartPadding + innerHeight;
+  const goalY = hasGoal ? baseY - (goalValue / maxValue) * innerHeight : null;
+  const goalLabelY = hasGoal ? Math.max(16, Math.min(baseY - 10, goalY - 8)) : null;
+  const points = values.map((value, index) => {
+    const x = chartPadding + (days.length === 1 ? innerWidth / 2 : (innerWidth / Math.max(1, days.length - 1)) * index);
+    const y = maxValue > 0 ? baseY - (value / maxValue) * innerHeight : baseY;
+    return { x, y, value };
+  });
+  const path = buildSmoothPath(points);
 
   return (
-    <Card className="app-card tracker-card week-progress-card">
+    <Card className="app-card tracker-card week-progress-card tracker-line-chart-card">
       <div className="tracker-card-header">
         <h2>Week View</h2>
       </div>
-      <div className="week-progress-bars" aria-label="Weekly calories chart">
-        {days.map(day => {
-          const calories = Number(day.totalCalories) || 0;
-          const height = calories > 0 ? Math.max(12, Math.round((calories / maxCalories) * 100)) : 4;
-          return (
-            <div className="week-progress-day" key={day.date}>
-              <div className="week-progress-track">
-                <span style={{ height: `${height}%` }} />
-              </div>
-              <strong>{day.dayLabel}</strong>
-              <small>{whole(calories)}</small>
-            </div>
-          );
-        })}
+
+      {/* ********************* TRACKER WEEK CLEAN METRIC SELECTOR START ********************* */}
+      <div className="tracker-week-metric-form" data-selected={selectedMetric} role="radiogroup" aria-label="Weekly chart metric">
+        <span className="tracker-week-metric-indicator" aria-hidden="true" />
+        {metricKeys.map(key => (
+          <div className="tracker-week-metric-choice" key={key}>
+            <input
+              type="radio"
+              id={`week-metric-${key}`}
+              name="weekMetric"
+              className="tracker-week-metric-radio"
+              checked={selectedMetric === key}
+              onChange={() => setSelectedMetric(key)}
+            />
+            <label className="tracker-week-metric-label" htmlFor={`week-metric-${key}`}>
+              <span className="tracker-week-metric-dot" aria-hidden="true" />
+              <span>{weeklyMetrics[key].label}</span>
+            </label>
+          </div>
+        ))}
       </div>
+      {/* ********************* TRACKER WEEK CLEAN METRIC SELECTOR END ********************* */}
+
+      {/* ********************* TRACKER WEEK LINE CHART START ********************* */}
+      <div className="tracker-week-line-chart" aria-label={`Weekly ${metric.label.toLowerCase()} line chart`}>
+        <svg className="tracker-week-line-chart-svg" viewBox={`0 0 ${chartWidth} ${chartHeight}`} role="img" aria-hidden="true">
+          {hasGoal && (
+            <>
+              <line className="tracker-goal-line" x1={chartPadding} y1={goalY} x2={chartWidth - chartPadding} y2={goalY} />
+              <text className="tracker-goal-label" x={chartWidth - chartPadding - 6} y={goalLabelY}>
+                Goal {whole(goalValue)}{metric.unit === 'g' ? 'g' : ' cal'}
+              </text>
+            </>
+          )}
+          <line className="tracker-line-axis" x1={chartPadding} y1={baseY} x2={chartWidth - chartPadding} y2={baseY} />
+          <path className="tracker-line-path-shadow" d={path} />
+          <path className="tracker-line-path" d={path} />
+          {points.map(point => (
+            <circle className="tracker-line-dot" cx={point.x} cy={point.y} r="4.4" key={`${point.x}-${point.y}`} />
+          ))}
+        </svg>
+
+        <div className="tracker-line-chart-labels">
+          {days.map((day, index) => (
+            <div className="tracker-line-day" key={day.date}>
+              <strong>{day.dayLabel}</strong>
+              <span>{whole(values[index])} {metric.unit}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      {/* ********************* TRACKER WEEK LINE CHART END ********************* */}
     </Card>
   );
 }
