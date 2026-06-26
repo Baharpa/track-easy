@@ -2,8 +2,10 @@ import { useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import useSWR from 'swr';
-import { Alert, Button, Card, Col, Form, Row } from 'react-bootstrap';
+import { Alert, Button, Card, Col, Row } from 'react-bootstrap';
 import PageHeader from '../../components/PageHeader';
+import MealFilterBar from '../../components/MealFilterBar';
+import AppShortcutCard from '../../components/AppShortcutCard';
 import RouteGuard from '../../components/RouteGuard';
 import IngredientCard from '../../components/IngredientCard';
 import { EmptyMessage, ErrorMessage, LoadingMessage } from '../../components/StateMessage';
@@ -54,19 +56,21 @@ export default function Inventory() {
   }
 
   return <RouteGuard>
-    <div className="inventory-page">
-    <div className="list-page-header">
-      <PageHeader title="Inventory" text="Ingredients you have at home." />
-      <div className="inventory-header-actions">
-        <Button as={Link} href="/ingredients/add" variant="success">Add Ingredient</Button>
+    <div className="">
+      <div className="list-page-header">
+        <PageHeader title="Ingredients" text="Ingredients you have at home." />
+        <div className="inventory-header-actions">
+          <Button as={Link} href="/ingredients/add" variant="success">Add Ingredient</Button>
+        </div>
       </div>
-    </div>
 
-    <div className="library-launch-row">
-      <Button as={Link} href="/ingredients/library" variant="outline-success" className="library-launch-button">
-        Browse Library
-      </Button>
-    </div>
+      <AppShortcutCard
+        href="/ingredients/library"
+        title="Go to Library"
+        subtitle="Browse natural foods and add them."
+        icon="+"
+        variant="library"
+      />
 
     {error && <ErrorMessage text="Failed to load ingredients." />}
     {!ingredients && !error && <LoadingMessage text="Loading ingredients..." />}
@@ -78,33 +82,26 @@ export default function Inventory() {
         </Alert>
       )}
 
-      <Card className="page-card filter-card">
-        <div className="inventory-section-header" ref={inventoryRef}>
-          <div>
-            <h2>Your Inventory</h2>
-            <p>Grouped by category so your saved ingredients are easier to scan.</p>
-          </div>
-          <Form.Select
-            value={category}
-            onChange={e => {
-              setCategory(e.target.value);
-              setExpandedCategories({});
-            }}
-            className="inventory-category-filter"
-            aria-label="Filter inventory by category"
-          >
-            <option value="">All categories</option>
-            {INVENTORY_CATEGORIES.map(categoryName => (
-              <option key={categoryName} value={categoryName}>{categoryName}</option>
-            ))}
-          </Form.Select>
-        </div>
-        <Row>
-          <Col>
-            <Form.Control placeholder="Search by ingredient name" value={search} onChange={e => setSearch(e.target.value)} />
-          </Col>
-        </Row>
-      </Card>
+      <div ref={inventoryRef}>
+        <MealFilterBar
+          search={search}
+          setSearch={setSearch}
+          category={category}
+          setCategory={value => {
+            setCategory(value);
+            setExpandedCategories({});
+          }}
+          categoryOptions={[
+            { label: 'All categories', value: '' },
+            ...INVENTORY_CATEGORIES.map(categoryName => ({ label: categoryName, value: categoryName }))
+          ]}
+          searchPlaceholder="Search ingredients..."
+          searchAriaLabel="Search ingredients"
+          categoryAriaLabel="Filter inventory by category"
+          showPastWeekOption={false}
+          className="page-card filter-card"
+        />
+      </div>
 
       {ingredients.length === 0 && <EmptyMessage text="No ingredients yet. Add your first ingredient to start building meals." />}
       {ingredients.length > 0 && visibleIngredientCount === 0 && <EmptyMessage text="No ingredients match your search or filter." />}

@@ -1,4 +1,5 @@
 import { Col, Form, Row } from 'react-bootstrap';
+import AppSearchBar from './AppSearchBar';
 import { mealCategoryOptions } from '../lib/mealCategoryHelpers';
 
 export default function MealFilterBar({
@@ -9,35 +10,44 @@ export default function MealFilterBar({
   showPastWeek,
   setShowPastWeek,
   showPastWeekOption = true,
+  categoryOptions,
+  searchPlaceholder = 'Search meals...',
+  searchAriaLabel = 'Search meals',
+  categoryAriaLabel = 'Filter by category',
   className = ''
 }) {
+  const options = categoryOptions || mealCategoryOptions(true).map(option => ({
+    label: option,
+    value: option === 'All categories' ? '' : option
+  }));
+
   return (
     <div className={`meal-filter-bar ${className}`}>
       <Row className="g-2 align-items-stretch">
-        <Col lg={showPastWeekOption ? 6 : 8}>
-          <Form.Control
-            className="meal-filter-control"
+        <Col md={7}>
+          <AppSearchBar
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search meals..."
-            aria-label="Search meals"
+            placeholder={searchPlaceholder}
+            ariaLabel={searchAriaLabel}
+            size="compact"
           />
         </Col>
-        <Col sm={showPastWeekOption ? 6 : 4} lg={showPastWeekOption ? 3 : 4}>
+        <Col md={5}>
           <Form.Select
             className="meal-filter-control"
             value={category}
             onChange={e => setCategory(e.target.value)}
-            aria-label="Filter meals by category"
+            aria-label={categoryAriaLabel}
           >
-            {mealCategoryOptions(true).map(option => (
-              <option key={option} value={option === 'All categories' ? '' : option}>
-                {option}
+            {options.map(option => (
+              <option key={option.value || option.label} value={option.value}>
+                {option.label}
               </option>
             ))}
           </Form.Select>
         </Col>
-        {showPastWeekOption && (
+        {showPastWeekOption && setShowPastWeek && (
           <Col sm={6} lg={3}>
             <Form.Check
               type="switch"

@@ -1006,6 +1006,7 @@ Purpose: Group meal browsing and selection styles before builder styles.
 .ingredient-library-row-body {
   min-width: 0;
   padding: 0 !important;
+  background-color: #59ffc5 !important;
 }
 
 .ingredient-library-row-top {
@@ -1849,57 +1850,46 @@ Purpose: Keep meal-building forms and component summaries together.
 }
 
 .filter-card {
-  box-shadow: var(--shadow-soft);
-  padding: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.inventory-page {
-  padding-bottom: 120px;
-}
-
-.inventory-page .filter-card {
   background: rgba(255, 254, 251, 0.98);
   border: 1px solid rgba(236, 229, 216, 0.76);
-  border-radius: 18px;
-  box-shadow: none;
-  margin-bottom: 0.95rem;
-  padding: 0.9rem;
+  border-radius: 22px;
+  box-shadow: 0 12px 26px rgba(44, 70, 49, 0.06);
+  margin-bottom: 1.5rem;
+  padding: 1rem;
 }
 
-.inventory-section-header {
-  align-items: flex-start;
-  display: flex;
-  gap: 0.85rem;
-  justify-content: space-between;
-  margin-bottom: 0.7rem;
+
+
+.list-section-page .list-page-header,
+.list-section-page .page-header {
+  margin-bottom: 0;
 }
 
-.inventory-section-header h2 {
-  color: #203227;
-  font-size: 1.08rem;
+.list-section-page .page-header h1 {
+  color: var(--text-main);
+  font-size: clamp(1.78rem, 8vw, 2.35rem);
   font-weight: 900;
-  line-height: 1.15;
+  letter-spacing: -0.035em;
+  line-height: 0.98;
+  margin: 0 0 0.32rem;
+}
+
+.list-section-page .page-header p,
+.list-section-page .page-header .text-muted {
+  color: var(--text-muted) !important;
+  font-size: 0.94rem;
+  font-weight: 700;
+  line-height: 1.38;
   margin: 0;
 }
 
-.inventory-section-header p {
-  color: var(--muted);
-  font-size: 0.84rem;
-  font-weight: 700;
-  margin: 0.2rem 0 0;
+.list-section-page .filter-card {
+  margin-bottom: 0.5rem;
+  padding: 1rem;
 }
 
-.inventory-category-filter,
-.inventory-page .filter-card .form-control {
-  border-radius: 14px;
-  min-height: 44px;
-}
 
-.inventory-category-filter {
-  flex: 0 0 220px;
-}
-
+/* space between the categories of ingredients page */
 .inventory-category-list {
   display: grid;
   gap: 0.9rem;
@@ -1957,90 +1947,109 @@ Purpose: Keep meal-building forms and component summaries together.
 
 
 
-.favourite-meals-shortcut {
-  display: block;
-  text-decoration: none;
+.app-shortcut-card-link {
   color: inherit;
+  display: block;
+  margin-bottom: 1rem;
+  text-decoration: none;
 }
 
-.favourite-meals-shortcut-card {
-  width: 100%;
-  min-height: 88px;
+.app-shortcut-card {
+  align-items: center !important;
+  border-radius: 22px;
   display: flex !important;
   flex-direction: row !important;
-  align-items: center !important;
-  justify-content: flex-start !important;
   gap: 14px;
-  text-align: left !important;
-
+  justify-content: flex-start !important;
+  min-height: 88px;
   padding: 14px 16px;
-  border-radius: 22px;
-  border: 1px solid rgba(255, 154, 96, 0.28);
+  text-align: left !important;
+  width: 100%;
+}
+
+.app-shortcut-card-coral .app-shortcut-card {
   background:
     radial-gradient(circle at 12% 12%, rgba(255, 126, 96, 0.18), transparent 34%),
     linear-gradient(135deg, #fffdf7 0%, #fff5e6 100%);
+  border: 1px solid rgba(255, 154, 96, 0.28);
   box-shadow: 0 14px 28px rgba(72, 45, 20, 0.08);
 }
 
-.favourite-meals-shortcut-icon {
-  width: 48px;
-  height: 48px;
-  flex: 0 0 48px;
+.app-shortcut-card-library .app-shortcut-card {
+  background:
+    radial-gradient(circle at 12% 12%, rgba(74, 168, 148, 0.17), transparent 34%),
+    linear-gradient(135deg, #fffef8 0%, #e9f6f2 100%);
+  border: 1px solid rgba(54, 133, 132, 0.25);
+  box-shadow: 0 14px 28px rgba(24, 89, 86, 0.08);
+}
 
-  display: grid;
-  place-items: center;
-
+.app-shortcut-icon {
   border-radius: 16px;
-  background: linear-gradient(135deg, #ff9f4a, #ff5f7e);
-  color: #fff;
+  color: #ffffff;
+  display: grid;
   font-size: 24px;
   font-weight: 800;
-  line-height: 1;
+  height: 50px;
+  place-items: center;
+  width: 48px;
+  padding-bottom: 0.5rem;
+}
+
+.app-shortcut-card-coral .app-shortcut-icon {
+  background: linear-gradient(135deg, #ff9f4a, #ff5f7e);
   box-shadow: 0 10px 20px rgba(255, 105, 96, 0.28);
 }
 
-.favourite-meals-shortcut-copy {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start !important;
-  gap: 3px;
+.app-shortcut-card-library .app-shortcut-icon {
+  background: linear-gradient(135deg, #52b7ac, #277d76);
+  box-shadow: 0 10px 20px rgba(39, 125, 118, 0.24);
 }
 
-.favourite-meals-shortcut-copy strong {
+.app-shortcut-copy {
+  align-items: flex-start !important;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.app-shortcut-copy strong {
   color: #173f31;
   font-size: 0.98rem;
+  font-weight: 900;
   line-height: 1.1;
 }
 
-.favourite-meals-shortcut-copy span {
+.app-shortcut-copy span {
   color: #657469;
   font-size: 0.82rem;
+  font-weight: 650;
   line-height: 1.3;
 }
 
-.favourite-meals-shortcut-arrow {
-  width: 100rem;
-  height: 30px;
-  flex: 0 0 32px;
-  margin-left: auto;
-
-  display: flex;
+.app-shortcut-arrow {
   align-items: center;
-  justify-content: center;
-
-  border-radius: 50%;
   background: white;
+  border-radius: 999px;
   color: #ff684d;
-  font-size: 40px;
-  font-weight: 800;
+  display: flex;
+  flex: 0 0 32px;
+  font-size: 2rem;
+  font-weight: 850;
+  height: 32px;
+  justify-content: center;
   line-height: 1;
-
-  padding-bottom: 0.75rem;
+  margin-left: auto;
+  padding-bottom: 0.2rem;
+  width: 32px;
 }
 
-.favourite-meals-shortcut:active .favourite-meals-shortcut-card {
+.app-shortcut-card-library .app-shortcut-arrow {
+  color: #277d76;
+}
+
+.app-shortcut-card-link:active .app-shortcut-card {
   transform: scale(0.985);
 }
 
@@ -2168,29 +2177,6 @@ Purpose: Keep tracker-only layout and progress visualization styles together.
 .tracker-fats { --tracker-color: var(--green); }
 .tracker-sugar { --tracker-color: #e05c8d; }
 
-.week-selector-pills {
-  display: grid;
-  gap: 0.5rem;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.week-selector-pill {
-  background: #fffaf3;
-  border: 1px solid rgba(236, 229, 216, 0.95);
-  border-radius: 999px;
-  color: #405044;
-  font-size: 0.84rem;
-  font-weight: 850;
-  min-height: 38px;
-  padding: 0.42rem 0.7rem;
-}
-
-.week-selector-pill.active {
-  background: var(--green);
-  border-color: var(--green);
-  color: #fff;
-}
-
 .analysis-stat {
   background: #fffaf3;
   border: 1px solid rgba(236, 229, 216, 0.82);
@@ -2237,8 +2223,7 @@ Purpose: Keep tracker-only layout and progress visualization styles together.
   font-weight: 900;
 }
 
-.weekly-meal-groups,
-.weekly-totals-list {
+.weekly-meal-groups {
   display: grid;
   gap: 0.65rem;
 }
@@ -2284,8 +2269,7 @@ Purpose: Keep tracker-only layout and progress visualization styles together.
   gap: 0.38rem;
 }
 
-.weekly-meal-row,
-.weekly-total-row {
+.weekly-meal-row {
   align-items: center;
   background: #fffaf3;
   border: 1px solid rgba(236, 229, 216, 0.82);
@@ -2297,16 +2281,14 @@ Purpose: Keep tracker-only layout and progress visualization styles together.
   padding: 0.52rem 0.65rem;
 }
 
-.weekly-meal-name,
-.weekly-total-row span {
+.weekly-meal-name {
   color: #203227;
   font-size: 0.86rem;
   font-weight: 900;
   min-width: 0;
 }
 
-.weekly-meal-stats,
-.weekly-total-row strong {
+.weekly-meal-stats {
   color: var(--muted);
   font-size: 0.8rem;
   font-weight: 850;
@@ -2314,9 +2296,6 @@ Purpose: Keep tracker-only layout and progress visualization styles together.
   white-space: nowrap;
 }
 
-.weekly-total-row strong {
-  color: #203227;
-}
 
 .meal-filter-bar {
   width: 100%;
@@ -2404,7 +2383,6 @@ Purpose: Keep logging workflow layout separate from reusable logged-food cards.
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 1rem;
 }
 
 .inventory-header-actions {
@@ -2710,25 +2688,6 @@ Purpose: Keep logging workflow layout separate from reusable logged-food cards.
     padding: 1rem !important;
   }
 
-  .inventory-page {
-    padding-bottom: 125px;
-  }
-
-  .inventory-page .filter-card {
-    margin-bottom: 0.85rem;
-    padding: 0.78rem !important;
-  }
-
-  .inventory-section-header {
-    display: grid;
-    gap: 0.65rem;
-  }
-
-  .inventory-category-filter {
-    flex: 1 1 auto;
-    width: 100%;
-  }
-
   .inventory-category-list {
     gap: 0.8rem;
   }
@@ -2781,10 +2740,13 @@ Purpose: Keep logging workflow layout separate from reusable logged-food cards.
     margin-bottom: 1rem;
   }
 
+
+  /* this is it */
   .inventory-header-actions {
     display: grid;
     gap: 0.55rem;
-    margin-bottom: 1rem;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
   }
 
   .inventory-header-actions .btn {
@@ -4745,5 +4707,283 @@ Purpose: Keep destructive confirmations consistent across the app.
 .confirm-delete-modal-content .btn {
   min-height: 48px;
   width: 100%;
+}
+
+
+/* Shared premium search input used across Food Library, Meals, Inventory, and picker modals */
+.app-search-bar {
+  align-items: center;
+  background: #fffefb;
+  border: 2px solid rgba(95, 147, 104, 0.72);
+  border-radius: 30px;
+  box-shadow: 0 12px 28px rgba(95, 147, 104, 0.11);
+  color: #143d2c;
+  display: flex;
+  gap: 0.8rem;
+  min-height: 58px;
+  padding: 0.55rem 0.85rem 0.55rem 1rem;
+  width: 100%;
+}
+
+.app-search-bar-large {
+  border-radius: 34px;
+  gap: 1rem;
+  min-height: 84px;
+  padding: 0.65rem 0.8rem 0.65rem 1.25rem;
+}
+
+.app-search-bar-compact {
+  border-radius: 30px;
+  min-height: 58px;
+}
+
+.app-search-bar:focus-within {
+  border-color: #3f7f52;
+  box-shadow: 0 0 0 0.18rem rgba(95, 147, 104, 0.15), 0 14px 30px rgba(95, 147, 104, 0.12);
+}
+
+.app-search-icon {
+  color: #173528;
+  flex: 0 0 auto;
+}
+
+.app-search-input {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  color: #203227 !important;
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+  min-width: 0;
+  outline: none !important;
+  padding: 0 !important;
+}
+
+.app-search-input:focus,
+.app-search-input:focus-visible,
+.app-search-input:active {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.app-search-bar-large .app-search-input {
+  font-size: 1.2rem !important;
+  font-weight: 650 !important;
+}
+
+.app-search-input::placeholder {
+  color: #68736d;
+  opacity: 0.92;
+}
+
+.app-search-end-icon {
+  align-items: center;
+  background: #eaf4e8;
+  border-radius: 999px;
+  color: #3b7d49;
+  display: inline-flex;
+  flex: 0 0 38px;
+  height: 38px;
+  justify-content: center;
+  width: 38px;
+}
+
+.app-search-bar-large .app-search-end-icon {
+  flex-basis: 58px;
+  height: 58px;
+  width: 58px;
+}
+
+.meal-filter-control.app-search-bar,
+.mobile-search-input.app-search-bar {
+  margin-bottom: 0;
+}
+
+/* Apple Screen Time style Tracker week navigation and chart */
+.week-screen-time-nav {
+  align-items: center;
+  background: rgba(255, 254, 249, 0.86);
+  border: 1px solid rgba(226, 218, 205, 0.82);
+  border-radius: 999px;
+  box-shadow: 0 12px 28px rgba(44, 70, 49, 0.08);
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: 42px minmax(0, 1fr) 42px;
+  margin: 0.6rem 0 1rem;
+  min-height: 56px;
+  padding: 0.35rem;
+}
+
+.week-nav-arrow {
+  align-items: center;
+  appearance: none;
+  background: #fffefb;
+  border: 1px solid rgba(226, 218, 205, 0.92);
+  border-radius: 999px;
+  color: var(--te-green-dark);
+  display: inline-flex;
+  font-size: 1.65rem;
+  font-weight: 900;
+  height: 44px;
+  justify-content: center;
+  line-height: 1;
+  width: 44px;
+}
+
+.week-nav-arrow:disabled {
+  color: rgba(34, 73, 52, 0.25);
+  opacity: 0.6;
+}
+
+.week-nav-date {
+  display: grid;
+  gap: 0.08rem;
+  min-width: 0;
+  text-align: center;
+}
+
+.week-nav-date strong {
+  color: var(--te-green-dark);
+  font-size: 0.98rem;
+  font-weight: 950;
+  line-height: 1.1;
+}
+
+.week-nav-date span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.week-progress-card {
+  background: rgba(255, 254, 249, 0.92) !important;
+  overflow: hidden;
+  padding-bottom: 1rem;
+}
+
+.week-progress-bars {
+  align-items: flex-end;
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  min-height: 170px;
+  padding: 0.55rem 0.15rem 0;
+}
+
+.week-progress-day {
+  align-items: center;
+  display: grid;
+  gap: 0.34rem;
+  justify-items: center;
+  min-width: 0;
+}
+
+.week-progress-track {
+  align-items: flex-end;
+  background: #eee8dc;
+  border-radius: 999px;
+  display: flex;
+  height: 116px;
+  justify-content: center;
+  overflow: hidden;
+  width: 18px;
+}
+
+.week-progress-track span {
+  background: linear-gradient(180deg, #d1a0ff, #ac63ff);
+  border-radius: inherit;
+  display: block;
+  min-height: 4px;
+  width: 100%;
+}
+
+.week-progress-day strong {
+  color: var(--te-green-dark);
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+.week-progress-day small {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 850;
+}
+
+.compact-week-analysis-card {
+  padding: 0.95rem !important;
+}
+
+.compact-analysis-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.compact-analysis-grid .analysis-stat {
+  background: #fffaf3;
+  border: 1px solid rgba(236, 229, 216, 0.82);
+  border-radius: 14px;
+  padding: 0.62rem 0.68rem;
+}
+
+.compact-analysis-grid .analysis-stat span {
+  font-size: 0.72rem;
+}
+
+.compact-analysis-grid .analysis-stat strong {
+  font-size: 0.95rem;
+}
+
+/* Dashboard spacing polish */
+.dashboard-home {
+  gap: 26px;
+  padding-top: 0.7rem;
+  padding-bottom: calc(132px + env(safe-area-inset-bottom));
+}
+
+.dashboard-stack {
+  gap: 26px;
+}
+
+.dashboard-hero {
+  padding-top: 0.45rem;
+  margin-bottom: 0.15rem;
+}
+
+.nutrition-section,
+.goal-progress-card,
+.mini-log-card {
+  margin-top: 0;
+}
+
+@media (max-width: 575.98px) {
+  .dashboard-home {
+    gap: 20px;
+    padding-top: 0.45rem;
+    padding-bottom: calc(142px + env(safe-area-inset-bottom));
+  }
+
+  .dashboard-stack {
+    gap: 20px;
+  }
+
+  .dashboard-hero {
+    padding-top: 0.15rem;
+  }
+
+  .dashboard-hero h1 {
+    margin-top: 0.4rem;
+  }
+
+  .mindset-card,
+  .goal-progress-card,
+  .mini-log-card {
+    margin-bottom: 0;
+  }
 }
 

@@ -7,6 +7,7 @@ import { Alert, Badge, Button, Card, Col, Form, Modal, Row } from 'react-bootstr
 import RouteGuard from '../../components/RouteGuard';
 import PortionSelector from '../../components/PortionSelector';
 import ServingAmountSelector from '../../components/ServingAmountSelector';
+import AppSearchBar from '../../components/AppSearchBar';
 import UnitSelect from '../../components/UnitSelect';
 import FoodImage from '../../components/FoodImage';
 import MealPickerModal from '../../components/MealPickerModal';
@@ -301,7 +302,13 @@ function IngredientPickerModal({ show, onHide, ingredients = [], onSelect }) {
       </Modal.Header>
       <Modal.Body className="meal-picker-body">
         <div className="meal-picker-controls">
-          <Form.Control placeholder="Search ingredients..." value={search} onChange={e => setSearch(e.target.value)} />
+          <AppSearchBar
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search ingredients..."
+            ariaLabel="Search ingredients"
+            size="compact"
+          />
           <Form.Select value={category} onChange={e => setCategory(e.target.value)}>
             <option value="">All categories</option>
             {categories.map(item => <option key={item} value={item}>{item}</option>)}

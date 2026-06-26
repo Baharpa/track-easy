@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { Button, Container, Nav, Navbar, Offcanvas, Form } from 'react-bootstrap';
+import { Button, Container, Nav, Navbar, Offcanvas } from 'react-bootstrap';
 import useSWR from 'swr';
 import { getCurrentUser } from '../lib/auth';
 import { removeToken } from '../lib/api';
 import { formatCalories, formatMacro } from '../lib/formatNutrition';
 import { TrackEasyIcon } from './TrackEasyIcons';
+import AppSearchBar from './AppSearchBar';
 
 const loggedInLinks = [
   { label: 'Home', href: '/dashboard', icon: 'home', subtitle: 'Daily overview' },
@@ -252,11 +253,14 @@ function MobileSearchDrawer({ show, onHide, searchQuery, setSearchQuery, mealRes
         <Offcanvas.Title>Search</Offcanvas.Title>
       </Offcanvas.Header>
       <Offcanvas.Body>
-        <Form.Control
+        <AppSearchBar
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
           placeholder="Search meals and ingredients"
+          ariaLabel="Search meals and ingredients"
+          size="compact"
           className="mobile-search-input"
+          autoFocus
         />
 
         <div className="mobile-search-section">

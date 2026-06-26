@@ -15,19 +15,22 @@ const nutrients = [
   { label: 'Sugar', key: 'totalSugar', shortKey: 'sugar', goalKey: 'sugarGoal', icon: 'berry', className: 'tracker-sugar', unit: 'g' }
 ];
 
-const weekOptions = [
-  { label: 'This Week', offset: 0 },
-  { label: 'Last Week', offset: 1 },
-  { label: '2 Weeks Ago', offset: 2 },
-  { label: '3 Weeks Ago', offset: 3 }
-];
-
 function whole(value) {
   return Math.round(Number(value) || 0);
 }
 
 function formatShortDate(dateString) {
   return new Date(`${dateString}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+function formatShortRange(days = []) {
+  if (!days.length) return '';
+  const start = new Date(`${days[0].date}T00:00:00`);
+  const end = new Date(`${days[days.length - 1].date}T00:00:00`);
+  const sameMonth = start.getMonth() === end.getMonth();
+  const startText = start.toLocaleDateString(undefined, sameMonth ? { month: 'short', day: 'numeric' } : { month: 'short', day: 'numeric' });
+  const endText = end.toLocaleDateString(undefined, { month: sameMonth ? undefined : 'short', day: 'numeric' });
+  return `${startText} - ${endText}`;
 }
 
 function formatDayName(dateString) {
@@ -146,10 +149,10 @@ export default function ProfileTracker() {
 
             {view === 'week' && weekDays.length > 0 && analysis && (
               <>
-                <WeekSelector selectedOffset={selectedWeekOffset} onSelect={setSelectedWeekOffset} range={getWeekRange(weekDays)} />
+                <WeekSelector selectedOffset={selectedWeekOffset} onSelect={setSelectedWeekOffset} range={formatShortRange(weekDays)} />
+                <WeekProgress days={weekDays} />
                 <WeekAnalysis analysis={analysis} />
                 <WeeklyMealsByDay days={weekDays} />
-                <WeeklyTotals totals={analysis.totals} goals={goals} />
               </>
             )}
           </>
@@ -188,22 +191,53 @@ function ProgressCard({ item, goals, title }) {
 
 function WeekSelector({ selectedOffset, onSelect, range }) {
   return (
-    <Card className="app-card tracker-card">
+    <div className="week-screen-time-nav" aria-label="Week navigation">
+      <button
+        type="button"
+        className="week-nav-arrow"
+        onClick={() => onSelect(Math.min(3, selectedOffset + 1))}
+        disabled={selectedOffset >= 3}
+        aria-label="Previous week"
+      >
+        &lsaquo;</button>
+      <div className="week-nav-date">
+        <strong>{range}</strong>
+        <span>{selectedOffset === 0 ? 'This week' : `${selectedOffset} week${selectedOffset > 1 ? 's' : ''} ago`}</span>
+      </div>
+      <button
+        type="button"
+        className="week-nav-arrow"
+        onClick={() => onSelect(Math.max(0, selectedOffset - 1))}
+        disabled={selectedOffset <= 0}
+        aria-label="Next week"
+      >
+        &rsaquo;</button>
+    </div>
+  );
+}
+
+function WeekProgress({ days }) {
+  const maxCalories = Math.max(1, ...days.map(day => Number(day.totalCalories) || 0));
+
+  return (
+    <Card className="app-card tracker-card week-progress-card">
       <div className="tracker-card-header">
         <h2>Week View</h2>
-        <span>{range}</span>
       </div>
-      <div className="week-selector-pills" role="tablist" aria-label="Select week">
-        {weekOptions.map(option => (
-          <button
-            type="button"
-            className={`week-selector-pill ${selectedOffset === option.offset ? 'active' : ''}`}
-            onClick={() => onSelect(option.offset)}
-            key={option.offset}
-          >
-            {option.label}
-          </button>
-        ))}
+      <div className="week-progress-bars" aria-label="Weekly calories chart">
+        {days.map(day => {
+          const calories = Number(day.totalCalories) || 0;
+          const height = calories > 0 ? Math.max(12, Math.round((calories / maxCalories) * 100)) : 4;
+          return (
+            <div className="week-progress-day" key={day.date}>
+              <div className="week-progress-track">
+                <span style={{ height: `${height}%` }} />
+              </div>
+              <strong>{day.dayLabel}</strong>
+              <small>{whole(calories)}</small>
+            </div>
+          );
+        })}
       </div>
     </Card>
   );
@@ -266,48 +300,17 @@ function FoodList({ title, foods = [], onDelete, compact = false }) {
 
 function WeekAnalysis({ analysis }) {
   return (
-    <Card className="app-card week-analysis-card">
+    <Card className="app-card week-analysis-card compact-week-analysis-card">
       <div className="tracker-card-header">
         <h2>Week Analysis</h2>
       </div>
-      <p>{analysis.consistency}</p>
-      <div className="analysis-grid">
+      <div className="analysis-grid compact-analysis-grid">
         <div className="analysis-stat"><span>Days logged</span><strong>{analysis.loggedCount}/7</strong></div>
         <div className="analysis-stat"><span>Avg calories</span><strong>{analysis.avgCalories}</strong></div>
         <div className="analysis-stat"><span>Avg protein</span><strong>{analysis.avgProtein}g</strong></div>
-        <div className="analysis-stat"><span>Best protein day</span><strong>{analysis.bestProtein?.dayLabel || '-'}, {formatFoodStat(analysis.bestProtein?.totalProtein, 'g')}</strong></div>
-        <div className="analysis-stat"><span>Highest calories</span><strong>{analysis.highestCalories?.dayLabel || '-'}, {formatFoodStat(analysis.highestCalories?.totalCalories, ' cal')}</strong></div>
-        <div className="analysis-stat analysis-stat-wide"><span>Calories vs goal</span><strong>{analysis.calorieGoalStatus}</strong></div>
+        <div className="analysis-stat"><span>Highest calorie day</span><strong>{analysis.highestCalories?.dayLabel || '-'}, {formatFoodStat(analysis.highestCalories?.totalCalories, ' cal')}</strong></div>
       </div>
     </Card>
   );
 }
 
-function WeeklyTotals({ totals, goals }) {
-  return (
-    <Card className="app-card tracker-card weekly-totals-card">
-      <div className="tracker-card-header">
-        <h2>Weekly Nutrition Totals</h2>
-      </div>
-      <div className="weekly-totals-list">
-        {nutrients.map(nutrient => {
-          const total = totals?.[nutrient.key] || 0;
-          const goal = goalForWeek(goals, nutrient.goalKey);
-          const totalText = nutrient.unit === 'cal'
-            ? whole(total).toLocaleString()
-            : `${formatFoodStat(total)}${nutrient.unit}`;
-          const goalText = nutrient.unit === 'cal'
-            ? whole(goal).toLocaleString()
-            : `${formatFoodStat(goal)}${nutrient.unit}`;
-
-          return (
-            <div className="weekly-total-row" key={nutrient.label}>
-              <span>{nutrient.label}</span>
-              <strong>{goal > 0 ? `${totalText} / ${goalText}` : totalText}</strong>
-            </div>
-          );
-        })}
-      </div>
-    </Card>
-  );
-}

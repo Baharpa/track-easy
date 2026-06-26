@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
-import { Alert, Button, Card, Form, Modal } from 'react-bootstrap';
+import { Alert, Button, Card, Modal } from 'react-bootstrap';
 import AppBackButton from '../../components/AppBackButton';
 import FoodImage from '../../components/FoodImage';
 import FoodInfoCard from '../../components/FoodInfoCard';
+import AppSearchBar from '../../components/AppSearchBar';
 import RouteGuard from '../../components/RouteGuard';
 import ServingAmountSelector from '../../components/ServingAmountSelector';
 import { TrackEasyIcon } from '../../components/TrackEasyIcons';
@@ -233,19 +234,16 @@ export default function IngredientLibrary() {
         </div>
         {!showingSelectionStep && (
           <div className="library-premium-search-wrap">
-            <div className="library-premium-search">
-              <TrackEasyIcon name="search" size={34} strokeWidth={2.2} />
-              <Form.Control
-                value={search}
-                onChange={event => setSearch(event.target.value)}
-                placeholder="Search vegetables, fruits, grains..."
-                className="library-premium-search-input"
-                autoFocus
-              />
-              <span className="library-premium-search-sparkle" aria-hidden="true">
-                <TrackEasyIcon name="sparkle" size={24} />
-              </span>
-            </div>
+            <AppSearchBar
+              value={search}
+              onChange={event => setSearch(event.target.value)}
+              placeholder="Search vegetables, fruits, grains..."
+              ariaLabel="Search natural foods"
+              size="large"
+              className="library-premium-search"
+              inputClassName="library-premium-search-input"
+              autoFocus
+            />
             <div className="library-search-helper">
               <TrackEasyIcon name="tracker" size={18} />
               <span>Start typing to see instant matches.</span>
@@ -374,7 +372,7 @@ function LibraryResultsPanel({ title, foods = [], emptyTitle, emptyText, onSelec
     <Card className={`library-results-panel ${compact ? 'library-results-panel-compact' : ''}`}>
       <div className="library-results-heading">
         <div>
-          <TrackEasyIcon name="bolt" size={22} />
+          <TrackEasyIcon name={title === 'Previous results' ? 'tracker' : 'bolt'} size={22} />
           <h2>{title}</h2>
         </div>
       </div>
