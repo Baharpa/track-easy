@@ -3,7 +3,8 @@ import { Button, Modal } from 'react-bootstrap';
 export default function UnsavedChangesModal({
   show,
   onKeepEditing,
-  onDiscardChanges
+  onDiscardChanges,
+  onSaveDraft
 }) {
   return (
     <Modal show={show} onHide={onKeepEditing} centered contentClassName="confirm-delete-modal-content">
@@ -14,6 +15,7 @@ export default function UnsavedChangesModal({
       <Modal.Footer>
         <Button variant="secondary" onClick={onKeepEditing}>Keep editing</Button>
         <Button variant="danger" onClick={onDiscardChanges}>Discard changes</Button>
+        {onSaveDraft && <Button variant="success" onClick={onSaveDraft}>Save draft</Button>}
       </Modal.Footer>
     </Modal>
   );

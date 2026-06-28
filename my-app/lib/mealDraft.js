@@ -1,4 +1,7 @@
-export const MEAL_DRAFT_KEY = 'trackeasy_meal_draft';
+export const MEAL_CREATE_DRAFT_KEY = 'trackeasy:meal:create';
+export const MEAL_OUTSIDE_FOOD_DRAFT_KEY = 'trackeasy:meal:outside-food';
+export const INGREDIENT_DRAFT_KEY_PREFIX = 'trackeasy:ingredient:draft:';
+export const MEAL_EDIT_DRAFT_KEY_PREFIX = 'trackeasy:meal:edit:';
 
 export function hasMealDraftContent(draft) {
   const meal = draft?.meal || {};
@@ -17,28 +20,69 @@ export function hasMealDraftContent(draft) {
   );
 }
 
-export function loadMealDraft() {
+export function hasIngredientDraftContent(draft) {
+  const ingredient = draft || {};
+  return Boolean(
+    ingredient.name?.trim() ||
+    ingredient.category?.trim() ||
+    ingredient.quantity !== undefined && ingredient.quantity !== null && ingredient.quantity !== '' ||
+    ingredient.unit?.trim() ||
+    ingredient.imageUrl?.trim() ||
+    Array.isArray(ingredient.conversions) && ingredient.conversions.length > 0 ||
+    Array.isArray(ingredient.servingOptions) && ingredient.servingOptions.length > 0 ||
+    Array.isArray(ingredient.measuringOptions) && ingredient.measuringOptions.length > 0 ||
+    Number(ingredient.calories) > 0 ||
+    Number(ingredient.protein) > 0 ||
+    Number(ingredient.carbs) > 0 ||
+    Number(ingredient.fats) > 0 ||
+    Number(ingredient.sugar) > 0
+  );
+}
+
+export function getIngredientDraftKey(id = 'new') {
+  return `${INGREDIENT_DRAFT_KEY_PREFIX}${id || 'new'}`;
+}
+
+export function getMealEditDraftKey(id) {
+  return `${MEAL_EDIT_DRAFT_KEY_PREFIX}${id || 'new'}`;
+}
+
+export function getMealDraftKey({ outsideFood = false, mealId = '' } = {}) {
+  if (mealId) return getMealEditDraftKey(mealId);
+  return outsideFood ? MEAL_OUTSIDE_FOOD_DRAFT_KEY : MEAL_CREATE_DRAFT_KEY;
+}
+
+function readStoredDraft(key) {
   if (typeof window === 'undefined') return null;
 
   try {
-    const rawDraft = localStorage.getItem(MEAL_DRAFT_KEY);
+    const rawDraft = localStorage.getItem(key);
     if (!rawDraft) return null;
-    const draft = JSON.parse(rawDraft);
-    return hasMealDraftContent(draft) ? draft : null;
+    return JSON.parse(rawDraft);
   } catch {
     return null;
   }
 }
 
-export function saveMealDraft(draft) {
+export function loadMealDraft(key = MEAL_CREATE_DRAFT_KEY) {
+  const draft = readStoredDraft(key);
+  return hasMealDraftContent(draft) ? draft : null;
+}
+
+export function loadIngredientDraft(key = getIngredientDraftKey()) {
+  const draft = readStoredDraft(key);
+  return hasIngredientDraftContent(draft) ? draft : null;
+}
+
+export function saveMealDraft(draft, key = MEAL_CREATE_DRAFT_KEY) {
   if (typeof window === 'undefined') return;
 
   if (!hasMealDraftContent(draft)) {
-    localStorage.removeItem(MEAL_DRAFT_KEY);
+    localStorage.removeItem(key);
     return;
   }
 
-  localStorage.setItem(MEAL_DRAFT_KEY, JSON.stringify({
+  localStorage.setItem(key, JSON.stringify({
     meal: draft.meal,
     components: draft.components || [],
     outsideFood: Boolean(draft.outsideFood),
@@ -47,7 +91,26 @@ export function saveMealDraft(draft) {
   }));
 }
 
-export function clearMealDraft() {
+export function saveIngredientDraft(draft, key = getIngredientDraftKey()) {
   if (typeof window === 'undefined') return;
-  localStorage.removeItem(MEAL_DRAFT_KEY);
+
+  if (!hasIngredientDraftContent(draft)) {
+    localStorage.removeItem(key);
+    return;
+  }
+
+  localStorage.setItem(key, JSON.stringify({
+    ...draft,
+    updatedAt: new Date().toISOString()
+  }));
+}
+
+export function clearMealDraft(key = MEAL_CREATE_DRAFT_KEY) {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(key);
+}
+
+export function clearIngredientDraft(key = getIngredientDraftKey()) {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(key);
 }

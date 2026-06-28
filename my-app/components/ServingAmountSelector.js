@@ -10,6 +10,7 @@ export default function ServingAmountSelector({
   onAmountChange,
   unit,
   onUnitChange,
+  extraUnits = [],
   amountLabel = 'Amount',
   customLabel,
   customPlaceholder,
@@ -27,11 +28,11 @@ export default function ServingAmountSelector({
           {options.map(option => (
             <button
               type="button"
-              className={`library-serving-option ${selectedOption === option.label ? 'active' : ''}`}
-              key={option.label}
+              className={`library-serving-option ${selectedOption === (option.label || option.servingName) ? 'active' : ''}`}
+              key={option.label || option.servingName}
               onClick={() => onOptionChange?.(option)}
             >
-              {option.label}
+              {option.label || option.servingName}
             </button>
           ))}
         </div>
@@ -53,7 +54,7 @@ export default function ServingAmountSelector({
                 placeholder={customPlaceholder || 'Amount'}
               />
             )}
-            {showUnitSelect && <UnitSelect value={unit} onChange={event => onUnitChange?.(event.target.value)} />}
+            {showUnitSelect && <UnitSelect value={unit} onChange={event => onUnitChange?.(event.target.value)} extraUnits={extraUnits} />}
           </div>
         </Form.Group>
       )}

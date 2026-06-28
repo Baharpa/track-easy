@@ -1,7 +1,7 @@
 const Ingredient = require('../models/Ingredient');
 const Meal = require('../models/Meal');
 const { addTotals, calculateNutritionWithUnit, round } = require('./nutrition');
-const { convertToGrams, normalizeUnit } = require('./unitConverter');
+const { convertToGrams, normalizeUnit, getIngredientServingOptions } = require('./unitConverter');
 
 function toPlain(doc) {
   if (!doc) return null;
@@ -22,6 +22,12 @@ function scaleLoggedIngredient(item, factor) {
     fats: round(Number(item.fats || 0) * factor),
     sugar: round(Number(item.sugar || 0) * factor)
   };
+}
+
+function getMealWeight(meal = {}) {
+  const ingredientWeight = (meal.ingredients || []).reduce((sum, item) => sum + Number(item.gramsUsed || 0), 0);
+  const componentWeight = (meal.components || []).reduce((sum, component) => sum + Number(component.totalWeight || 0), 0);
+  return round(ingredientWeight || componentWeight || 0);
 }
 
 async function hydrateMealIngredients(userId, selectedIngredients = []) {
@@ -58,12 +64,12 @@ async function hydrateMealComponents(userId, components = []) {
 
   for (const component of components) {
     const originalIngredients = await hydrateMealIngredients(userId, component.ingredients || []);
-    const totalWeight = originalIngredients.reduce((sum, item) => sum + Number(item.gramsUsed || item.quantityUsed || 0), 0);
+    const totalWeight = originalIngredients.reduce((sum, item) => sum + Number(item.gramsUsed || 0), 0);
     const consumedWeight = Number(component.consumedWeight || totalWeight);
 
     const proportionalAmounts = totalWeight > 0
       ? originalIngredients.map(item => {
-          const itemWeight = Number(item.gramsUsed || item.quantityUsed || 0);
+          const itemWeight = Number(item.gramsUsed || 0);
           const percent = totalWeight > 0 ? itemWeight / totalWeight : 0;
           const gramsUsed = round(percent * consumedWeight);
           return { ...item, quantityUsed: gramsUsed, gramsUsed, unit: 'grams' };
@@ -74,8 +80,8 @@ async function hydrateMealComponents(userId, components = []) {
       const ingredient = originalIngredients.find(entry => String(entry.ingredientId) === String(item.ingredientId));
       if (!ingredient) return item;
 
-      const baseWeight = Number(ingredient.gramsUsed || ingredient.quantityUsed || 0);
-      const factor = baseWeight > 0 ? Number(item.gramsUsed || item.quantityUsed || 0) / baseWeight : 0;
+      const baseWeight = Number(ingredient.gramsUsed || 0);
+      const factor = baseWeight > 0 ? Number(item.gramsUsed || 0) / baseWeight : 0;
       return scaleLoggedIngredient(ingredient, factor);
     });
 
@@ -129,33 +135,40 @@ async function hydrateMealDocument(userId, meal) {
   };
 }
 
-function buildPortionLogFromMeal(meal, portion, portionLabel) {
+function buildPortionLogFromMeal(meal, portion, portionLabel, options = {}) {
+  const portionMode = options.portionMode || 'whole';
+  const portionFactor = Number(options.portionFactor ?? portion ?? 1) || 1;
+  const loggedGrams = round(Number(options.loggedGrams || 0));
+
   if (meal.outsideFood) {
     return {
       type: 'meal',
       mealId: meal._id,
       name: meal.name,
-      portion,
+      portion: portionFactor,
+      portionMode,
       portionLabel,
-      servings: portion,
-      calories: round(Number(meal.totalCalories || 0) * portion),
-      protein: round(Number(meal.totalProtein || 0) * portion),
-      carbs: round(Number(meal.totalCarbs || 0) * portion),
-      fats: round(Number(meal.totalFats || 0) * portion),
-      sugar: round(Number(meal.totalSugar || 0) * portion),
+      portionFactor,
+      loggedGrams,
+      servings: portionFactor,
+      calories: round(Number(meal.totalCalories || 0) * portionFactor),
+      protein: round(Number(meal.totalProtein || 0) * portionFactor),
+      carbs: round(Number(meal.totalCarbs || 0) * portionFactor),
+      fats: round(Number(meal.totalFats || 0) * portionFactor),
+      sugar: round(Number(meal.totalSugar || 0) * portionFactor),
       ingredients: [],
       components: [],
       componentPortions: []
     };
   }
 
-  const ingredients = (meal.ingredients || []).map(item => scaleLoggedIngredient(item, portion));
+  const ingredients = (meal.ingredients || []).map(item => scaleLoggedIngredient(item, portionFactor));
   const components = (meal.components || []).map(component => {
-    const componentIngredients = (component.ingredients || []).map(item => scaleLoggedIngredient(item, portion));
+    const componentIngredients = (component.ingredients || []).map(item => scaleLoggedIngredient(item, portionFactor));
     return {
       name: component.name,
       category: component.category,
-      eatenWeight: round(Number(component.totalWeight || 0) * portion),
+      eatenWeight: round(Number(component.totalWeight || 0) * portionFactor),
       unit: 'grams',
       ingredients: componentIngredients,
       nutritionTotals: addTotals(componentIngredients)
@@ -167,9 +180,12 @@ function buildPortionLogFromMeal(meal, portion, portionLabel) {
     type: 'meal',
     mealId: meal._id,
     name: meal.name,
-    portion,
+    portion: portionFactor,
+    portionMode,
     portionLabel,
-    servings: portion,
+    portionFactor,
+    loggedGrams: loggedGrams || round(getMealWeight(meal) * portionFactor),
+    servings: portionFactor,
     calories: totals.calories,
     protein: totals.protein,
     carbs: totals.carbs,
@@ -221,6 +237,7 @@ function buildComponentLogFromMeal(meal, componentPortions = []) {
     mealId: meal._id,
     name: meal.name,
     portion: 1,
+    portionMode: 'customize',
     portionLabel: 'custom component amounts',
     servings: 1,
     calories: totals.calories,
@@ -244,6 +261,9 @@ async function hydrateLoggedMeal(userId, logMeal) {
 
     const amount = Number(source.amount || source.quantityUsed || source.ingredients?.[0]?.quantityUsed || 0);
     const unit = normalizeUnit(source.unit || source.ingredients?.[0]?.unit || ingredient.unit || 'grams') || 'grams';
+    const servingMatch = getIngredientServingOptions(ingredient).find(option => normalizeUnit(option.unit) === unit && Number(option.amount) === Number(amount));
+    const gramsUsedValue = source.gramsUsed || source.ingredients?.[0]?.gramsUsed || (servingMatch?.gramsEquivalent > 0 ? amount * (servingMatch.gramsEquivalent / servingMatch.amount) : convertToGrams(amount, unit, ingredient));
+    const gramsUsed = Number(gramsUsedValue) > 0 ? round(gramsUsedValue) : null;
     const nutrition = calculateNutritionWithUnit(amount, unit, ingredient);
     return {
       ...source,
@@ -252,6 +272,7 @@ async function hydrateLoggedMeal(userId, logMeal) {
       name: ingredient.name,
       amount: round(amount),
       unit,
+      gramsUsed,
       portion: 1,
       portionLabel: `${round(amount)} ${unit}`,
       servings: 1,
@@ -265,6 +286,7 @@ async function hydrateLoggedMeal(userId, logMeal) {
         name: ingredient.name,
         quantityUsed: round(amount),
         unit,
+        gramsUsed,
         ...nutrition
       }],
       components: []
@@ -298,7 +320,16 @@ async function hydrateLoggedMeal(userId, logMeal) {
 
   return {
     ...source,
-    ...buildPortionLogFromMeal(hydratedMeal, Number(source.portion || source.servings || 1), source.portionLabel || '1 whole meal')
+    ...buildPortionLogFromMeal(
+      hydratedMeal,
+      Number(source.portion || source.servings || source.portionFactor || 1),
+      source.portionLabel || '1 whole meal',
+      {
+        portionMode: source.portionMode,
+        portionFactor: source.portionFactor,
+        loggedGrams: source.loggedGrams
+      }
+    )
   };
 }
 

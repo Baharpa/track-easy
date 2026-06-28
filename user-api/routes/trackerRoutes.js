@@ -4,7 +4,7 @@ const Meal = require('../models/Meal');
 const Ingredient = require('../models/Ingredient');
 const DailyLog = require('../models/DailyLog');
 const { addTotals, round, calculateNutritionWithUnit } = require('../utils/nutrition');
-const { convertToGrams, isValidUnit, normalizeUnit } = require('../utils/unitConverter');
+const { convertToGrams, normalizeUnit, getIngredientServingOptions } = require('../utils/unitConverter');
 const {
   hydrateLoggedMeal,
   hydrateMealDocument,
@@ -64,8 +64,11 @@ function buildIngredientLog(ingredient, amount, unit) {
   const cleanAmount = Number(amount);
   const cleanUnit = normalizeUnit(unit || ingredient.unit || 'grams');
   if (!cleanAmount || cleanAmount <= 0) throw new Error('Amount must be a positive number.');
-  if (!isValidUnit(cleanUnit)) throw new Error('Please choose a valid unit.');
 
+  const matchingServing = getIngredientServingOptions(ingredient).find(option => normalizeUnit(option.unit) === cleanUnit && Number(option.amount) === cleanAmount);
+  const gramsUsed = matchingServing?.gramsEquivalent > 0
+    ? round(cleanAmount * (matchingServing.gramsEquivalent / matchingServing.amount))
+    : convertToGrams(cleanAmount, cleanUnit, ingredient);
   const nutrition = calculateNutritionWithUnit(cleanAmount, cleanUnit, ingredient);
 
   return {
@@ -74,6 +77,7 @@ function buildIngredientLog(ingredient, amount, unit) {
     name: ingredient.name,
     amount: round(cleanAmount),
     unit: cleanUnit,
+    gramsUsed: gramsUsed > 0 ? round(gramsUsed) : null,
     portion: 1,
     portionLabel: `${round(cleanAmount)} ${cleanUnit}`,
     servings: 1,
@@ -87,6 +91,7 @@ function buildIngredientLog(ingredient, amount, unit) {
       name: ingredient.name,
       quantityUsed: round(cleanAmount),
       unit: cleanUnit,
+      gramsUsed: gramsUsed > 0 ? round(gramsUsed) : null,
       ...nutrition
     }],
     components: []
@@ -111,13 +116,19 @@ router.post('/log', auth, async (req, res) => {
       const meal = await Meal.findOne({ _id: req.body.mealId, userId: req.user._id });
       if (!meal) return res.status(404).json({ message: 'Meal not found.' });
       const hasComponentAmounts = meal.components?.length > 0 && req.body.componentPortions?.length > 0;
-      const portion = Number(req.body.portion || req.body.servings || 1);
+      const portion = Number(req.body.portion || req.body.servings || req.body.portionFactor || 1);
+      const portionMode = req.body.portionMode || (hasComponentAmounts ? 'customize' : 'whole');
+      const loggedGrams = Number(req.body.loggedGrams || 0);
       if (!hasComponentAmounts && portion <= 0) return res.status(400).json({ message: 'Portion must be a positive number.' });
       const portionLabel = req.body.portionLabel || (req.body.servings ? `${portion} serving${portion === 1 ? '' : 's'}` : '1 whole meal');
       const hydratedMeal = await hydrateMealDocument(req.user._id, meal);
       loggedMeal = hasComponentAmounts
         ? buildComponentLogFromMeal(hydratedMeal, req.body.componentPortions)
-        : buildPortionLogFromMeal(hydratedMeal, portion, portionLabel);
+        : buildPortionLogFromMeal(hydratedMeal, portion, portionLabel, {
+            portionMode,
+            portionFactor: portion,
+            loggedGrams
+          });
     }
 
     log.meals.push(loggedMeal);
@@ -228,6 +239,7 @@ router.put('/log/:logMealId', auth, async (req, res) => {
     const amount = Number(req.body.amount || req.body.quantityUsed);
     const unit = req.body.unit || meal.unit || ingredient.unit || 'grams';
     if (!amount || amount <= 0) return res.status(400).json({ message: 'Amount must be positive.' });
+    if (!hasKnownConversion(amount, unit, ingredient)) return res.status(400).json({ message: 'Add a custom conversion for this ingredient.' });
 
     const updatedIngredientLog = await hydrateLoggedMeal(req.user._id, {
       ...meal.toObject(),
@@ -248,10 +260,14 @@ router.put('/log/:logMealId', auth, async (req, res) => {
         ...existingLogMeta
       };
     } else {
-      const newPortion = Number(req.body.portion || req.body.servings || 1);
+      const newPortion = Number(req.body.portion || req.body.servings || req.body.portionFactor || 1);
       if (newPortion <= 0) return res.status(400).json({ message: 'Portion must be positive.' });
       log.meals[mealIndex] = {
-        ...buildPortionLogFromMeal(hydratedMeal, newPortion, req.body.portionLabel || meal.portionLabel || '1 whole meal'),
+        ...buildPortionLogFromMeal(hydratedMeal, newPortion, req.body.portionLabel || meal.portionLabel || '1 whole meal', {
+          portionMode: req.body.portionMode || meal.portionMode || 'whole',
+          portionFactor: req.body.portionFactor || newPortion,
+          loggedGrams: req.body.loggedGrams || meal.loggedGrams || 0
+        }),
         ...existingLogMeta
       };
     }

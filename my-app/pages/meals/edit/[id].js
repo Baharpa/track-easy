@@ -7,6 +7,7 @@ import RouteGuard from '../../../components/RouteGuard';
 import ComponentMealEditor, { mealToEditorState } from '../../../components/ComponentMealEditor';
 import { ErrorMessage, LoadingMessage } from '../../../components/StateMessage';
 import { apiFetch } from '../../../lib/api';
+import { getMealDraftKey } from '../../../lib/mealDraft';
 
 export default function EditMeal() {
   const router = useRouter();
@@ -45,19 +46,20 @@ export default function EditMeal() {
 
   return <RouteGuard>
     <AppBackButton href={id ? `/meals/${id}` : '/meals'} label="Back" />
-    <PageHeader title="Edit Meal" text="Update meal details and ingredient amounts." />
-    {(mealError || ingredientsError) && <ErrorMessage text="Failed to load meal editor data." />}
-    {(!meal || !ingredients) && !(mealError || ingredientsError) && <LoadingMessage text="Loading meal editor..." />}
-    {meal && ingredients && <ComponentMealEditor
-      ingredients={ingredients}
+      <PageHeader title="Edit Meal" text="Update meal details and ingredient amounts." />
+      {(mealError || ingredientsError) && <ErrorMessage text="Failed to load meal editor data." />}
+      {(!meal || !ingredients) && !(mealError || ingredientsError) && <LoadingMessage text="Loading meal editor..." />}
+      {meal && ingredients && <ComponentMealEditor
+        ingredients={ingredients}
       initialMeal={editorState.meal}
       initialComponents={editorState.components}
       onSave={submit}
       onSaveSuccess={handleSuccess}
-      onCancel={() => router.push(`/meals/${id}`)}
-      saveLabel="Update Meal"
-      saving={isSaving}
-      error={saveError}
-    />}
-  </RouteGuard>;
+        onCancel={() => router.push(`/meals/${id}`)}
+        saveLabel="Update Meal"
+        saving={isSaving}
+        error={saveError}
+        draftKey={getMealDraftKey({ mealId: id })}
+      />}
+    </RouteGuard>;
 }

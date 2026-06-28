@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 
-export default function useUnsavedChanges(isDirty, { enabled = true, onDiscard } = {}) {
+export default function useUnsavedChanges(isDirty, { enabled = true, onDiscard, onSaveDraft } = {}) {
   const router = useRouter();
   const [showModal, setShowModal] = useState(false);
   const dirtyRef = useRef(Boolean(isDirty));
@@ -67,14 +67,11 @@ export default function useUnsavedChanges(isDirty, { enabled = true, onDiscard }
     pendingActionRef.current = null;
   }
 
-  function discardChanges() {
+  function continuePendingNavigation() {
     const pending = pendingActionRef.current;
     allowNavigationRef.current = true;
     setShowModal(false);
     pendingActionRef.current = null;
-    if (typeof onDiscard === 'function') {
-      onDiscard();
-    }
 
     if (pending?.type === 'back') {
       router.back();
@@ -84,6 +81,23 @@ export default function useUnsavedChanges(isDirty, { enabled = true, onDiscard }
     if (pending?.url) {
       router.push(pending.url);
     }
+  }
+
+  function discardChanges() {
+    if (typeof onDiscard === 'function') {
+      onDiscard();
+    }
+    continuePendingNavigation();
+  }
+
+  async function saveDraft() {
+    if (typeof onSaveDraft !== 'function') {
+      discardChanges();
+      return;
+    }
+
+    await onSaveDraft();
+    continuePendingNavigation();
   }
 
   function markSaved() {
@@ -97,6 +111,7 @@ export default function useUnsavedChanges(isDirty, { enabled = true, onDiscard }
     showModal,
     keepEditing,
     discardChanges,
+    saveDraft,
     markSaved
   };
 }

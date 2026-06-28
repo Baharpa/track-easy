@@ -36,7 +36,7 @@ Purpose: Define reusable design tokens and app-wide defaults.
   --app-bg: #f7fbf3;
   --surface: #ffffff;
   --surface-soft: #fbfaf5;
-  --border-soft: rgba(31, 62, 42, 0.10);
+  --border-soft: rgba(31, 62, 42, 0.1);
   --text-main: #11291f;
   --text-muted: #6f7d70;
   --brand-green: #5f996b;
@@ -77,7 +77,7 @@ Purpose: Define reusable design tokens and app-wide defaults.
   --te-cream: #fbf8ef;
   --te-card: rgba(255, 255, 255, 0.88);
   --te-border: rgba(38, 80, 56, 0.14);
-  --te-shadow-soft: 0 18px 45px rgba(24, 64, 42, 0.10);
+  --te-shadow-soft: 0 18px 45px rgba(24, 64, 42, 0.1);
   --te-radius-lg: 24px;
   --te-radius-md: 18px;
   --te-radius-sm: 12px;
@@ -92,11 +92,21 @@ html {
 }
 
 body {
-  background:
-    radial-gradient(circle at top left, rgba(234, 245, 232, 0.82), transparent 28rem),
+  background: radial-gradient(
+      circle at top left,
+      rgba(234, 245, 232, 0.82),
+      transparent 28rem
+    ),
     linear-gradient(180deg, #fffdf8 0%, var(--app-bg) 24rem);
   color: var(--text);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
   min-height: 100vh;
 }
 
@@ -214,7 +224,7 @@ Purpose: Control global page gutters, app-level grids, and headings.
 
 .app-loading-box::before {
   animation: appLoadingBoxBounce 0.9s cubic-bezier(0.5, 0.05, 0.2, 0.9) infinite;
-  background: #1A6844;
+  background: #1a6844;
   border-radius: 12px;
   box-shadow: 0 14px 24px rgba(26, 104, 68, 0.22);
   content: "";
@@ -432,7 +442,9 @@ Purpose: Keep app navigation controls grouped and easy to edit.
   position: sticky;
   top: 0;
   z-index: 1040;
-  padding: 0.45rem calc(var(--top-nav-right-padding-mobile) + env(safe-area-inset-right)) 0.2rem calc(var(--top-nav-left-padding-mobile) + env(safe-area-inset-left));
+  padding: 0.45rem
+    calc(var(--top-nav-right-padding-mobile) + env(safe-area-inset-right))
+    0.2rem calc(var(--top-nav-left-padding-mobile) + env(safe-area-inset-left));
 }
 
 .mobile-shell-topbar {
@@ -479,7 +491,11 @@ Purpose: Keep app navigation controls grouped and easy to edit.
 
 .mobile-shell-brand-mark {
   align-items: center;
-  background: linear-gradient(180deg, rgba(95, 147, 104, 0.15), rgba(255, 255, 255, 0.98));
+  background: linear-gradient(
+    180deg,
+    rgba(95, 147, 104, 0.15),
+    rgba(255, 255, 255, 0.98)
+  );
   border: 1px solid rgba(95, 147, 104, 0.18);
   border-radius: 14px;
   color: var(--green);
@@ -547,7 +563,11 @@ Purpose: Keep app navigation controls grouped and easy to edit.
 }
 
 .mobile-drawer-card.active {
-  background: linear-gradient(180deg, rgba(239, 248, 236, 0.98), rgba(255, 255, 255, 0.98));
+  background: linear-gradient(
+    180deg,
+    rgba(239, 248, 236, 0.98),
+    rgba(255, 255, 255, 0.98)
+  );
   border-color: rgba(95, 147, 104, 0.22);
 }
 
@@ -968,7 +988,6 @@ Purpose: Store common surfaces and controls that should stay consistent.
   padding-top: 0.55rem;
   align-items: center;
   font-style: italic;
-  
 }
 
 .btn-outline-success:hover,
@@ -1026,7 +1045,10 @@ Purpose: Group meal browsing and selection styles before builder styles.
 .category-card,
 .ingredient-library-card {
   border-radius: 14px;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .category-card:hover,
@@ -1277,17 +1299,39 @@ Purpose: Keep meal-building forms and component summaries together.
   font-size: 1.35rem;
 }
 
-.category-dairy { --category-color: #6f9fd8; }
-.category-vegetables { --category-color: #5f8f5f; }
-.category-protein { --category-color: #b66b54; }
-.category-carbs { --category-color: #d59b45; }
-.category-sauces { --category-color: #d48755; }
-.category-fruit { --category-color: #d97964; }
-.category-grains { --category-color: #b58a4a; }
-.category-nuts-and-seeds { --category-color: #9b7b4f; }
-.category-spices { --category-color: #c06c45; }
-.category-drinks { --category-color: #5b9a9f; }
-.category-other { --category-color: #7f8b78; }
+.category-dairy {
+  --category-color: #6f9fd8;
+}
+.category-vegetables {
+  --category-color: #5f8f5f;
+}
+.category-protein {
+  --category-color: #b66b54;
+}
+.category-carbs {
+  --category-color: #d59b45;
+}
+.category-sauces {
+  --category-color: #d48755;
+}
+.category-fruit {
+  --category-color: #d97964;
+}
+.category-grains {
+  --category-color: #b58a4a;
+}
+.category-nuts-and-seeds {
+  --category-color: #9b7b4f;
+}
+.category-spices {
+  --category-color: #c06c45;
+}
+.category-drinks {
+  --category-color: #5b9a9f;
+}
+.category-other {
+  --category-color: #7f8b78;
+}
 
 .category-icon {
   background-color: var(--category-color, #7f8b78);
@@ -1433,6 +1477,51 @@ Purpose: Keep meal-building forms and component summaries together.
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+}
+
+.draft-restore-card {
+  border: 1px solid rgba(95, 147, 104, 0.22);
+  border-radius: 18px;
+  box-shadow: 0 12px 26px rgba(72, 84, 64, 0.12);
+}
+
+.draft-restore-card-body {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.draft-restore-card-actions,
+.meal-builder-toolbar-actions,
+.component-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.component-card-actions {
+  justify-content: flex-end;
+}
+
+.component-empty-state {
+  background: rgba(247, 244, 236, 0.72);
+  border: 1px dashed rgba(201, 190, 166, 0.72);
+  border-radius: 14px;
+  padding: 0.75rem 0.85rem;
+}
+
+.component-builder-card.active {
+  border-color: rgba(95, 147, 104, 0.42);
+  box-shadow: 0 16px 34px rgba(35, 58, 42, 0.14);
+}
+
+@media (max-width: 576px) {
+  .draft-restore-card-body,
+  .meal-builder-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 
 .component-name-input {
@@ -1926,7 +2015,10 @@ Purpose: Keep meal-building forms and component summaries together.
   gap: 0.85rem;
   text-align: left;
   color: #203227;
-  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .tracker-select-meal-card:hover,
@@ -2045,7 +2137,10 @@ Purpose: Keep meal-building forms and component summaries together.
   min-height: 58px;
   padding: 0.75rem 0.9rem;
   text-align: left;
-  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
   width: 100%;
 }
 
@@ -2092,7 +2187,10 @@ Purpose: Keep meal-building forms and component summaries together.
   border: 1px solid rgba(236, 229, 216, 0.9);
   border-radius: 18px;
   background: #fffefb;
-  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .meal-picker-card:hover,
@@ -2136,7 +2234,6 @@ Purpose: Keep meal-building forms and component summaries together.
   padding: 1rem;
 }
 
-
 .list-page-header {
   align-items: center;
   display: flex;
@@ -2177,7 +2274,6 @@ Purpose: Keep meal-building forms and component summaries together.
   margin-bottom: 0.5rem;
   padding: 1rem;
 }
-
 
 .inventory-category-list {
   display: grid;
@@ -2246,16 +2342,22 @@ Purpose: Keep meal-building forms and component summaries together.
 }
 
 .app-shortcut-card-coral .app-shortcut-card {
-  background:
-    radial-gradient(circle at 12% 12%, rgba(255, 126, 96, 0.18), transparent 34%),
+  background: radial-gradient(
+      circle at 12% 12%,
+      rgba(255, 126, 96, 0.18),
+      transparent 34%
+    ),
     linear-gradient(135deg, #fffdf7 0%, #fff5e6 100%);
   border: 1px solid rgba(255, 154, 96, 0.28);
   box-shadow: 0 14px 28px rgba(72, 45, 20, 0.08);
 }
 
 .app-shortcut-card-library .app-shortcut-card {
-  background:
-    radial-gradient(circle at 12% 12%, rgba(74, 168, 148, 0.17), transparent 34%),
+  background: radial-gradient(
+      circle at 12% 12%,
+      rgba(74, 168, 148, 0.17),
+      transparent 34%
+    ),
     linear-gradient(135deg, #fffef8 0%, #e9f6f2 100%);
   border: 1px solid rgba(54, 133, 132, 0.25);
   box-shadow: 0 14px 28px rgba(24, 89, 86, 0.08);
@@ -2330,7 +2432,6 @@ Purpose: Keep meal-building forms and component summaries together.
 .app-shortcut-card-link:active .app-shortcut-card {
   transform: scale(0.985);
 }
-
 
 .tracker-page {
   display: grid;
@@ -2429,11 +2530,21 @@ Purpose: Keep tracker-only layout and progress visualization styles together.
   height: 100%;
 }
 
-.tracker-calories { --tracker-color: var(--orange); }
-.tracker-protein { --tracker-color: #8c5dd9; }
-.tracker-carbs { --tracker-color: var(--blue); }
-.tracker-fats { --tracker-color: var(--green); }
-.tracker-sugar { --tracker-color: #e05c8d; }
+.tracker-calories {
+  --tracker-color: var(--orange);
+}
+.tracker-protein {
+  --tracker-color: #8c5dd9;
+}
+.tracker-carbs {
+  --tracker-color: var(--blue);
+}
+.tracker-fats {
+  --tracker-color: var(--green);
+}
+.tracker-sugar {
+  --tracker-color: #e05c8d;
+}
 
 .analysis-stat {
   background: #fffaf3;
@@ -2466,7 +2577,6 @@ Purpose: Keep tracker-only layout and progress visualization styles together.
   display: grid;
   gap: 0.2rem;
 }
-
 
 .analysis-stat span {
   color: var(--muted);
@@ -2527,7 +2637,7 @@ Purpose: Keep tracker-only layout and progress visualization styles together.
 .history-food-card-grid {
   display: grid;
   gap: 0.7rem;
-  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .history-food-card {
@@ -2542,7 +2652,10 @@ Purpose: Keep tracker-only layout and progress visualization styles together.
   min-height: 76px;
   padding: 0.55rem;
   text-decoration: none;
-  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
 }
 
 .history-food-card:hover,
@@ -2597,7 +2710,6 @@ Purpose: Keep tracker-only layout and progress visualization styles together.
   text-align: right;
   white-space: nowrap;
 }
-
 
 .meal-filter-bar {
   width: 100%;
@@ -2861,6 +2973,25 @@ Purpose: Keep logging workflow layout separate from reusable logged-food cards.
   min-height: 42px;
 }
 
+.ingredient-measuring-card {
+  border: 1px solid rgba(95, 153, 107, 0.14);
+  border-radius: 18px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.ingredient-serving-option-card {
+  border: 1px solid rgba(95, 153, 107, 0.14);
+  border-radius: 16px;
+  margin-top: 0.8rem;
+}
+
+.ingredient-serving-option-card .form-control {
+  min-width: 0;
+}
+
+.ingredient-measuring-empty {
+  padding: 0.25rem 0 0.1rem;
+}
 
 .selected-ingredient-panel .btn-success {
   border-radius: 999px;
@@ -3036,7 +3167,6 @@ Purpose: Keep logging workflow layout separate from reusable logged-food cards.
     margin-bottom: 1rem;
   }
 
-
   .inventory-header-actions {
     display: grid;
     gap: 0.55rem;
@@ -3201,7 +3331,7 @@ Purpose: Keep logging workflow layout separate from reusable logged-food cards.
   }
 
   .history-food-card-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .history-food-card {
@@ -3492,6 +3622,10 @@ Purpose: Keep logging workflow layout separate from reusable logged-food cards.
     min-height: 40px;
     padding-bottom: 0.45rem;
     padding-top: 0.45rem;
+  }
+
+  .ingredient-serving-option-card .row > [class*="col"] {
+    width: 100%;
   }
 
   .selected-ingredient-panel .btn-success {
@@ -3848,9 +3982,16 @@ ingredient cards, nutrition rows, and food actions.
 
 .food-info-card--premium .food-info-card__image-wrap {
   aspect-ratio: 16 / 11;
-  background:
-    radial-gradient(circle at 22% 18%, rgba(255, 255, 255, 0.96), transparent 30%),
-    radial-gradient(circle at 86% 76%, rgba(31, 126, 73, 0.14), transparent 34%),
+  background: radial-gradient(
+      circle at 22% 18%,
+      rgba(255, 255, 255, 0.96),
+      transparent 30%
+    ),
+    radial-gradient(
+      circle at 86% 76%,
+      rgba(31, 126, 73, 0.14),
+      transparent 34%
+    ),
     linear-gradient(135deg, #f3f8ea 0%, #fff4df 100%);
   border-radius: 21px;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.74);
@@ -3863,9 +4004,16 @@ ingredient cards, nutrition rows, and food actions.
 }
 
 .food-info-card--premium .food-image-placeholder {
-  background:
-    radial-gradient(circle at 20% 18%, rgba(255, 255, 255, 0.85), transparent 28%),
-    radial-gradient(circle at 80% 72%, color-mix(in srgb, var(--category-color, #5f8f5f) 22%, transparent), transparent 36%),
+  background: radial-gradient(
+      circle at 20% 18%,
+      rgba(255, 255, 255, 0.85),
+      transparent 28%
+    ),
+    radial-gradient(
+      circle at 80% 72%,
+      color-mix(in srgb, var(--category-color, #5f8f5f) 22%, transparent),
+      transparent 36%
+    ),
     linear-gradient(135deg, #f7f1df 0%, #eef7e7 100%);
   color: color-mix(in srgb, var(--category-color, #1a6844) 68%, #0b3525);
   isolation: isolate;
@@ -3943,7 +4091,10 @@ ingredient cards, nutrition rows, and food actions.
   color: #0b4a31 !important;
   height: 34px;
   min-height: 34px;
-  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    border-color 160ms ease;
   width: 34px;
 }
 
@@ -4156,6 +4307,41 @@ ingredient cards, nutrition rows, and food actions.
     grid-template-columns: 1fr;
     min-height: 0;
   }
+
+  .logged-food-card {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 0.72rem;
+  }
+
+  .logged-food-card .food-info-card__top {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .logged-food-card .food-info-card__actions {
+    gap: 4px;
+  }
+
+  .logged-food-card .food-info-action {
+    height: 32px;
+    min-height: 32px;
+    width: 32px;
+  }
+
+  .logged-food-card .food-info-action svg {
+    height: 17px;
+    width: 17px;
+  }
+
+  .logged-food-card .food-nutrition-rows {
+    gap: 7px;
+  }
+
+  .logged-food-card .food-nutrition-row,
+  .logged-food-card .food-nutrition-row:nth-child(n + 3) {
+    min-height: 42px;
+    padding: 0.42rem 0.48rem;
+  }
 }
 
 @media (max-width: 380px) {
@@ -4252,7 +4438,9 @@ ingredient cards, nutrition rows, and food actions.
 }
 
 .food-card-grid .food-nutrition-rows--premium .food-nutrition-row,
-.food-card-grid .food-nutrition-rows--premium .food-nutrition-row:nth-child(n + 3) {
+.food-card-grid
+  .food-nutrition-rows--premium
+  .food-nutrition-row:nth-child(n + 3) {
   gap: 7px;
   grid-column: auto;
   grid-template-columns: 22px minmax(0, 1fr);
@@ -4327,7 +4515,9 @@ ingredient cards, nutrition rows, and food actions.
   }
 
   .food-card-grid .food-nutrition-rows--premium .food-nutrition-row,
-  .food-card-grid .food-nutrition-rows--premium .food-nutrition-row:nth-child(n + 3) {
+  .food-card-grid
+    .food-nutrition-rows--premium
+    .food-nutrition-row:nth-child(n + 3) {
     gap: 5px;
     grid-template-columns: 20px minmax(0, 1fr);
     min-height: 42px;
@@ -4348,7 +4538,10 @@ ingredient cards, nutrition rows, and food actions.
     font-size: 0.63rem;
   }
 
-  .food-card-grid .food-nutrition-rows--premium .food-nutrition-row__copy strong {
+  .food-card-grid
+    .food-nutrition-rows--premium
+    .food-nutrition-row__copy
+    strong {
     font-size: 0.81rem;
   }
 
@@ -4405,7 +4598,6 @@ ingredient cards, nutrition rows, and food actions.
   gap: 1rem;
   padding: 1rem;
 }
-
 
 /* Food Library variation option list spacing; food result rows now use FoodInfoCard directly. */
 .library-option-list {
@@ -4860,7 +5052,6 @@ ingredient cards, nutrition rows, and food actions.
   .compact-card {
     border-radius: var(--radius-lg);
   }
-
 }
 
 /* ============================================================
@@ -4906,7 +5097,7 @@ Purpose: Keep the latest home-page visual treatment grouped together.
   line-height: 1.1;
   text-transform: uppercase;
   padding-left: 1.25rem;
-} 
+}
 
 .dashboard-hero h1 {
   color: var(--te-green-dark);
@@ -5053,11 +5244,12 @@ Purpose: Keep the latest home-page visual treatment grouped together.
 .goal-ring {
   align-items: center;
   aspect-ratio: 1;
-  background:
-    radial-gradient(circle at center, #fffefa 0 56%, transparent 57%),
+  background: radial-gradient(circle at center, #fffefa 0 56%, transparent 57%),
     conic-gradient(#3f7f52 var(--goal-percent), #e9e3d7 0);
   border-radius: 999px;
-  box-shadow: inset 0 0 0 1px var(--te-border), 0 14px 26px rgba(44, 70, 49, 0.08);
+  box-shadow:
+    inset 0 0 0 1px var(--te-border),
+    0 14px 26px rgba(44, 70, 49, 0.08);
   color: var(--te-green-dark);
   display: inline-flex;
   font-size: 1.35rem;
@@ -5185,13 +5377,13 @@ Purpose: Keep the latest home-page visual treatment grouped together.
 }
 
 @media (max-width: 575.98px) {
-/* track your day title */
+  /* track your day title */
 
   .dashboard-hero h1 {
     font-size: clamp(1rem, 11vw, 4.55rem);
   }
 
-    /* Write below title */
+  /* Write below title */
 
   .dashboard-home {
     gap: 22px;
@@ -5241,7 +5433,82 @@ Purpose: One shared logged-food card design across the app.
 
 /* Logged-food cards reuse FoodInfoCard; this class only identifies the variant */
 .logged-food-card {
+  align-items: stretch;
+  gap: 12px;
+  grid-template-columns: minmax(108px, 30%) minmax(0, 1fr);
+  min-height: 0;
   position: relative;
+  width: 100%;
+}
+
+.logged-food-card .food-info-card__image-wrap {
+  aspect-ratio: 1 / 1;
+}
+
+.logged-food-card .food-info-card__content {
+  gap: 10px;
+  min-width: 0;
+}
+
+.logged-food-card .food-info-card__top {
+  align-items: flex-start;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.logged-food-card .food-info-card__copy {
+  min-width: 0;
+}
+
+.logged-food-card .food-info-card__actions {
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.logged-food-card .food-info-action {
+  height: 34px;
+  min-height: 34px;
+  width: 34px;
+}
+
+.logged-food-card .food-info-action svg {
+  height: 18px;
+  width: 18px;
+}
+
+.logged-food-card .food-nutrition-rows {
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.logged-food-card .food-nutrition-row,
+.logged-food-card .food-nutrition-row:nth-child(n + 3) {
+  grid-column: auto;
+  grid-template-columns: 22px minmax(0, 1fr);
+  min-height: 44px;
+  padding: 0.48rem 0.56rem;
+}
+
+.logged-food-card .food-nutrition-row__copy {
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.logged-food-card .food-nutrition-row__copy strong,
+.logged-food-card .food-nutrition-row__copy span {
+  display: block;
+  min-width: 0;
+}
+
+.logged-food-card .food-nutrition-row__copy strong {
+  font-size: 0.88rem;
+  line-height: 1.05;
+}
+
+.logged-food-card .food-nutrition-row__copy span {
+  font-size: 0.72rem;
+  line-height: 1.08;
 }
 
 /* ============================================================
@@ -5273,6 +5540,19 @@ Purpose: One shared empty state whenever no food is logged.
 }
 
 /* Center plus icon used by all logged food empty states */
+.empty-logged-food-card__inner {
+  align-items: center;
+  border: 1px dashed rgba(95, 147, 104, 0.34);
+  border-radius: 24px;
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+  min-height: 198px;
+  padding: 26px 20px;
+  text-align: center;
+}
+
+/* Center plus icon used by all logged food empty states */
 .empty-logged-food-card__icon {
   align-items: center;
   background: rgba(234, 245, 232, 0.98);
@@ -5284,6 +5564,7 @@ Purpose: One shared empty state whenever no food is logged.
   width: 76px;
 }
 
+*/
 /* Empty logged food title text shared across the app */
 .empty-logged-food-card__title {
   color: var(--te-green-dark);
@@ -5385,7 +5666,9 @@ Purpose: One reusable search style with green outer focus and no black inner bro
 
 .app-search-bar:focus-within {
   border-color: #3f7f52;
-  box-shadow: 0 0 0 0.18rem rgba(95, 147, 104, 0.15), 0 14px 30px rgba(95, 147, 104, 0.12);
+  box-shadow:
+    0 0 0 0.18rem rgba(95, 147, 104, 0.15),
+    0 14px 30px rgba(95, 147, 104, 0.12);
 }
 
 .app-search-icon {
@@ -5450,7 +5733,6 @@ Purpose: One reusable search style with green outer focus and no black inner bro
 .mobile-search-input.app-search-bar {
   margin-bottom: 0;
 }
-
 
 /* ============================================================
 10B. TRACKER WEEK NAVIGATION AND APPLE-STYLE WEEK CHART
@@ -5545,7 +5827,9 @@ Purpose: Keeps week arrows, weekly progress bars, and compact analysis visually 
   background: linear-gradient(180deg, #f7f0e6, #efe6da);
   border: 1px solid rgba(222, 211, 195, 0.95);
   border-radius: 999px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78), 0 10px 22px rgba(80, 59, 38, 0.07);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    0 10px 22px rgba(80, 59, 38, 0.07);
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   margin: 0.55rem 0 1.15rem;
@@ -5555,10 +5839,18 @@ Purpose: Keeps week arrows, weekly progress bars, and compact analysis visually 
   position: relative;
 }
 
-.tracker-week-metric-form[data-selected="calories"] { --metric-index: 0; }
-.tracker-week-metric-form[data-selected="protein"] { --metric-index: 1; }
-.tracker-week-metric-form[data-selected="carbs"] { --metric-index: 2; }
-.tracker-week-metric-form[data-selected="fats"] { --metric-index: 3; }
+.tracker-week-metric-form[data-selected="calories"] {
+  --metric-index: 0;
+}
+.tracker-week-metric-form[data-selected="protein"] {
+  --metric-index: 1;
+}
+.tracker-week-metric-form[data-selected="carbs"] {
+  --metric-index: 2;
+}
+.tracker-week-metric-form[data-selected="fats"] {
+  --metric-index: 3;
+}
 
 .tracker-week-metric-indicator {
   background: linear-gradient(180deg, #fffdf8, #ffeeda);
@@ -5570,7 +5862,9 @@ Purpose: Keeps week arrows, weekly progress bars, and compact analysis visually 
   position: absolute;
   top: 0.28rem;
   transform: translateX(calc(var(--metric-index) * 100%));
-  transition: transform 260ms cubic-bezier(0.34, 1, 0.64, 1), box-shadow 220ms ease;
+  transition:
+    transform 260ms cubic-bezier(0.34, 1, 0.64, 1),
+    box-shadow 220ms ease;
   width: calc((100% - 0.56rem) / 4);
   z-index: 1;
 }
@@ -5604,7 +5898,9 @@ Purpose: Keeps week arrows, weekly progress bars, and compact analysis visually 
   min-height: 38px;
   padding: 0.42rem 0.28rem;
   position: relative;
-  transition: color 180ms ease, transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition:
+    color 180ms ease,
+    transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
   user-select: none;
   white-space: nowrap;
 }
@@ -5615,7 +5911,10 @@ Purpose: Keeps week arrows, weekly progress bars, and compact analysis visually 
   border-radius: 999px;
   flex: 0 0 7px;
   height: 7px;
-  transition: background 180ms ease, border-color 180ms ease, transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
   width: 7px;
 }
 
@@ -5624,7 +5923,9 @@ Purpose: Keeps week arrows, weekly progress bars, and compact analysis visually 
   transform: scale(1.035);
 }
 
-.tracker-week-metric-radio:checked + .tracker-week-metric-label .tracker-week-metric-dot {
+.tracker-week-metric-radio:checked
+  + .tracker-week-metric-label
+  .tracker-week-metric-dot {
   background: #74eaff;
   border-color: #4d0cff;
   transform: scale(1.22);
@@ -5636,8 +5937,11 @@ Purpose: Keeps week arrows, weekly progress bars, and compact analysis visually 
 
 /* Tracker line chart: higher-contrast weekly nutrition chart with goal reference line. */
 .tracker-line-chart-card {
-  background:
-    radial-gradient(circle at 18% 6%, rgba(217, 118, 83, 0.1), transparent 34%),
+  background: radial-gradient(
+      circle at 18% 6%,
+      rgba(217, 118, 83, 0.1),
+      transparent 34%
+    ),
     rgba(255, 254, 249, 0.96) !important;
   overflow: hidden;
 }

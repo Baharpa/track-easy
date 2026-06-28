@@ -17,9 +17,15 @@ import {
 import { CATEGORY_LIBRARY, getCategoryClass, getCategoryIcon, getFoodImage } from '../lib/foodVisuals';
 import { getCategoryLabel } from '../lib/categoryHelpers';
 import { MEAL_CATEGORIES, normalizeMealCategory } from '../lib/mealCategoryHelpers';
-import { calculateNutritionWithUnit, getConversionWarning } from '../lib/unitConverter';
+import { calculateNutritionWithUnit, getConversionWarning, getIngredientServingOptions, getIngredientServingUnits, normalizeUnit } from '../lib/unitConverter';
 import useUnsavedChanges from '../hooks/useUnsavedChanges';
 import UnsavedChangesModal from './UnsavedChangesModal';
+import {
+  clearMealDraft,
+  getMealDraftKey,
+  loadMealDraft,
+  saveMealDraft
+} from '../lib/mealDraft';
 
 function sameCategory(ingredient, categoryName) {
   const ingredientCategory = getCategoryLabel(ingredient.category || 'Other').toLowerCase();
@@ -105,7 +111,8 @@ export default function ComponentMealEditor({
   onCancel,
   saveLabel = 'Save Meal',
   saving = false,
-  error = ''
+  error = '',
+  draftKey: draftKeyProp = ''
 }) {
   const [meal, setMeal] = useState(initialMeal || { name: '', category: '', imageUrl: '' });
   const [components, setComponents] = useState(initialComponents || []);
@@ -128,7 +135,11 @@ export default function ComponentMealEditor({
   const [editingItem, setEditingItem] = useState(null);
   const [libraryError, setLibraryError] = useState('');
   const [librarySuccess, setLibrarySuccess] = useState('');
+  const [selectedMealPart, setSelectedMealPart] = useState(initialComponents?.[0]?.name || '');
+  const [draftState, setDraftState] = useState(null);
+  const [showDraftCard, setShowDraftCard] = useState(false);
   const successTimerRef = useRef(null);
+  const draftKey = draftKeyProp || getMealDraftKey({ mealId: initialMeal?._id || '' });
   const initialSnapshot = useMemo(() => JSON.stringify({
     meal: initialMeal || { name: '', category: '', imageUrl: '' },
     components: initialComponents || [],
@@ -148,11 +159,23 @@ export default function ComponentMealEditor({
     outsideFood,
     manualNutrition
   }), [meal, components, outsideFood, manualNutrition]);
-  const { showModal, keepEditing, discardChanges, markSaved } = useUnsavedChanges(initialSnapshot !== currentSnapshot && !saving);
+  const { showModal, keepEditing, discardChanges, saveDraft, markSaved } = useUnsavedChanges(initialSnapshot !== currentSnapshot && !saving, {
+    onDiscard: () => clearMealDraft(draftKey),
+    onSaveDraft: async () => {
+      saveMealDraft({ meal, components, outsideFood, manualNutrition }, draftKey);
+      setDraftState({ meal, components, outsideFood, manualNutrition });
+    }
+  });
 
   useEffect(() => () => {
     if (successTimerRef.current) clearTimeout(successTimerRef.current);
   }, []);
+
+  useEffect(() => {
+    const storedDraft = loadMealDraft(draftKey);
+    setDraftState(storedDraft);
+    setShowDraftCard(Boolean(storedDraft));
+  }, [draftKey]);
 
   const previewComponents = useMemo(
     () => buildPreviewComponents(ingredients, components),
@@ -180,8 +203,12 @@ export default function ComponentMealEditor({
     setLibrarySuccess('');
   }
 
-  function openLibrary() {
+  function openLibrary(partName = '') {
     resetLibraryForm();
+    if (partName) setSelectedMealPart(partName);
+    if (partName && !components.some(component => component.name === partName)) {
+      setComponents(current => [...current, { name: partName, category: partName, ingredients: [] }]);
+    }
     setShowLibrary(true);
   }
 
@@ -199,16 +226,29 @@ export default function ComponentMealEditor({
     setLibrarySuccess('');
   }
 
+  function addMealPart() {
+    const nextName = ['Flatbread', 'Eggs', 'Avocado', 'Pasta', 'Meat sauce', 'Toppings'].find(name => !components.some(component => component.name === name))
+      || `Meal Part ${components.length + 1}`;
+    setComponents(current => [...current, { name: nextName, category: nextName, ingredients: [] }]);
+    setSelectedMealPart(nextName);
+  }
+
+  function removeMealPart(partName) {
+    setComponents(current => current.filter(component => component.name !== partName));
+    setSelectedMealPart(current => (current === partName ? '' : current));
+  }
+
   function selectIngredient(ingredient) {
+    const primaryServing = getIngredientServingOptions(ingredient)[0];
     setActiveIngredient(ingredient);
-    setAmountUsed(ingredient.quantity || '');
-    setUnitUsed(ingredient.unit || 'grams');
+    setAmountUsed(primaryServing?.amount || ingredient.quantity || '');
+    setUnitUsed(normalizeUnit(primaryServing?.unit || ingredient.unit || 'grams') || primaryServing?.unit || ingredient.unit || 'grams');
     setLibraryError('');
     setLibrarySuccess('');
   }
 
   function addIngredientToMeal() {
-    const groupName = selectedCategory || 'Other';
+    const groupName = selectedMealPart || components[0]?.name || 'Main';
     const amount = Number(amountUsed);
     const ingredientName = activeIngredient?.name;
 
@@ -236,11 +276,10 @@ export default function ComponentMealEditor({
     setComponents(currentComponents => {
       let nextComponents = currentComponents.map(component => ({
         ...component,
-        ingredients: component.ingredients.filter((item, index) => {
-          if (!editingItem) return true;
-          return !(component.name === editingItem.componentName && index === editingItem.ingredientIndex);
-        })
-      })).filter(component => component.ingredients.length > 0);
+        ingredients: editingItem && component.name === editingItem.componentName
+          ? component.ingredients.filter((item, index) => index !== editingItem.ingredientIndex)
+          : component.ingredients
+      }));
 
       const existingIndex = nextComponents.findIndex(component => component.name === groupName);
       if (existingIndex >= 0) {
@@ -273,7 +312,7 @@ export default function ComponentMealEditor({
         ...component,
         ingredients: component.ingredients.filter((item, index) => index !== ingredientIndex)
       };
-    }).filter(component => component.ingredients.length > 0));
+    }));
   }
 
   function renameComponent(oldName, newName) {
@@ -283,6 +322,7 @@ export default function ComponentMealEditor({
     setComponents(components.map(component => (
       component.name === oldName ? { ...component, name: cleanName, category: cleanName } : component
     )));
+    if (selectedMealPart === oldName) setSelectedMealPart(cleanName);
   }
 
   function editIngredient(componentName, ingredientIndex) {
@@ -292,9 +332,10 @@ export default function ComponentMealEditor({
     if (!component || !item || !ingredient) return;
 
     setSelectedCategory(getCategoryLabel(ingredient.category || componentName || 'Other'));
+    setSelectedMealPart(componentName);
     setActiveIngredient(ingredient);
     setAmountUsed(item.quantityUsed);
-    setUnitUsed(item.unit || ingredient.unit || 'grams');
+    setUnitUsed(normalizeUnit(item.unit || ingredient.unit || 'grams') || item.unit || ingredient.unit || 'grams');
     setEditingItem({ componentName, ingredientIndex });
     setShowLibrary(true);
   }
@@ -317,14 +358,56 @@ export default function ComponentMealEditor({
       return;
     }
     markSaved();
+    clearMealDraft(draftKey);
     if (onSaveSuccess) {
       await onSaveSuccess();
     }
   }
 
+  function restoreDraft() {
+    if (!draftState) return;
+    setMeal({
+      ...(draftState.meal || { name: '', category: '', imageUrl: '' }),
+      category: draftState.meal?.category ? normalizeMealCategory(draftState.meal.category) : ''
+    });
+    setComponents(draftState.components || []);
+    setOutsideFood(Boolean(draftState.outsideFood));
+    setManualNutrition({
+      restaurantName: draftState.manualNutrition?.restaurantName || '',
+      calories: draftState.manualNutrition?.calories || '',
+      protein: draftState.manualNutrition?.protein || '',
+      carbs: draftState.manualNutrition?.carbs || '',
+      fats: draftState.manualNutrition?.fats || '',
+      sugar: draftState.manualNutrition?.sugar || ''
+    });
+    setSelectedMealPart(draftState.components?.[0]?.name || '');
+    setShowDraftCard(false);
+  }
+
+  function deleteDraft() {
+    clearMealDraft(draftKey);
+    setDraftState(null);
+    setShowDraftCard(false);
+  }
+
   return <>
     {message && <Alert variant="warning">{message}</Alert>}
     {error && <Alert variant="danger">{error}</Alert>}
+
+    {showDraftCard && draftState && (
+      <Card className="draft-restore-card mb-4">
+        <Card.Body className="draft-restore-card-body">
+          <div>
+            <strong>Continue draft</strong>
+            <p className="text-muted mb-0">A saved meal draft was found. Restore it or delete it.</p>
+          </div>
+          <div className="draft-restore-card-actions">
+            <Button variant="success" size="sm" onClick={restoreDraft}>Continue draft</Button>
+            <Button variant="outline-danger" size="sm" onClick={deleteDraft}>Delete draft</Button>
+          </div>
+        </Card.Body>
+      </Card>
+    )}
 
     <Card className="page-card p-4 mb-4 meal-setup-card">
       <Row className="g-4 align-items-stretch">
@@ -371,21 +454,16 @@ export default function ComponentMealEditor({
       <ManualNutritionCard values={manualNutrition} onChange={setManualNutrition} />
     )}
 
-    {!outsideFood && components.length === 0 && (
-      <Card className="page-card p-5 text-center mb-4 empty-builder-card">
-        <h4>No ingredients added yet</h4>
-        <p className="text-muted">Use the ingredient library to choose ingredients and place them into meal groups.</p>
-        <div><Button variant="success" onClick={openLibrary}>Add Ingredient</Button></div>
-      </Card>
-    )}
-
-    {!outsideFood && components.length > 0 && (
+    {!outsideFood && (
       <div className="meal-builder-toolbar">
         <div>
-          <h4>Meal Ingredients</h4>
-          <p className="text-muted">Add more ingredients or review what is already in this meal.</p>
+          <h4>Meal Parts</h4>
+          <p className="text-muted">Build the meal as separate parts like Flatbread, Eggs, Avocado, Pasta, Meat sauce, or Toppings.</p>
         </div>
-        <Button variant="success" onClick={openLibrary}>Add Another Ingredient</Button>
+        <div className="meal-builder-toolbar-actions">
+          <Button variant="outline-success" onClick={addMealPart}>Add Meal Part</Button>
+          <Button variant="success" onClick={() => openLibrary(selectedMealPart || components[0]?.name || '')}>Add Ingredient</Button>
+        </div>
       </div>
     )}
 
@@ -394,9 +472,10 @@ export default function ComponentMealEditor({
         {previewComponents.map(componentPreview => {
           const originalComponent = components.find(component => component.name === componentPreview.name);
           const componentCategory = componentPreview.category || componentPreview.name;
+          const isActivePart = selectedMealPart === componentPreview.name;
 
           return <Col lg={6} key={componentPreview.name}>
-            <Card className="page-card component-builder-card">
+            <Card className={`page-card component-builder-card ${isActivePart ? 'active' : ''}`}>
               <Card.Body>
                 <div className="component-card-header">
                   <div className="component-card-title-block">
@@ -412,9 +491,20 @@ export default function ComponentMealEditor({
                       {componentIngredientLabel(componentPreview.ingredients.length)} - {formatAmount(componentPreview.totalWeight)}g total
                     </div>
                   </div>
+                  <div className="component-card-actions">
+                    <Button variant="outline-success" size="sm" onClick={() => openLibrary(componentPreview.name)}>Add Ingredient</Button>
+                    {components.length > 1 && (
+                      <Button variant="outline-danger" size="sm" onClick={() => removeMealPart(componentPreview.name)}>Remove Part</Button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="component-ingredient-list">
+                  {componentPreview.ingredients.length === 0 && (
+                    <div className="component-empty-state">
+                      <p className="text-muted mb-0">No ingredients in this meal part yet.</p>
+                    </div>
+                  )}
                   {componentPreview.ingredients.map((item, index) => {
                     const originalItem = originalComponent?.ingredients[index];
                     const fullIngredient = findIngredient(ingredients, item.ingredientId);
@@ -540,6 +630,7 @@ export default function ComponentMealEditor({
       show={showModal}
       onKeepEditing={keepEditing}
       onDiscardChanges={discardChanges}
+      onSaveDraft={saveDraft}
     />
   </>;
 }
@@ -569,6 +660,8 @@ function IngredientLibraryModal({
   const conversionWarning = activeIngredient
     ? getConversionWarning(amountUsed, unitUsed, activeIngredient)
     : '';
+  const servingOptions = useMemo(() => getIngredientServingOptions(activeIngredient), [activeIngredient]);
+  const servingUnits = useMemo(() => getIngredientServingUnits(activeIngredient), [activeIngredient]);
   const addIngredientHref = {
     pathname: '/ingredients/add',
     query: { category: selectedCategory }
@@ -655,10 +748,18 @@ function IngredientLibraryModal({
               {activeIngredient ? <>
                 <Form onSubmit={handleSelectedIngredientSubmit}>
                   <ServingAmountSelector
+                    options={servingOptions}
+                    selectedOption={servingOptions.find(option => Number(option.amount) === Number(amountUsed) && normalizeUnit(option.unit) === normalizeUnit(unitUsed))?.servingName}
+                    onOptionChange={option => {
+                      const nextAmount = option.custom && normalizeUnit(option.unit) === 'grams' ? '' : option.amount;
+                      setAmountUsed(String(nextAmount));
+                      setUnitUsed(normalizeUnit(option.unit) || option.unit);
+                    }}
                     amount={amountUsed}
                     onAmountChange={setAmountUsed}
                     unit={unitUsed}
                     onUnitChange={setUnitUsed}
+                    extraUnits={servingUnits}
                     amountLabel="Amount used"
                     nutrition={selectedPreview}
                     conversionWarning={conversionWarning}

@@ -1,54 +1,125 @@
-import { useMemo, useState } from 'react';
-import Link from 'next/link';
-import useSWR from 'swr';
-import { Card } from 'react-bootstrap';
-import AppLoadingBox from '../components/AppLoadingBox';
-import { EmptyLoggedFoodCard } from '../components/LoggedFoodCard';
-import FoodImage from '../components/FoodImage';
-import RouteGuard from '../components/RouteGuard';
-import { ErrorMessage } from '../components/StateMessage';
-import { TrackEasyIcon } from '../components/TrackEasyIcons';
-import { sortLoggedFoodsNewestFirst } from '../lib/loggedFoodOrder';
+import { useMemo, useState } from "react";
+import useSWR, { useSWRConfig } from "swr";
+import { Card } from "react-bootstrap";
+import AppLoadingBox from "../components/AppLoadingBox";
+import LoggedFoodCard, {
+  EmptyLoggedFoodCard,
+} from "../components/LoggedFoodCard";
+import RouteGuard from "../components/RouteGuard";
+import { ErrorMessage } from "../components/StateMessage";
+import { TrackEasyIcon } from "../components/TrackEasyIcons";
+import { apiFetch } from "../lib/api";
+import { sortLoggedFoodsNewestFirst } from "../lib/loggedFoodOrder";
 
 const nutrients = [
-  { label: 'Calories', key: 'totalCalories', shortKey: 'calories', goalKey: 'calorieGoal', icon: 'flame', className: 'tracker-calories', unit: 'cal' },
-  { label: 'Protein', key: 'totalProtein', shortKey: 'protein', goalKey: 'proteinGoal', icon: 'muscle', className: 'tracker-protein', unit: 'g' },
-  { label: 'Carbs', key: 'totalCarbs', shortKey: 'carbs', goalKey: 'carbsGoal', icon: 'bread', className: 'tracker-carbs', unit: 'g' },
-  { label: 'Fats', key: 'totalFats', shortKey: 'fats', goalKey: 'fatsGoal', icon: 'avocado', className: 'tracker-fats', unit: 'g' },
-  { label: 'Sugar', key: 'totalSugar', shortKey: 'sugar', goalKey: 'sugarGoal', icon: 'berry', className: 'tracker-sugar', unit: 'g' }
+  {
+    label: "Calories",
+    key: "totalCalories",
+    shortKey: "calories",
+    goalKey: "calorieGoal",
+    icon: "flame",
+    className: "tracker-calories",
+    unit: "cal",
+  },
+  {
+    label: "Protein",
+    key: "totalProtein",
+    shortKey: "protein",
+    goalKey: "proteinGoal",
+    icon: "muscle",
+    className: "tracker-protein",
+    unit: "g",
+  },
+  {
+    label: "Carbs",
+    key: "totalCarbs",
+    shortKey: "carbs",
+    goalKey: "carbsGoal",
+    icon: "bread",
+    className: "tracker-carbs",
+    unit: "g",
+  },
+  {
+    label: "Fats",
+    key: "totalFats",
+    shortKey: "fats",
+    goalKey: "fatsGoal",
+    icon: "avocado",
+    className: "tracker-fats",
+    unit: "g",
+  },
+  {
+    label: "Sugar",
+    key: "totalSugar",
+    shortKey: "sugar",
+    goalKey: "sugarGoal",
+    icon: "berry",
+    className: "tracker-sugar",
+    unit: "g",
+  },
 ];
 
 const weeklyMetrics = {
-  calories: { label: 'Calories', key: 'totalCalories', goalKey: 'calorieGoal', unit: 'cal' },
-  protein: { label: 'Protein', key: 'totalProtein', goalKey: 'proteinGoal', unit: 'g' },
-  carbs: { label: 'Carbs', key: 'totalCarbs', goalKey: 'carbsGoal', unit: 'g' },
-  fats: { label: 'Fats', key: 'totalFats', goalKey: 'fatsGoal', unit: 'g' }
+  calories: {
+    label: "Calories",
+    key: "totalCalories",
+    goalKey: "calorieGoal",
+    unit: "cal",
+  },
+  protein: {
+    label: "Protein",
+    key: "totalProtein",
+    goalKey: "proteinGoal",
+    unit: "g",
+  },
+  carbs: { label: "Carbs", key: "totalCarbs", goalKey: "carbsGoal", unit: "g" },
+  fats: { label: "Fats", key: "totalFats", goalKey: "fatsGoal", unit: "g" },
 };
 
 function whole(value) {
   return Math.round(Number(value) || 0);
 }
 
+function formatFoodStat(value, unit = "") {
+  const num = Number(value ?? 0);
+  const safe = Number.isFinite(num) ? num : 0;
+  const formatted = Number.isInteger(safe) ? String(safe) : safe.toFixed(1);
+  return unit ? `${formatted} ${unit}` : formatted;
+}
+
 function formatShortDate(dateString) {
-  return new Date(`${dateString}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  return new Date(`${dateString}T00:00:00`).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
 }
 
 function formatShortRange(days = []) {
-  if (!days.length) return '';
+  if (!days.length) return "";
   const start = new Date(`${days[0].date}T00:00:00`);
   const end = new Date(`${days[days.length - 1].date}T00:00:00`);
   const sameMonth = start.getMonth() === end.getMonth();
-  const startText = start.toLocaleDateString(undefined, sameMonth ? { month: 'short', day: 'numeric' } : { month: 'short', day: 'numeric' });
-  const endText = end.toLocaleDateString(undefined, { month: sameMonth ? undefined : 'short', day: 'numeric' });
+  const startText = start.toLocaleDateString(
+    undefined,
+    sameMonth
+      ? { month: "short", day: "numeric" }
+      : { month: "short", day: "numeric" },
+  );
+  const endText = end.toLocaleDateString(undefined, {
+    month: sameMonth ? undefined : "short",
+    day: "numeric",
+  });
   return `${startText} - ${endText}`;
 }
 
 function formatDayName(dateString) {
-  return new Date(`${dateString}T00:00:00`).toLocaleDateString(undefined, { weekday: 'long' });
+  return new Date(`${dateString}T00:00:00`).toLocaleDateString(undefined, {
+    weekday: "long",
+  });
 }
 
 function buildSmoothPath(points) {
-  if (!points.length) return '';
+  if (!points.length) return "";
   if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
 
   return points.reduce((path, point, index) => {
@@ -57,31 +128,38 @@ function buildSmoothPath(points) {
     const previous = points[index - 1];
     const controlX = (previous.x + point.x) / 2;
     return `${path} C ${controlX} ${previous.y}, ${controlX} ${point.y}, ${point.x} ${point.y}`;
-  }, '');
+  }, "");
 }
 
 function getWeekRange(days = []) {
-  if (!days.length) return '';
+  if (!days.length) return "";
   return `${formatShortDate(days[0].date)} - ${formatShortDate(days[days.length - 1].date)}`;
 }
 
 function normalizeWeek(weekLogs = []) {
-  return weekLogs.map(item => ({
+  return weekLogs.map((item) => ({
     date: item.date,
-    dayLabel: item.dayLabel || new Date(`${item.date}T00:00:00`).toLocaleDateString(undefined, { weekday: 'short' }),
+    dayLabel:
+      item.dayLabel ||
+      new Date(`${item.date}T00:00:00`).toLocaleDateString(undefined, {
+        weekday: "short",
+      }),
     totalCalories: Number(item.totalCalories ?? item.calories) || 0,
     totalProtein: Number(item.totalProtein ?? item.protein) || 0,
     totalCarbs: Number(item.totalCarbs ?? item.carbs) || 0,
     totalFats: Number(item.totalFats ?? item.fats) || 0,
     totalSugar: Number(item.totalSugar ?? item.sugar) || 0,
     meals: sortLoggedFoodsNewestFirst(item.meals || item.foods || []),
-    hasLogs: item.hasLogs ?? (item.meals || item.foods || []).length > 0
+    hasLogs: item.hasLogs ?? (item.meals || item.foods || []).length > 0,
   }));
 }
 
 function getTotals(days) {
   return nutrients.reduce((totals, nutrient) => {
-    totals[nutrient.key] = days.reduce((sum, day) => sum + (Number(day[nutrient.key]) || 0), 0);
+    totals[nutrient.key] = days.reduce(
+      (sum, day) => sum + (Number(day[nutrient.key]) || 0),
+      0,
+    );
     return totals;
   }, {});
 }
@@ -92,23 +170,33 @@ function goalForWeek(goals, goalKey) {
 }
 
 function getAnalysis(days, goals) {
-  const loggedDays = days.filter(day => day.hasLogs);
+  const loggedDays = days.filter((day) => day.hasLogs);
   const divisor = loggedDays.length || 1;
-  const avgCalories = loggedDays.reduce((sum, day) => sum + day.totalCalories, 0) / divisor;
-  const avgProtein = loggedDays.reduce((sum, day) => sum + day.totalProtein, 0) / divisor;
-  const bestProtein = days.reduce((best, day) => day.totalProtein > best.totalProtein ? day : best, days[0] || {});
-  const highestCalories = days.reduce((best, day) => day.totalCalories > best.totalCalories ? day : best, days[0] || {});
+  const avgCalories =
+    loggedDays.reduce((sum, day) => sum + day.totalCalories, 0) / divisor;
+  const avgProtein =
+    loggedDays.reduce((sum, day) => sum + day.totalProtein, 0) / divisor;
+  const bestProtein = days.reduce(
+    (best, day) => (day.totalProtein > best.totalProtein ? day : best),
+    days[0] || {},
+  );
+  const highestCalories = days.reduce(
+    (best, day) => (day.totalCalories > best.totalCalories ? day : best),
+    days[0] || {},
+  );
   const totals = getTotals(days);
-  const weeklyCalorieGoal = goalForWeek(goals, 'calorieGoal');
+  const weeklyCalorieGoal = goalForWeek(goals, "calorieGoal");
   const calorieDiff = totals.totalCalories - weeklyCalorieGoal;
-  const calorieGoalStatus = weeklyCalorieGoal > 0
-    ? calorieDiff === 0
-      ? 'On target'
-      : `${Math.abs(whole(calorieDiff)).toLocaleString()} ${calorieDiff > 0 ? 'over' : 'under'} goal`
-    : 'No calorie goal set';
-  const consistency = loggedDays.length >= 5
-    ? `You logged food ${loggedDays.length} of 7 days. Strong consistency.`
-    : `You logged food ${loggedDays.length} of 7 days. A few more logs will make your trends clearer.`;
+  const calorieGoalStatus =
+    weeklyCalorieGoal > 0
+      ? calorieDiff === 0
+        ? "On target"
+        : `${Math.abs(whole(calorieDiff)).toLocaleString()} ${calorieDiff > 0 ? "over" : "under"} goal`
+      : "No calorie goal set";
+  const consistency =
+    loggedDays.length >= 5
+      ? `You logged food ${loggedDays.length} of 7 days. Strong consistency.`
+      : `You logged food ${loggedDays.length} of 7 days. A few more logs will make your trends clearer.`;
 
   return {
     loggedCount: loggedDays.length,
@@ -119,18 +207,30 @@ function getAnalysis(days, goals) {
     totals,
     weeklyCalorieGoal,
     calorieGoalStatus,
-    consistency
+    consistency,
   };
 }
 
 export default function ProfileTracker() {
-  const { data: today, error: todayError } = useSWR('/api/tracker/today');
-  const { data: goals, error: goalsError } = useSWR('/api/user/goals');
-  const [view, setView] = useState('day');
+  const { mutate } = useSWRConfig();
+  const { data: today, error: todayError } = useSWR("/api/tracker/today");
+  const { data: goals, error: goalsError } = useSWR("/api/user/goals");
+  const [view, setView] = useState("day");
   const [selectedWeekOffset, setSelectedWeekOffset] = useState(0);
-  const { data: weekLogs, error: weekError } = useSWR(`/api/tracker/week?offset=${selectedWeekOffset}`);
+  const { data: weekLogs, error: weekError } = useSWR(
+    `/api/tracker/week?offset=${selectedWeekOffset}`,
+  );
   const weekDays = useMemo(() => normalizeWeek(weekLogs || []), [weekLogs]);
   const analysis = weekDays.length ? getAnalysis(weekDays, goals) : null;
+
+  async function removeLoggedFood(food) {
+    if (!food?._id) return;
+    await apiFetch(`/api/tracker/log/${food._id}`, { method: "DELETE" });
+    await mutate("/api/tracker/today");
+    await mutate(
+      (key) => typeof key === "string" && key.startsWith("/api/tracker/week"),
+    );
+  }
 
   return (
     <RouteGuard>
@@ -138,39 +238,69 @@ export default function ProfileTracker() {
         <div className="mobile-page-header">
           <div>
             <h1 className="mobile-page-title">Tracker</h1>
-            <p className="mobile-page-subtitle">Review your nutrition progress.</p>
+            <p className="mobile-page-subtitle">
+              Review your nutrition progress.
+            </p>
           </div>
         </div>
 
-        {(todayError || weekError || goalsError) && <ErrorMessage text="Failed to load tracker data." />}
-
-        <div className="segmented-control" role="tablist" aria-label="Tracker view">
-          <button type="button" className={`segmented-control-button ${view === 'day' ? 'active' : ''}`} onClick={() => setView('day')}>Day</button>
-          <button type="button" className={`segmented-control-button ${view === 'week' ? 'active' : ''}`} onClick={() => setView('week')}>Week</button>
-        </div>
-
-        {(!today || !weekLogs || !goals) && !(todayError || weekError || goalsError) && (
-          <div className="app-loading-panel">
-            <AppLoadingBox />
-            <span className="app-loading-panel-text">Loading tracker...</span>
-          </div>
+        {(todayError || weekError || goalsError) && (
+          <ErrorMessage text="Failed to load tracker data." />
         )}
+
+        <div
+          className="segmented-control"
+          role="tablist"
+          aria-label="Tracker view"
+        >
+          <button
+            type="button"
+            className={`segmented-control-button ${view === "day" ? "active" : ""}`}
+            onClick={() => setView("day")}
+          >
+            Day
+          </button>
+          <button
+            type="button"
+            className={`segmented-control-button ${view === "week" ? "active" : ""}`}
+            onClick={() => setView("week")}
+          >
+            Week
+          </button>
+        </div>
+
+        {(!today || !weekLogs || !goals) &&
+          !(todayError || weekError || goalsError) && (
+            <div className="app-loading-panel">
+              <AppLoadingBox />
+              <span className="app-loading-panel-text">Loading tracker...</span>
+            </div>
+          )}
 
         {today && weekLogs && goals && (
           <>
-            {view === 'day' && (
+            {view === "day" && (
               <>
                 <ProgressCard item={today} goals={goals} title="Today" />
-                <FoodList title="Foods logged today" foods={today.meals || []} date={today.date} />
+                <FoodList
+                  title="Foods logged today"
+                  foods={today.meals || []}
+                  date={today.date}
+                  onRemove={removeLoggedFood}
+                />
               </>
             )}
 
-            {view === 'week' && weekDays.length > 0 && analysis && (
+            {view === "week" && weekDays.length > 0 && analysis && (
               <>
-                <WeekSelector selectedOffset={selectedWeekOffset} onSelect={setSelectedWeekOffset} range={formatShortRange(weekDays)} />
+                <WeekSelector
+                  selectedOffset={selectedWeekOffset}
+                  onSelect={setSelectedWeekOffset}
+                  range={formatShortRange(weekDays)}
+                />
                 <WeekProgress days={weekDays} goals={goals} />
                 <WeekAnalysis analysis={analysis} />
-                <WeeklyMealsByDay days={weekDays} />
+                <WeeklyMealsByDay days={weekDays} onRemove={removeLoggedFood} />
               </>
             )}
           </>
@@ -187,18 +317,28 @@ function ProgressCard({ item, goals, title }) {
         <h2>{title} Progress</h2>
       </div>
       <div className="tracker-progress-list">
-        {nutrients.map(nutrient => {
+        {nutrients.map((nutrient) => {
           const current = whole(item?.[nutrient.key]);
           const goal = whole(goals?.[nutrient.goalKey]);
-          const percent = goal > 0 ? Math.min(100, Math.round((current / goal) * 100)) : 0;
+          const percent =
+            goal > 0 ? Math.min(100, Math.round((current / goal) * 100)) : 0;
           return (
-            <div className={`tracker-progress-row ${nutrient.className}`} key={nutrient.label}>
+            <div
+              className={`tracker-progress-row ${nutrient.className}`}
+              key={nutrient.label}
+            >
               <div className="tracker-progress-top">
-                <span className="tracker-progress-icon"><TrackEasyIcon name={nutrient.icon} size={15} /></span>
+                <span className="tracker-progress-icon">
+                  <TrackEasyIcon name={nutrient.icon} size={15} />
+                </span>
                 <strong>{nutrient.label}</strong>
-                <span>{current} / {goal || 0} {nutrient.unit}</span>
+                <span>
+                  {current} / {goal || 0} {nutrient.unit}
+                </span>
               </div>
-              <div className="tracker-progress-bar"><span style={{ width: `${percent}%` }} /></div>
+              <div className="tracker-progress-bar">
+                <span style={{ width: `${percent}%` }} />
+              </div>
             </div>
           );
         })}
@@ -217,10 +357,15 @@ function WeekSelector({ selectedOffset, onSelect, range }) {
         disabled={selectedOffset >= 3}
         aria-label="Previous week"
       >
-        &lsaquo;</button>
+        &lsaquo;
+      </button>
       <div className="week-nav-date">
         <strong>{range}</strong>
-        <span>{selectedOffset === 0 ? 'This week' : `${selectedOffset} week${selectedOffset > 1 ? 's' : ''} ago`}</span>
+        <span>
+          {selectedOffset === 0
+            ? "This week"
+            : `${selectedOffset} week${selectedOffset > 1 ? "s" : ""} ago`}
+        </span>
       </div>
       <button
         type="button"
@@ -229,16 +374,17 @@ function WeekSelector({ selectedOffset, onSelect, range }) {
         disabled={selectedOffset <= 0}
         aria-label="Next week"
       >
-        &rsaquo;</button>
+        &rsaquo;
+      </button>
     </div>
   );
 }
 
 function WeekProgress({ days, goals }) {
-  const [selectedMetric, setSelectedMetric] = useState('calories');
+  const [selectedMetric, setSelectedMetric] = useState("calories");
   const metricKeys = Object.keys(weeklyMetrics);
   const metric = weeklyMetrics[selectedMetric];
-  const values = days.map(day => Number(day[metric.key]) || 0);
+  const values = days.map((day) => Number(day[metric.key]) || 0);
   const goalValue = Number(goals?.[metric.goalKey]) || 0;
   const hasGoal = goalValue > 0;
   const maxValue = Math.max(1, goalValue, ...values);
@@ -249,9 +395,15 @@ function WeekProgress({ days, goals }) {
   const innerHeight = 90;
   const baseY = chartPadding + innerHeight;
   const goalY = hasGoal ? baseY - (goalValue / maxValue) * innerHeight : null;
-  const goalLabelY = hasGoal ? Math.max(16, Math.min(baseY - 10, goalY - 8)) : null;
+  const goalLabelY = hasGoal
+    ? Math.max(16, Math.min(baseY - 10, goalY - 8))
+    : null;
   const points = values.map((value, index) => {
-    const x = chartPadding + (days.length === 1 ? innerWidth / 2 : (innerWidth / Math.max(1, days.length - 1)) * index);
+    const x =
+      chartPadding +
+      (days.length === 1
+        ? innerWidth / 2
+        : (innerWidth / Math.max(1, days.length - 1)) * index);
     const y = maxValue > 0 ? baseY - (value / maxValue) * innerHeight : baseY;
     return { x, y, value };
   });
@@ -264,9 +416,14 @@ function WeekProgress({ days, goals }) {
       </div>
 
       {/* ********************* TRACKER WEEK CLEAN METRIC SELECTOR START ********************* */}
-      <div className="tracker-week-metric-form" data-selected={selectedMetric} role="radiogroup" aria-label="Weekly chart metric">
+      <div
+        className="tracker-week-metric-form"
+        data-selected={selectedMetric}
+        role="radiogroup"
+        aria-label="Weekly chart metric"
+      >
         <span className="tracker-week-metric-indicator" aria-hidden="true" />
-        {metricKeys.map(key => (
+        {metricKeys.map((key) => (
           <div className="tracker-week-metric-choice" key={key}>
             <input
               type="radio"
@@ -276,7 +433,10 @@ function WeekProgress({ days, goals }) {
               checked={selectedMetric === key}
               onChange={() => setSelectedMetric(key)}
             />
-            <label className="tracker-week-metric-label" htmlFor={`week-metric-${key}`}>
+            <label
+              className="tracker-week-metric-label"
+              htmlFor={`week-metric-${key}`}
+            >
               <span className="tracker-week-metric-dot" aria-hidden="true" />
               <span>{weeklyMetrics[key].label}</span>
             </label>
@@ -286,21 +446,52 @@ function WeekProgress({ days, goals }) {
       {/* ********************* TRACKER WEEK CLEAN METRIC SELECTOR END ********************* */}
 
       {/* ********************* TRACKER WEEK LINE CHART START ********************* */}
-      <div className="tracker-week-line-chart" aria-label={`Weekly ${metric.label.toLowerCase()} line chart`}>
-        <svg className="tracker-week-line-chart-svg" viewBox={`0 0 ${chartWidth} ${chartHeight}`} role="img" aria-hidden="true">
+      <div
+        className="tracker-week-line-chart"
+        aria-label={`Weekly ${metric.label.toLowerCase()} line chart`}
+      >
+        <svg
+          className="tracker-week-line-chart-svg"
+          viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+          role="img"
+          aria-hidden="true"
+        >
           {hasGoal && (
             <>
-              <line className="tracker-goal-line" x1={chartPadding} y1={goalY} x2={chartWidth - chartPadding} y2={goalY} />
-              <text className="tracker-goal-label" x={chartWidth - chartPadding - 6} y={goalLabelY}>
-                Goal {whole(goalValue)}{metric.unit === 'g' ? 'g' : ' cal'}
+              <line
+                className="tracker-goal-line"
+                x1={chartPadding}
+                y1={goalY}
+                x2={chartWidth - chartPadding}
+                y2={goalY}
+              />
+              <text
+                className="tracker-goal-label"
+                x={chartWidth - chartPadding - 6}
+                y={goalLabelY}
+              >
+                Goal {whole(goalValue)}
+                {metric.unit === "g" ? "g" : " cal"}
               </text>
             </>
           )}
-          <line className="tracker-line-axis" x1={chartPadding} y1={baseY} x2={chartWidth - chartPadding} y2={baseY} />
+          <line
+            className="tracker-line-axis"
+            x1={chartPadding}
+            y1={baseY}
+            x2={chartWidth - chartPadding}
+            y2={baseY}
+          />
           <path className="tracker-line-path-shadow" d={path} />
           <path className="tracker-line-path" d={path} />
-          {points.map(point => (
-            <circle className="tracker-line-dot" cx={point.x} cy={point.y} r="4.4" key={`${point.x}-${point.y}`} />
+          {points.map((point) => (
+            <circle
+              className="tracker-line-dot"
+              cx={point.x}
+              cy={point.y}
+              r="4.4"
+              key={`${point.x}-${point.y}`}
+            />
           ))}
         </svg>
 
@@ -308,7 +499,9 @@ function WeekProgress({ days, goals }) {
           {days.map((day, index) => (
             <div className="tracker-line-day" key={day.date}>
               <strong>{day.dayLabel}</strong>
-              <span>{whole(values[index])} {metric.unit}</span>
+              <span>
+                {whole(values[index])} {metric.unit}
+              </span>
             </div>
           ))}
         </div>
@@ -318,14 +511,14 @@ function WeekProgress({ days, goals }) {
   );
 }
 
-function WeeklyMealsByDay({ days }) {
+function WeeklyMealsByDay({ days, onRemove }) {
   return (
     <Card className="app-card tracker-card weekly-meals-card">
       <div className="tracker-card-header">
         <h2>Meals by Day</h2>
       </div>
       <div className="weekly-meal-groups">
-        {days.map(day => (
+        {days.map((day) => (
           <section className="weekly-meal-group" key={day.date}>
             <div className="weekly-meal-day">
               <strong>{formatDayName(day.date)}</strong>
@@ -335,8 +528,16 @@ function WeeklyMealsByDay({ days }) {
               <p className="weekly-meal-empty">No food logged</p>
             ) : (
               <div className="weekly-meal-list">
-                {sortLoggedFoodsNewestFirst(day.meals || []).map(food => (
-                  <HistoryFoodCard food={food} date={day.date} key={food._id || `${day.date}-${food.name}-${food.loggedAt || ''}`} />
+                {sortLoggedFoodsNewestFirst(day.meals || []).map((food) => (
+                  <HistoryFoodCard
+                    food={food}
+                    date={day.date}
+                    onRemove={onRemove}
+                    key={
+                      food._id ||
+                      `${day.date}-${food.name}-${food.loggedAt || ""}`
+                    }
+                  />
                 ))}
               </div>
             )}
@@ -347,52 +548,55 @@ function WeeklyMealsByDay({ days }) {
   );
 }
 
-function loggedFoodImage(item = {}) {
-  return item.imageUrl || item.image || item.photoUrl || item.thumbnailUrl || item.mealImageUrl || item.ingredientImageUrl || '';
-}
-
 function logDetailHref(food, date) {
   return {
-    pathname: '/logs/[id]',
+    pathname: "/logs/[id]",
     query: {
       id: food._id,
-      ...(date ? { date } : {})
-    }
+      ...(date ? { date } : {}),
+      from: "history",
+    },
   };
 }
 
-function HistoryFoodCard({ food, date }) {
+function HistoryFoodCard({ food, date, onRemove }) {
   return (
-    <Link href={logDetailHref(food, date)} className="history-food-card">
-      <FoodImage
-        src={loggedFoodImage(food)}
-        alt={food.name || 'Logged food'}
-        category={food.type === 'ingredient' ? 'Other' : food.category || 'Meal'}
-        className="history-food-card__image"
-        placeholderClassName="history-food-card__placeholder"
-      />
-      <span className="history-food-card__title">{food.name || 'Logged food'}</span>
-    </Link>
+    <LoggedFoodCard
+      item={food}
+      detailHref={logDetailHref(food, date)}
+      onRemove={onRemove}
+      className="history-logged-food-card"
+    />
   );
 }
 
-function FoodList({ title, foods = [], date, compact = false }) {
+function FoodList({ title, foods = [], date, compact = false, onRemove }) {
   const sortedFoods = sortLoggedFoodsNewestFirst(foods);
-  const content = sortedFoods.length === 0 ? (
-    <EmptyLoggedFoodCard />
-  ) : (
-    <div className="history-food-card-grid">
-      {sortedFoods.map(food => (
-        <HistoryFoodCard food={food} date={date} key={food._id || `${food.name}-${food.loggedAt}`} />
-      ))}
-    </div>
-  );
+  const content =
+    sortedFoods.length === 0 ? (
+      <EmptyLoggedFoodCard />
+    ) : (
+      <div className="history-food-card-grid">
+        {sortedFoods.map((food) => (
+          <HistoryFoodCard
+            food={food}
+            date={date}
+            onRemove={onRemove}
+            key={food._id || `${food.name}-${food.loggedAt}`}
+          />
+        ))}
+      </div>
+    );
 
   if (compact) return content;
 
   return (
     <Card className="app-card tracker-card">
-      {title && <div className="tracker-card-header"><h2>{title}</h2></div>}
+      {title && (
+        <div className="tracker-card-header">
+          <h2>{title}</h2>
+        </div>
+      )}
       {content}
     </Card>
   );
@@ -405,12 +609,26 @@ function WeekAnalysis({ analysis }) {
         <h2>Week Analysis</h2>
       </div>
       <div className="analysis-grid compact-analysis-grid">
-        <div className="analysis-stat"><span>Days logged</span><strong>{analysis.loggedCount}/7</strong></div>
-        <div className="analysis-stat"><span>Avg calories</span><strong>{analysis.avgCalories}</strong></div>
-        <div className="analysis-stat"><span>Avg protein</span><strong>{analysis.avgProtein}g</strong></div>
-        <div className="analysis-stat"><span>Highest calorie day</span><strong>{analysis.highestCalories?.dayLabel || '-'}, {formatFoodStat(analysis.highestCalories?.totalCalories, ' cal')}</strong></div>
+        <div className="analysis-stat">
+          <span>Days logged</span>
+          <strong>{analysis.loggedCount}/7</strong>
+        </div>
+        <div className="analysis-stat">
+          <span>Avg calories</span>
+          <strong>{analysis.avgCalories}</strong>
+        </div>
+        <div className="analysis-stat">
+          <span>Avg protein</span>
+          <strong>{analysis.avgProtein}g</strong>
+        </div>
+        <div className="analysis-stat">
+          <span>Highest calorie day</span>
+          <strong>
+            {analysis.highestCalories?.dayLabel || "-"},{" "}
+            {formatFoodStat(analysis.highestCalories?.totalCalories, " cal")}
+          </strong>
+        </div>
       </div>
     </Card>
   );
 }
-

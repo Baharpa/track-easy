@@ -15,7 +15,7 @@ import UnsavedChangesModal from '../../components/UnsavedChangesModal';
 import { ErrorMessage, LoadingMessage } from '../../components/StateMessage';
 import { apiFetch } from '../../lib/api';
 import { formatAmount, formatCalories, formatMacro, formatServingLabel, getIngredientServingNutrition } from '../../lib/formatNutrition';
-import { calculateNutritionWithUnit, getConversionWarning } from '../../lib/unitConverter';
+import { calculateNutritionWithUnit, getConversionWarning, getIngredientServingOptions, getIngredientServingUnits, normalizeUnit } from '../../lib/unitConverter';
 import { getFoodImage } from '../../lib/foodVisuals';
 import { normalizeMealCategory } from '../../lib/mealCategoryHelpers';
 import { APP_CATEGORIES, normalizeCategory } from '../../lib/categoryHelpers';
@@ -34,6 +34,7 @@ export default function LogFood() {
   const { register, handleSubmit, reset, watch, setValue, formState: { errors, isSubmitting } } = useForm();
   const [activeTab, setActiveTab] = useState('meal');
   const [portionInfo, setPortionInfo] = useState({ portion: 1, portionLabel: '1 whole meal' });
+  const [customMealGrams, setCustomMealGrams] = useState('');
   const [componentPortions, setComponentPortions] = useState({});
   const [showMealPicker, setShowMealPicker] = useState(false);
   const [showIngredientPicker, setShowIngredientPicker] = useState(false);
@@ -51,10 +52,11 @@ export default function LogFood() {
         || Object.keys(componentPortions).length > 0
         || portionInfo.portion !== 1
         || portionInfo.portionLabel !== '1 whole meal'
+        || customMealGrams
       : selectedIngredient
         || ingredientAmount
         || ingredientUnit !== 'grams'
-  ), [activeTab, componentPortions, ingredientAmount, ingredientUnit, portionInfo.portion, portionInfo.portionLabel, selectedIngredient, selectedMealId]);
+  ), [activeTab, componentPortions, customMealGrams, ingredientAmount, ingredientUnit, portionInfo.portion, portionInfo.portionLabel, selectedIngredient, selectedMealId]);
   const { showModal, keepEditing, discardChanges, markSaved } = useUnsavedChanges(hasUnsavedChanges);
 
   useEffect(() => {
@@ -67,16 +69,26 @@ export default function LogFood() {
   const ingredientConversionWarning = selectedIngredient
     ? getConversionWarning(ingredientAmount, ingredientUnit, selectedIngredient)
     : '';
+  const ingredientServingOptions = useMemo(() => getIngredientServingOptions(selectedIngredient), [selectedIngredient]);
+  const ingredientServingUnits = useMemo(() => getIngredientServingUnits(selectedIngredient), [selectedIngredient]);
 
   function selectMeal(meal) {
     setValue('mealId', meal._id, { shouldValidate: true });
     setComponentPortions({});
+    setCustomMealGrams('');
+  }
+
+  function getMealWeight(meal) {
+    const ingredientsWeight = (meal?.ingredients || []).reduce((sum, item) => sum + Number(item.gramsUsed || item.quantityUsed || 0), 0);
+    const componentsWeight = (meal?.components || []).reduce((sum, component) => sum + Number(component.totalWeight || 0), 0);
+    return ingredientsWeight || componentsWeight || 0;
   }
 
   function selectIngredient(ingredient) {
+    const primaryServing = getIngredientServingOptions(ingredient)[0];
     setSelectedIngredient(ingredient);
-    setIngredientAmount(ingredient.quantity || '');
-    setIngredientUnit(ingredient.unit || 'grams');
+    setIngredientAmount(primaryServing?.amount || ingredient.quantity || '');
+    setIngredientUnit(normalizeUnit(primaryServing?.unit || ingredient.unit || 'grams') || primaryServing?.unit || ingredient.unit || 'grams');
     setIngredientErrorMessage('');
     setShowIngredientPicker(false);
   }
@@ -92,9 +104,20 @@ export default function LogFood() {
   }
 
   async function logMeal(data) {
-    const body = { type: 'meal', mealId: data.mealId, ...portionInfo };
+    const body = { type: 'meal', mealId: data.mealId, ...portionInfo, portionMode: 'whole' };
+    const customGrams = Number(customMealGrams || 0);
+    const mealWeight = getMealWeight(selectedMeal);
 
-    if (hasComponents) {
+    if (customGrams > 0 && mealWeight > 0) {
+      const factor = customGrams / mealWeight;
+      body.portion = factor;
+      body.portionFactor = factor;
+      body.loggedGrams = customGrams;
+      body.portionMode = 'grams';
+      body.portionLabel = `${customGrams}g of meal`;
+    }
+
+    if (hasComponents && customGrams <= 0) {
       body.componentPortions = selectedMeal.components.map((component, index) => ({
         componentIndex: index,
         eatenAmount: Number(componentPortions[index]?.eatenAmount || component.totalWeight),
@@ -110,6 +133,7 @@ export default function LogFood() {
     markSaved();
     reset({ mealId: '' });
     setPortionInfo({ portion: 1, portionLabel: '1 whole meal' });
+    setCustomMealGrams('');
     setComponentPortions({});
     setLogSuccess('Meal added');
     window.setTimeout(() => setLogSuccess(''), 2600);
@@ -198,8 +222,26 @@ export default function LogFood() {
             </Form.Group>
 
             {selectedMeal && !hasComponents && <PortionSelector value={portionInfo.portion} onChange={setPortionInfo} />}
+            {selectedMeal && (
+              <Form.Group className="tracker-form-section">
+                <Form.Label>Custom Meal Grams</Form.Label>
+                <Form.Control
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={customMealGrams}
+                  onChange={e => setCustomMealGrams(e.target.value)}
+                  placeholder="Optional custom grams for the whole meal"
+                />
+                <Form.Text className="text-muted">
+                  {getMealWeight(selectedMeal) > 0
+                    ? 'Enter grams to log a partial meal by weight.'
+                    : 'Add ingredient weights to log by grams accurately.'}
+                </Form.Text>
+              </Form.Group>
+            )}
             {selectedMeal && hasComponents && <div className="component-portion-section">
-              <Form.Label>Component Amounts Eaten</Form.Label>
+              <Form.Label>Customize Meal Parts</Form.Label>
               {selectedMeal.components.map((component, index) => (
                 <Row key={`${component.name}-${index}`} className="component-portion-row">
                   <Col md={5}>
@@ -236,11 +278,19 @@ export default function LogFood() {
             </Form.Group>
 
             {selectedIngredient && <>
-              <ServingAmountSelector
+                <ServingAmountSelector
+                  options={ingredientServingOptions}
+                  selectedOption={selectedIngredient && ingredientServingOptions.find(option => Number(option.amount) === Number(ingredientAmount) && normalizeUnit(option.unit) === normalizeUnit(ingredientUnit))?.servingName}
+                  onOptionChange={option => {
+                    const nextAmount = option.custom && normalizeUnit(option.unit) === 'grams' ? '' : option.amount;
+                    setIngredientAmount(String(nextAmount));
+                    setIngredientUnit(normalizeUnit(option.unit) || option.unit);
+                  }}
                 amount={ingredientAmount}
                 onAmountChange={setIngredientAmount}
                 unit={ingredientUnit}
                 onUnitChange={setIngredientUnit}
+                extraUnits={ingredientServingUnits}
                 nutrition={ingredientPreview}
                 conversionWarning={ingredientConversionWarning}
               />

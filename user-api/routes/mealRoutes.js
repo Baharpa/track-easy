@@ -3,6 +3,7 @@ const auth = require('../config/auth');
 const Meal = require('../models/Meal');
 const Ingredient = require('../models/Ingredient');
 const { calculateNutritionWithUnit, addTotals, calculateComponentPortion, round } = require('../utils/nutrition');
+const { convertToGrams, normalizeUnit, getIngredientServingOptions } = require('../utils/unitConverter');
 const { hydrateMealDocument } = require('../utils/logHydration');
 const router = express.Router();
 
@@ -14,7 +15,11 @@ async function buildMealIngredients(userId, selectedIngredients) {
 
     if (ingredient) {
       const quantityUsed = Number(item.quantityUsed);
-      const unit = item.unit || 'grams';
+      const unit = normalizeUnit(item.unit || 'grams');
+      const matchingServing = getIngredientServingOptions(ingredient).find(option => normalizeUnit(option.unit) === unit && Number(option.amount) === quantityUsed);
+      const gramsUsed = matchingServing?.gramsEquivalent > 0
+        ? round(quantityUsed * (matchingServing.gramsEquivalent / matchingServing.amount))
+        : convertToGrams(quantityUsed, unit, ingredient);
       
       // Use new per-100g calculation with unit conversion
       const nutrition = calculateNutritionWithUnit(quantityUsed, unit, ingredient);
@@ -24,6 +29,7 @@ async function buildMealIngredients(userId, selectedIngredients) {
         name: ingredient.name,
         quantityUsed,
         unit,
+        gramsUsed: gramsUsed > 0 ? round(gramsUsed) : null,
         ...nutrition
       });
     }
@@ -38,7 +44,7 @@ async function buildMealComponents(userId, components) {
 
   for (const component of components || []) {
     const originalIngredients = await buildMealIngredients(userId, component.ingredients || []);
-    const totalWeight = originalIngredients.reduce((sum, item) => sum + Number(item.quantityUsed || 0), 0);
+    const totalWeight = originalIngredients.reduce((sum, item) => sum + Number(item.gramsUsed || 0), 0);
     const consumedWeight = Number(component.consumedWeight || totalWeight);
 
     // This is the proportional logic from the planning sheet.
@@ -51,12 +57,17 @@ async function buildMealComponents(userId, components) {
       if (ingredient) {
         // Use new per-100g calculation with unit conversion
         const nutrition = calculateNutritionWithUnit(item.quantityUsed, item.unit, ingredient);
+        const matchingServing = getIngredientServingOptions(ingredient).find(option => normalizeUnit(option.unit) === normalizeUnit(item.unit) && Number(option.amount) === Number(item.quantityUsed));
+        const gramsUsed = matchingServing?.gramsEquivalent > 0
+          ? round(Number(item.quantityUsed) * (matchingServing.gramsEquivalent / matchingServing.amount))
+          : convertToGrams(item.quantityUsed, item.unit, ingredient);
         
         consumedIngredients.push({
           ingredientId: ingredient._id,
           name: ingredient.name,
           quantityUsed: item.quantityUsed,
           unit: item.unit,
+          gramsUsed: gramsUsed > 0 ? round(gramsUsed) : null,
           ...nutrition
         });
       }

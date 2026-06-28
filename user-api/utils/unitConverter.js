@@ -1,29 +1,6 @@
 // Unit Conversion Utility
-// Converts various units to grams for consistent nutrition calculations
+// Converts ingredient units to grams for nutrition calculations.
 
-// Default conversion values for general foods
-// NOTE: These are approximate values. Different foods have different densities.
-// For example: 1 cup of almond flour ≠ 1 cup of Greek yogurt in grams
-// We support ingredient-specific overrides in the Ingredient model
-const DEFAULT_CONVERSIONS = {
-  // Weight conversions
-  kilograms: { toGrams: 1000 },
-  grams: { toGrams: 1 },
-  
-  // Volume conversions
-  liters: { toMilliliters: 1000 },
-  milliliters: { toMilliliters: 1 },
-  
-  // Common cooking measurements (approximations for general foods)
-  teaspoons: { toGrams: 5 },
-  tablespoons: { toGrams: 15 },
-  cups: { toGrams: 240 },
-  
-  // Piece (cannot convert without ingredient-specific data)
-  pieces: { toGrams: null }
-};
-
-// List of all valid units
 const VALID_UNITS = [
   'grams',
   'kilograms',
@@ -35,238 +12,318 @@ const VALID_UNITS = [
   'pieces'
 ];
 
-/**
- * Normalize unit name (case-insensitive, handle common aliases)
- * @param {string} unit - The unit to normalize
- * @returns {string} - Normalized unit name
- */
+const STANDARD_UNIT_SET = new Set(VALID_UNITS);
+
 function normalizeUnit(unit) {
   if (!unit) return null;
-  const normalized = unit.toLowerCase().trim();
-  
-  // Common aliases
+  const normalized = String(unit).toLowerCase().trim();
+
   const aliases = {
-    'g': 'grams',
-    'kg': 'kilograms',
-    'ml': 'milliliters',
-    'l': 'liters',
-    'tsp': 'teaspoons',
-    'tbsp': 'tablespoons',
-    'cup': 'cups',
-    'pcs': 'pieces',
-    'piece': 'pieces',
-    'pc': 'pieces'
+    g: 'grams',
+    kg: 'kilograms',
+    ml: 'milliliters',
+    l: 'liters',
+    tsp: 'teaspoons',
+    tbsp: 'tablespoons',
+    cup: 'cups',
+    pcs: 'pieces',
+    piece: 'pieces',
+    pc: 'pieces'
   };
-  
+
   return aliases[normalized] || normalized;
 }
 
-/**
- * Check if a unit is valid
- * @param {string} unit - Unit to validate
- * @returns {boolean}
- */
+function isStandardUnit(unit) {
+  return STANDARD_UNIT_SET.has(normalizeUnit(unit));
+}
+
 function isValidUnit(unit) {
-  const normalized = normalizeUnit(unit);
-  return VALID_UNITS.includes(normalized);
+  return isStandardUnit(unit);
 }
 
-/**
- * Convert an amount from one unit to another
- * @param {number} amount - The amount to convert
- * @param {string} fromUnit - Source unit
- * @param {string} toUnit - Target unit
- * @param {object} ingredient - Optional ingredient object with custom conversions
- * @returns {number} - Converted amount, or null if conversion not possible
- */
-function convert(amount, fromUnit, toUnit, ingredient = null) {
-  if (!amount || amount <= 0) return 0;
-  
-  const from = normalizeUnit(fromUnit);
-  const to = normalizeUnit(toUnit);
-  
-  if (!from || !to) return null;
-  if (!isValidUnit(from) || !isValidUnit(to)) return null;
-  
-  if (from === to) return amount;
-  
-  // Special handling for pieces - cannot convert without ingredient data
-  if (from === 'pieces' || to === 'pieces') {
-    if (from === 'pieces' && to === 'grams') {
-      if (ingredient && ingredient.gramsPerPiece) {
-        return amount * ingredient.gramsPerPiece;
-      }
-      return null; // Cannot convert pieces without gramsPerPiece
-    }
-    if (from === 'grams' && to === 'pieces') {
-      if (ingredient && ingredient.gramsPerPiece) {
-        return amount / ingredient.gramsPerPiece;
-      }
-      return null;
-    }
-    return null; // Cannot convert between pieces and non-grams
-  }
-  
-  // Convert to grams as intermediate unit
-  let grams = convertToGrams(amount, from, ingredient);
-  if (grams === null) return null;
-  
-  // Convert from grams to target unit
-  return convertFromGrams(grams, to, ingredient);
-}
+function normalizeConversionOption(option) {
+  if (!option) return null;
 
-/**
- * Convert any unit to grams
- * @param {number} amount
- * @param {string} unit
- * @param {object} ingredient - Optional ingredient with custom conversions
- * @returns {number} grams, or null if cannot convert
- */
-function convertToGrams(amount, unit, ingredient = null) {
-  const normalized = normalizeUnit(unit);
-  
-  if (!normalized) return null;
-  if (normalized === 'grams') return amount;
-  
-  if (normalized === 'kilograms') {
-    return amount * 1000;
-  }
-  
-  if (normalized === 'milliliters' || normalized === 'liters') {
-    return null;
-  }
-  
-  if (normalized === 'teaspoons') {
-    return ingredient?.gramsPerTeaspoon ? amount * ingredient.gramsPerTeaspoon : null;
-  }
-  
-  if (normalized === 'tablespoons') {
-    return ingredient?.gramsPerTablespoon ? amount * ingredient.gramsPerTablespoon : null;
-  }
-  
-  if (normalized === 'cups') {
-    return ingredient?.gramsPerCup ? amount * ingredient.gramsPerCup : null;
-  }
-  
-  if (normalized === 'pieces') {
-    if (ingredient?.gramsPerPiece) {
-      return amount * ingredient.gramsPerPiece;
-    }
-    return null; // Cannot convert pieces without data
-  }
-  
-  return null;
-}
+  const amount = Number(option.amount);
+  const gramsEquivalent = option.gramsEquivalent !== undefined && option.gramsEquivalent !== ''
+    ? Number(option.gramsEquivalent)
+    : option.grams !== undefined && option.grams !== ''
+      ? Number(option.grams)
+      : null;
+  const unit = String(option.unit || '').trim().toLowerCase();
+  if (!unit || amount <= 0) return null;
 
-function getConversionWarning(unit, ingredient = null) {
-  const normalized = normalizeUnit(unit);
+  const label = String(option.label || option.servingName || option.displayName || '').trim() || `${amount} ${unit}`;
 
-  if (normalized === 'teaspoons' && !ingredient?.gramsPerTeaspoon) {
-    return 'Add a custom conversion for this ingredient.';
-  }
-
-  if (normalized === 'tablespoons' && !ingredient?.gramsPerTablespoon) {
-    return 'Add a custom conversion for this ingredient.';
-  }
-
-  if (normalized === 'cups' && !ingredient?.gramsPerCup) {
-    return 'Add a custom conversion for this ingredient.';
-  }
-
-  if (normalized === 'milliliters' || normalized === 'liters') {
-    return 'Add a custom conversion for this ingredient.';
-  }
-
-  return '';
-}
-
-/**
- * Convert from grams to any other unit
- * @param {number} grams
- * @param {string} unit
- * @param {object} ingredient - Optional ingredient with custom conversions
- * @returns {number} converted amount, or null if cannot convert
- */
-function convertFromGrams(grams, unit, ingredient = null) {
-  const normalized = normalizeUnit(unit);
-  
-  if (!normalized) return null;
-  if (normalized === 'grams') return grams;
-  
-  if (normalized === 'kilograms') {
-    return grams / 1000;
-  }
-  
-  if (normalized === 'milliliters' || normalized === 'liters') {
-    // Grams to ML assumes 1:1 for water/most liquids
-    const ml = grams;
-    return normalized === 'milliliters' ? ml : ml / 1000;
-  }
-  
-  if (normalized === 'teaspoons') {
-    const gramsPerTsp = ingredient?.gramsPerTeaspoon || DEFAULT_CONVERSIONS.teaspoons.toGrams;
-    return grams / gramsPerTsp;
-  }
-  
-  if (normalized === 'tablespoons') {
-    const gramsPerTbsp = ingredient?.gramsPerTablespoon || DEFAULT_CONVERSIONS.tablespoons.toGrams;
-    return grams / gramsPerTbsp;
-  }
-  
-  if (normalized === 'cups') {
-    const gramsPerCup = ingredient?.gramsPerCup || DEFAULT_CONVERSIONS.cups.toGrams;
-    return grams / gramsPerCup;
-  }
-  
-  if (normalized === 'pieces') {
-    if (ingredient?.gramsPerPiece) {
-      return grams / ingredient.gramsPerPiece;
-    }
-    return null;
-  }
-  
-  return null;
-}
-
-/**
- * Calculate nutrition based on amount used and per-100g values
- * @param {number} gramsUsed - Amount used in grams
- * @param {object} nutritionPer100g - { caloriesPer100g, proteinPer100g, etc }
- * @returns {object} - Calculated nutrition values
- */
-function calculateNutrition(gramsUsed, nutritionPer100g) {
-  if (!gramsUsed || !nutritionPer100g) {
-    return { calories: 0, protein: 0, carbs: 0, fats: 0, sugar: 0 };
-  }
-  
-  const factor = gramsUsed / 100;
   return {
-    calories: round((nutritionPer100g.caloriesPer100g || 0) * factor),
-    protein: round((nutritionPer100g.proteinPer100g || 0) * factor),
-    carbs: round((nutritionPer100g.carbsPer100g || 0) * factor),
-    fats: round((nutritionPer100g.fatsPer100g || 0) * factor),
-    sugar: round((nutritionPer100g.sugarPer100g || 0) * factor)
+    label,
+    servingName: label,
+    amount,
+    unit,
+    gramsEquivalent: Number.isFinite(gramsEquivalent) && gramsEquivalent > 0 ? gramsEquivalent : null,
+    calories: Number(option.calories) || 0,
+    protein: Number(option.protein) || 0,
+    carbs: Number(option.carbs) || 0,
+    sugar: Number(option.sugar) || 0,
+    fats: Number(option.fats) || 0
   };
 }
 
-/**
- * Round to 1 decimal place
- * @param {number} num
- * @returns {number}
- */
+function buildLegacyConversionOptions(ingredient) {
+  const conversions = Array.isArray(ingredient?.conversions)
+    ? ingredient.conversions.map(normalizeConversionOption).filter(Boolean)
+    : [];
+  if (conversions.length > 0) return conversions;
+
+  const servingOptions = Array.isArray(ingredient?.servingOptions)
+    ? ingredient.servingOptions.map(option => normalizeConversionOption({
+        label: option.label || option.servingName,
+        amount: option.amount,
+        unit: option.unit,
+        gramsEquivalent: option.gramsEquivalent ?? option.grams,
+        calories: option.calories,
+        protein: option.protein,
+        carbs: option.carbs,
+        sugar: option.sugar,
+        fats: option.fats
+      })).filter(Boolean)
+    : [];
+  if (servingOptions.length > 0) return servingOptions;
+
+  return Array.isArray(ingredient?.measuringOptions)
+    ? ingredient.measuringOptions.map(option => normalizeConversionOption({
+        label: option.label,
+        amount: option.amount,
+        unit: option.unit,
+        gramsEquivalent: option.grams
+      })).filter(Boolean)
+    : [];
+}
+
+function getIngredientServingOptions(ingredient) {
+  const options = [];
+  const seen = new Set();
+
+  const pushOption = (option) => {
+    if (!option) return;
+    const key = `${option.amount}|${normalizeUnit(option.unit)}|${option.gramsEquivalent ?? ''}|${option.label}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    options.push(option);
+  };
+
+  if (Array.isArray(ingredient?.conversions)) {
+    ingredient.conversions.map(normalizeConversionOption).filter(Boolean).forEach(pushOption);
+  }
+
+  buildLegacyConversionOptions(ingredient).forEach(pushOption);
+
+  return options;
+}
+
+function getIngredientServingUnits(ingredient) {
+  const units = new Set();
+
+  for (const option of getIngredientServingOptions(ingredient)) {
+    const normalized = normalizeUnit(option.unit);
+    if (!normalized || isStandardUnit(normalized)) continue;
+    units.add(option.unit.trim().toLowerCase());
+  }
+
+  return Array.from(units);
+}
+
+function findMatchingConversion(ingredient, amount, unit) {
+  const normalizedUnit = normalizeUnit(unit);
+  const numericAmount = Number(amount);
+  const options = getIngredientServingOptions(ingredient).filter(option => normalizeUnit(option.unit) === normalizedUnit);
+  return options.find(option => Number(option.amount) === numericAmount) || options[0] || null;
+}
+
+function convertWithConversionOption(amount, option) {
+  if (!option || !amount || amount <= 0) return null;
+  if (option.gramsEquivalent > 0) return amount * (option.gramsEquivalent / option.amount);
+  if (normalizeUnit(option.unit) === 'grams') return amount;
+  return null;
+}
+
+function convertToGrams(amount, unit, ingredient = null) {
+  const normalized = normalizeUnit(unit);
+  if (!normalized) return null;
+  if (normalized === 'grams') return amount;
+  if (normalized === 'kilograms') return amount * 1000;
+  if (normalized === 'milliliters' || normalized === 'liters') return null;
+
+  const matchingConversion = findMatchingConversion(ingredient, amount, unit);
+  if (matchingConversion) {
+    return convertWithConversionOption(amount, matchingConversion);
+  }
+
+  if (normalized === 'teaspoons' && ingredient?.gramsPerTeaspoon) return amount * ingredient.gramsPerTeaspoon;
+  if (normalized === 'tablespoons' && ingredient?.gramsPerTablespoon) return amount * ingredient.gramsPerTablespoon;
+  if (normalized === 'cups' && ingredient?.gramsPerCup) return amount * ingredient.gramsPerCup;
+  if (normalized === 'pieces' && ingredient?.gramsPerPiece) return amount * ingredient.gramsPerPiece;
+
+  return null;
+}
+
 function round(num) {
   return Math.round((Number(num) || 0) * 10) / 10;
 }
 
+function sameUnit(unitA, unitB) {
+  return normalizeUnit(unitA) === normalizeUnit(unitB);
+}
+
+function getStoredNutrition(ingredient, field) {
+  return Number(ingredient?.[field]) || 0;
+}
+
+function hasDirectNutrition(ingredient) {
+  return ['calories', 'protein', 'carbs', 'fats', 'sugar'].some(field => getStoredNutrition(ingredient, field) > 0);
+}
+
+function calculateNutritionFromRatio(ratio, ingredient) {
+  return {
+    calories: round(getStoredNutrition(ingredient, 'calories') * ratio),
+    protein: round(getStoredNutrition(ingredient, 'protein') * ratio),
+    carbs: round(getStoredNutrition(ingredient, 'carbs') * ratio),
+    fats: round(getStoredNutrition(ingredient, 'fats') * ratio),
+    sugar: round(getStoredNutrition(ingredient, 'sugar') * ratio)
+  };
+}
+
+function calculateNutritionFromPer100gValue(gramsUsed, ingredient) {
+  if (!gramsUsed || gramsUsed <= 0) {
+    return { calories: 0, protein: 0, carbs: 0, fats: 0, sugar: 0 };
+  }
+
+  const factor = gramsUsed / 100;
+  return {
+    calories: round(getPer100gValue(ingredient, 'calories') * factor),
+    protein: round(getPer100gValue(ingredient, 'protein') * factor),
+    carbs: round(getPer100gValue(ingredient, 'carbs') * factor),
+    fats: round(getPer100gValue(ingredient, 'fats') * factor),
+    sugar: round(getPer100gValue(ingredient, 'sugar') * factor)
+  };
+}
+
+function getPer100gValue(ingredient, field) {
+  const per100gField = `${field}Per100g`;
+  const directValue = Number(ingredient?.[per100gField]);
+  if (directValue > 0) return directValue;
+
+  const legacyValue = Number(ingredient?.[field]) || 0;
+  const inventoryGrams = convertToGrams(Number(ingredient?.quantity), ingredient?.unit, ingredient);
+  if (legacyValue > 0 && inventoryGrams > 0) {
+    return legacyValue / inventoryGrams * 100;
+  }
+
+  return 0;
+}
+
+function getSavedQuantityNutrition(ingredient) {
+  const direct = {
+    calories: getStoredNutrition(ingredient, 'calories'),
+    protein: getStoredNutrition(ingredient, 'protein'),
+    carbs: getStoredNutrition(ingredient, 'carbs'),
+    fats: getStoredNutrition(ingredient, 'fats'),
+    sugar: getStoredNutrition(ingredient, 'sugar')
+  };
+
+  if (Object.values(direct).some(value => value > 0)) return direct;
+
+  const grams = convertToGrams(Number(ingredient?.quantity), ingredient?.unit, ingredient);
+  return calculateNutritionFromPer100gValue(grams, ingredient);
+}
+
+function calculateNutritionWithUnit(quantityUsed, unit, ingredient) {
+  if (!quantityUsed || quantityUsed <= 0) {
+    return { calories: 0, protein: 0, carbs: 0, fats: 0, sugar: 0 };
+  }
+
+  const matchingConversion = findMatchingConversion(ingredient, quantityUsed, unit);
+  if (matchingConversion && ['calories', 'protein', 'carbs', 'fats', 'sugar'].some(field => Number(matchingConversion[field]) > 0)) {
+    const factor = Number(quantityUsed) / Number(matchingConversion.amount || 1);
+    return {
+      calories: round(Number(matchingConversion.calories || 0) * factor),
+      protein: round(Number(matchingConversion.protein || 0) * factor),
+      carbs: round(Number(matchingConversion.carbs || 0) * factor),
+      fats: round(Number(matchingConversion.fats || 0) * factor),
+      sugar: round(Number(matchingConversion.sugar || 0) * factor)
+    };
+  }
+
+  const savedQuantity = Number(ingredient?.quantity);
+  const inventoryGrams = convertToGrams(savedQuantity, ingredient?.unit, ingredient);
+  const usedGrams = convertToGrams(quantityUsed, unit, ingredient);
+
+  if (hasDirectNutrition(ingredient) && savedQuantity > 0) {
+    if (sameUnit(unit, ingredient?.unit)) {
+      return calculateNutritionFromRatio(Number(quantityUsed) / savedQuantity, ingredient);
+    }
+
+    if (usedGrams > 0 && inventoryGrams > 0) {
+      return calculateNutritionFromRatio(usedGrams / inventoryGrams, ingredient);
+    }
+  }
+
+  if (usedGrams === null || usedGrams <= 0) {
+    return { calories: 0, protein: 0, carbs: 0, fats: 0, sugar: 0 };
+  }
+
+  return calculateNutritionFromPer100gValue(usedGrams, ingredient);
+}
+
+function convertFromGrams(grams, unit, ingredient = null) {
+  const normalized = normalizeUnit(unit);
+  if (!normalized) return null;
+  if (normalized === 'grams') return grams;
+  if (normalized === 'kilograms') return grams / 1000;
+  if (normalized === 'milliliters' || normalized === 'liters') return null;
+
+  if (normalized === 'teaspoons' || normalized === 'tablespoons' || normalized === 'cups' || normalized === 'pieces') {
+    const matchingConversion = getIngredientServingOptions(ingredient).find(option => normalizeUnit(option.unit) === normalized && option.gramsEquivalent > 0);
+    if (matchingConversion) {
+      return grams / (matchingConversion.gramsEquivalent / matchingConversion.amount);
+    }
+    if (normalized === 'teaspoons' && ingredient?.gramsPerTeaspoon) return grams / ingredient.gramsPerTeaspoon;
+    if (normalized === 'tablespoons' && ingredient?.gramsPerTablespoon) return grams / ingredient.gramsPerTablespoon;
+    if (normalized === 'cups' && ingredient?.gramsPerCup) return grams / ingredient.gramsPerCup;
+    if (normalized === 'pieces' && ingredient?.gramsPerPiece) return grams / ingredient.gramsPerPiece;
+    return null;
+  }
+
+  return null;
+}
+
+function hasKnownConversion(quantityUsed, unit, ingredient) {
+  if (!quantityUsed || Number(quantityUsed) <= 0 || !unit || !ingredient) return true;
+  if (sameUnit(unit, ingredient.unit)) return true;
+  return convertToGrams(Number(quantityUsed), unit, ingredient) !== null;
+}
+
+function getConversionWarning(quantityUsed, unit, ingredient) {
+  return hasKnownConversion(quantityUsed, unit, ingredient) ? '' : 'Add a custom conversion for this ingredient.';
+}
+
 module.exports = {
   VALID_UNITS,
-  DEFAULT_CONVERSIONS,
   normalizeUnit,
+  isStandardUnit,
   isValidUnit,
-  convert,
+  getIngredientServingOptions,
+  getIngredientServingUnits,
+  getIngredientMeasuringOptions: getIngredientServingOptions,
+  getIngredientMeasuringUnits: getIngredientServingUnits,
   convertToGrams,
   convertFromGrams,
+  hasKnownConversion,
   getConversionWarning,
-  calculateNutrition,
+  calculateNutritionWithUnit,
+  getSavedQuantityNutrition,
+  getPer100gValue,
+  calculateNutritionFromPer100g: calculateNutritionFromPer100gValue,
   round
 };

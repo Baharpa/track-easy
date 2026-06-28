@@ -4,8 +4,8 @@ import { Form } from 'react-bootstrap';
  * Reusable unit dropdown component
  * Shows all valid units: grams, kilograms, milliliters, liters, teaspoons, tablespoons, cups, pieces
  */
-export default function UnitSelect({ value, onChange, isInvalid, required = true, disabled = false, className = '' }) {
-  const units = [
+export default function UnitSelect({ value, onChange, isInvalid, required = true, disabled = false, className = '', extraUnits = [] }) {
+  const baseUnits = [
     { value: 'grams', label: 'Grams (g)' },
     { value: 'kilograms', label: 'Kilograms (kg)' },
     { value: 'milliliters', label: 'Milliliters (ml)' },
@@ -15,6 +15,9 @@ export default function UnitSelect({ value, onChange, isInvalid, required = true
     { value: 'cups', label: 'Cups' },
     { value: 'pieces', label: 'Pieces' }
   ];
+  const extra = extraUnits
+    .map(unit => typeof unit === 'string' ? { value: unit, label: unit } : unit)
+    .filter(unit => unit?.value && !baseUnits.some(base => base.value === unit.value));
 
   return (
     <Form.Select
@@ -26,7 +29,7 @@ export default function UnitSelect({ value, onChange, isInvalid, required = true
       required={required}
     >
       <option value="">Choose unit</option>
-      {units.map(unit => (
+      {[...baseUnits, ...extra].map(unit => (
         <option key={unit.value} value={unit.value}>
           {unit.label}
         </option>

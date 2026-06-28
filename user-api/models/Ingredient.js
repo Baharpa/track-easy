@@ -26,6 +26,28 @@ const ingredientSchema = new mongoose.Schema({
   gramsPerTablespoon: { type: Number },
   gramsPerCup: { type: Number },
   gramsPerPiece: { type: Number },
+
+  conversions: [{
+    amount: { type: Number, required: true },
+    unit: { type: String, required: true },
+    gramsEquivalent: { type: Number, required: true }
+  }],
+
+  // Legacy alias kept for compatibility with older saved documents and code paths.
+  servingOptions: [{
+    label: { type: String },
+    amount: { type: Number, required: true },
+    unit: { type: String, required: true },
+    gramsEquivalent: { type: Number }
+  }],
+
+  // Legacy fallback kept for compatibility with older saved documents.
+  measuringOptions: [{
+    label: { type: String, required: true },
+    unit: { type: String, required: true },
+    amount: { type: Number, required: true },
+    grams: { type: Number, required: true }
+  }],
   
   imageUrl: { type: String, default: '' },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }

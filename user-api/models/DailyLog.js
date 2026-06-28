@@ -7,10 +7,14 @@ const loggedMealSchema = new mongoose.Schema({
   name: String,
   amount: Number,
   unit: String,
+  gramsUsed: Number,
   
   // Portion system (new)
+  portionMode: { type: String, default: 'whole' },
   portion: { type: Number, default: 1 },
   portionLabel: { type: String, default: '1 whole meal' },
+  portionFactor: { type: Number, default: 1 },
+  loggedGrams: { type: Number, default: 0 },
   
   // Legacy servings (for backwards compatibility)
   servings: { type: Number, default: 1 },
@@ -23,14 +27,15 @@ const loggedMealSchema = new mongoose.Schema({
   sugar: Number,
 
   ingredients: [{
-    ingredientId: { type: mongoose.Schema.Types.ObjectId, ref: 'Ingredient' },
-    name: String,
-    quantityUsed: Number,
-    unit: String,
-    calories: Number,
-    protein: Number,
-    carbs: Number,
-    fats: Number,
+      ingredientId: { type: mongoose.Schema.Types.ObjectId, ref: 'Ingredient' },
+      name: String,
+      quantityUsed: Number,
+      unit: String,
+      gramsUsed: Number,
+      calories: Number,
+      protein: Number,
+      carbs: Number,
+      fats: Number,
     sugar: Number
   }],
 

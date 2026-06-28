@@ -1,9 +1,9 @@
-import Link from 'next/link';
-import { useState } from 'react';
-import { Button, Dropdown } from 'react-bootstrap';
-import ConfirmDeleteModal from './ConfirmDeleteModal';
-import FoodInfoCard from './FoodInfoCard';
-import { TrackEasyIcon } from './TrackEasyIcons';
+import Link from "next/link";
+import { useState } from "react";
+import { Button, Dropdown } from "react-bootstrap";
+import ConfirmDeleteModal from "./ConfirmDeleteModal";
+import FoodInfoCard from "./FoodInfoCard";
+import { TrackEasyIcon } from "./TrackEasyIcons";
 
 function whole(value) {
   return Math.round(Number(value) || 0);
@@ -11,24 +11,46 @@ function whole(value) {
 
 function loggedFoodDescription(item = {}) {
   if (item.portionLabel) return item.portionLabel;
-  if (item.type === 'ingredient') return `${whole(item.amount || item.quantityUsed)} ${item.unit || ''}`.trim();
+  if (item.type === "ingredient")
+    return `${whole(item.amount || item.quantityUsed)} ${item.unit || ""}`.trim();
   return `${item.servings || item.portion || 1} serving`;
 }
 
 function loggedFoodImage(item = {}) {
-  return item.imageUrl || item.image || item.photoUrl || item.thumbnailUrl || item.mealImageUrl || item.ingredientImageUrl || '';
+  return (
+    item.imageUrl ||
+    item.image ||
+    item.photoUrl ||
+    item.thumbnailUrl ||
+    item.mealImageUrl ||
+    item.ingredientImageUrl ||
+    ""
+  );
 }
 
-export default function LoggedFoodCard({ item, onOpen, onRemove, className = '' }) {
+export default function LoggedFoodCard({
+  item,
+  onOpen,
+  onRemove,
+  detailHref,
+  className = "",
+}) {
   const [showConfirm, setShowConfirm] = useState(false);
   const imageSrc = loggedFoodImage(item);
-  const logHref = item?._id ? `/logs/${item._id}` : '';
+  const logHref = detailHref || (item?._id ? `/logs/${item._id}` : "");
+  const editHref =
+    typeof logHref === "string"
+      ? { pathname: logHref, query: { mode: "edit" } }
+      : {
+          pathname: logHref?.pathname || "",
+          query: { ...(logHref?.query || {}), mode: "edit" },
+        };
   const nutritionRows = [
-    { label: 'Calories', value: `${whole(item?.calories)} cal` },
-    { label: 'Protein', value: `${whole(item?.protein)}g` },
-    { label: 'Carbs', value: `${whole(item?.carbs)}g` },
-    { label: 'Sugar', value: `${whole(item?.sugar)}g` },
-    { label: 'Fats', value: `${whole(item?.fats)}g` }
+    { label: "Calories", value: `${whole(item?.calories)} cal` },
+    { label: "Protein", value: `${whole(item?.protein)}g` },
+    { label: "Carbs", value: `${whole(item?.carbs)}g` },
+    { label: "Sugar", value: `${whole(item?.sugar)}g` },
+    { label: "Fats", value: `${whole(item?.fats)}g` },
   ];
 
   async function confirmRemove() {
@@ -37,7 +59,7 @@ export default function LoggedFoodCard({ item, onOpen, onRemove, className = '' 
   }
 
   function handleOpen() {
-    if (typeof onOpen === 'function') {
+    if (typeof onOpen === "function") {
       onOpen(item);
     }
   }
@@ -45,13 +67,15 @@ export default function LoggedFoodCard({ item, onOpen, onRemove, className = '' 
   return (
     <>
       <FoodInfoCard
-        title={item?.name || 'Logged food'}
+        title={item?.name || "Logged food"}
         subtitle={loggedFoodDescription(item)}
         imageSrc={imageSrc}
-        category={item?.type === 'ingredient' ? 'Other' : item?.category || 'Meal'}
+        category={
+          item?.type === "ingredient" ? "Other" : item?.category || "Meal"
+        }
         nutritionRows={nutritionRows}
         className={`logged-food-card ${className}`.trim()}
-        actions={(
+        actions={
           <>
             {onRemove && (
               <Button
@@ -60,29 +84,50 @@ export default function LoggedFoodCard({ item, onOpen, onRemove, className = '' 
                 size="sm"
                 className="food-info-action food-info-action--danger"
                 onClick={() => setShowConfirm(true)}
-                aria-label={`Remove ${item?.name || 'logged food'}`}
+                aria-label={`Remove ${item?.name || "logged food"}`}
               >
                 <TrackEasyIcon name="trash" size={20} />
               </Button>
             )}
             <Dropdown align="end">
-              <Dropdown.Toggle variant="link" size="sm" className="food-info-action food-info-action--menu" aria-label={`More actions for ${item?.name || 'logged food'}`}>
+              <Dropdown.Toggle
+                variant="link"
+                size="sm"
+                className="food-info-action food-info-action--menu"
+                aria-label={`More actions for ${item?.name || "logged food"}`}
+              >
                 <TrackEasyIcon name="ellipsis" size={22} />
               </Dropdown.Toggle>
               <Dropdown.Menu className="food-info-menu">
                 {logHref ? (
                   <>
-                    <Dropdown.Item as={Link} href={logHref}>View details</Dropdown.Item>
-                    <Dropdown.Item as={Link} href={{ pathname: logHref, query: { mode: 'edit' } }}>Edit log</Dropdown.Item>
+                    <Dropdown.Item as={Link} href={logHref}>
+                      View details
+                    </Dropdown.Item>
+                    <Dropdown.Item as={Link} href={editHref}>
+                      Edit log
+                    </Dropdown.Item>
                   </>
                 ) : (
-                  <Dropdown.Item onClick={handleOpen} disabled={typeof onOpen !== 'function'}>View details</Dropdown.Item>
+                  <Dropdown.Item
+                    onClick={handleOpen}
+                    disabled={typeof onOpen !== "function"}
+                  >
+                    View details
+                  </Dropdown.Item>
                 )}
-                {onRemove && <Dropdown.Item className="text-danger" onClick={() => setShowConfirm(true)}>Remove</Dropdown.Item>}
+                {onRemove && (
+                  <Dropdown.Item
+                    className="text-danger"
+                    onClick={() => setShowConfirm(true)}
+                  >
+                    Remove
+                  </Dropdown.Item>
+                )}
               </Dropdown.Menu>
             </Dropdown>
           </>
-        )}
+        }
       />
 
       {onRemove && (
@@ -104,11 +149,16 @@ export function EmptyLoggedFoodCard() {
   return (
     <div className="empty-logged-food-card">
       <div className="empty-logged-food-card__inner">
-        <span className="empty-logged-food-card__icon" aria-hidden="true">
-          <TrackEasyIcon name="plus" size={34} />
+        <span
+          className="empty-logged-food-card__icon"
+          aria-hidden="true"
+        ></span>
+        <strong className="empty-logged-food-card__title">
+          No food logged today
+        </strong>
+        <span className="empty-logged-food-card__text">
+          Log a meal or ingredient to see it here.
         </span>
-        <strong className="empty-logged-food-card__title">No food logged today</strong>
-        <span className="empty-logged-food-card__text">Log a meal or ingredient to see it here.</span>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-const { convertToGrams } = require('./unitConverter');
+const { convertToGrams, getIngredientServingOptions, normalizeUnit } = require('./unitConverter');
 
 function round(num) {
   return Math.round((Number(num) || 0) * 10) / 10;
@@ -93,27 +93,39 @@ function calculateNutritionWithUnit(quantityUsed, unit, ingredient) {
     return emptyTotals();
   }
 
+  const servingOptions = getIngredientServingOptions(ingredient);
+  const normalizedUnit = normalizeUnit(unit);
+  const servingMatch = servingOptions.find(option => normalizeUnit(option.unit) === normalizedUnit && Number(option.amount) === Number(quantityUsed));
+  if (servingMatch && ['calories', 'protein', 'carbs', 'fats', 'sugar'].some(field => Number(servingMatch[field]) > 0)) {
+    const factor = Number(quantityUsed) / Number(servingMatch.amount || 1);
+    return {
+      calories: round(Number(servingMatch.calories || 0) * factor),
+      protein: round(Number(servingMatch.protein || 0) * factor),
+      carbs: round(Number(servingMatch.carbs || 0) * factor),
+      fats: round(Number(servingMatch.fats || 0) * factor),
+      sugar: round(Number(servingMatch.sugar || 0) * factor)
+    };
+  }
+
   const savedQuantity = Number(ingredient?.quantity);
+  const savedGrams = convertToGrams(savedQuantity, ingredient?.unit, ingredient);
+  const usedGrams = convertToGrams(quantityUsed, unit, ingredient);
   if (hasDirectNutrition(ingredient) && savedQuantity > 0) {
     if (sameUnit(unit, ingredient?.unit)) {
       return calculateNutritionFromRatio(Number(quantityUsed) / savedQuantity, ingredient);
     }
 
-    const usedGrams = convertToGrams(quantityUsed, unit, ingredient);
-    const savedGrams = convertToGrams(savedQuantity, ingredient?.unit, ingredient);
     if (usedGrams > 0 && savedGrams > 0) {
       return calculateNutritionFromRatio(usedGrams / savedGrams, ingredient);
     }
   }
 
-  const gramsUsed = convertToGrams(quantityUsed, unit, ingredient);
-  
-  if (gramsUsed === null || gramsUsed <= 0) {
+  if (usedGrams === null || usedGrams <= 0) {
     // If conversion fails or results in invalid amount, return empty
     return emptyTotals();
   }
 
-  return calculateNutritionFromPer100g(gramsUsed, ingredient);
+  return calculateNutritionFromPer100g(usedGrams, ingredient);
 }
 
 function addTotals(items) {

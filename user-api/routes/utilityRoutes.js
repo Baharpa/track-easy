@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Ingredient = require('../models/Ingredient');
-const { convertToGrams, convertFromGrams } = require('../utils/unitConverter');
+const { convertToGrams, convertFromGrams, hasKnownConversion, normalizeUnit } = require('../utils/unitConverter');
 
 /**
  * POST /api/convert
@@ -40,60 +40,46 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ success: false, error: 'From unit and to unit are required' });
     }
 
+    const cleanFromUnit = normalizeUnit(fromUnit);
+    const cleanToUnit = normalizeUnit(toUnit);
+
     // Allowed units
     const VALID_UNITS = ['grams', 'kilograms', 'milliliters', 'liters', 'teaspoons', 'tablespoons', 'cups', 'pieces'];
-    if (!VALID_UNITS.includes(fromUnit) || !VALID_UNITS.includes(toUnit)) {
+    if (!VALID_UNITS.includes(cleanFromUnit) || !VALID_UNITS.includes(cleanToUnit)) {
       return res.status(400).json({ success: false, error: `Invalid unit. Allowed: ${VALID_UNITS.join(', ')}` });
     }
-
-    // Check if we need ingredient-specific data
-    const needsIngredient = ['teaspoons', 'tablespoons', 'cups', 'pieces'].includes(fromUnit) || 
-                           ['teaspoons', 'tablespoons', 'cups', 'pieces'].includes(toUnit);
 
     let ingredient = null;
     let ingredientName = 'generic food';
     let warning = null;
 
-    if (needsIngredient && ingredientId) {
+    if (ingredientId) {
       ingredient = await Ingredient.findById(ingredientId);
       if (ingredient) {
         ingredientName = ingredient.name;
-        // Check if this is a default conversion (no custom values set)
-        const hasCustomConversion = ingredient.gramsPerTeaspoon || ingredient.gramsPerTablespoon || ingredient.gramsPerCup || ingredient.gramsPerPiece;
-        if (!hasCustomConversion) {
-          warning = 'This is a default estimate. For better accuracy, add ingredient-specific conversion values.';
-        }
+        warning = hasKnownConversion(1, cleanFromUnit, ingredient) && hasKnownConversion(1, cleanToUnit, ingredient)
+          ? null
+          : 'Add a custom conversion for this ingredient.';
       }
-    } else if (needsIngredient && !ingredientId) {
-      // For food-specific conversions without ingredient data, use defaults but warn
-      warning = 'Using default conversions. For food-specific accuracy, select an ingredient.';
-    }
-
-    // Special case: pieces conversion
-    if ((fromUnit === 'pieces' || toUnit === 'pieces') && !ingredient?.gramsPerPiece) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Pieces cannot be converted unless grams per piece is set for this ingredient.' 
-      });
     }
 
     // Convert to grams first
-    let gramsUsed = convertToGrams(amount, fromUnit, ingredient);
-    
+    let gramsUsed = convertToGrams(amount, cleanFromUnit, ingredient);
+
     if (gramsUsed === null) {
-      return res.status(400).json({ 
-        success: false, 
-        error: `Cannot convert from ${fromUnit}` 
+      return res.status(400).json({
+        success: false,
+        error: `Cannot convert from ${cleanFromUnit}`
       });
     }
 
     // Convert from grams to target unit
-    let result = convertFromGrams(gramsUsed, toUnit, ingredient);
+    let result = convertFromGrams(gramsUsed, cleanToUnit, ingredient);
 
     if (result === null) {
-      return res.status(400).json({ 
-        success: false, 
-        error: `Cannot convert to ${toUnit}` 
+      return res.status(400).json({
+        success: false,
+        error: `Cannot convert to ${cleanToUnit}`
       });
     }
 
@@ -112,13 +98,13 @@ router.post('/', async (req, res) => {
       pieces: 'pieces'
     };
 
-    const message = `${amount} ${unitLabels[fromUnit]} ${ingredientName} = ${result} ${unitLabels[toUnit]}`;
+    const message = `${amount} ${unitLabels[cleanFromUnit]} ${ingredientName} = ${result} ${unitLabels[cleanToUnit]}`;
 
     res.json({
       success: true,
       amount,
-      fromUnit,
-      toUnit,
+      fromUnit: cleanFromUnit,
+      toUnit: cleanToUnit,
       result,
       ingredientName,
       message,
