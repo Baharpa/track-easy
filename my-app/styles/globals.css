@@ -1592,6 +1592,12 @@ Purpose: Keep meal-building forms and component summaries together.
   text-transform: uppercase;
 }
 
+.meal-parts-add-row {
+  display: flex;
+  justify-content: flex-start;
+  margin: -0.25rem 0 1.5rem;
+}
+
 .component-name-row {
   display: flex;
   align-items: center;

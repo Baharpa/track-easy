@@ -758,19 +758,6 @@ export default function CreateMealComponentPage() {
                   Avocado, Pasta, Meat sauce, or Toppings.
                 </p>
               </div>
-              <div className="meal-builder-toolbar-actions">
-                <Button variant="outline-success" onClick={addMealPart}>
-                  Add Meal Part
-                </Button>
-                <Button
-                  variant="success"
-                  onClick={() =>
-                    openLibrary(selectedMealPart || components[0]?.name || "")
-                  }
-                >
-                  Add Ingredient
-                </Button>
-              </div>
             </div>
           )}
 
@@ -923,6 +910,14 @@ export default function CreateMealComponentPage() {
                 );
               })}
             </Row>
+          )}
+
+          {!outsideFood && (
+            <div className="meal-parts-add-row">
+              <Button variant="outline-success" onClick={addMealPart}>
+                Add Meal Part
+              </Button>
+            </div>
           )}
 
           {!outsideFood && hasMealIngredients && (
