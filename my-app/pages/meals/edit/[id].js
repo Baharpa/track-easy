@@ -29,12 +29,16 @@ export default function EditMeal() {
 
       await mutate(`/api/meals/${id}`, updatedMeal, false);
       mutate('/api/meals');
-      router.replace(`/meals/${id}`);
     } catch (err) {
       setSaveError(err.message || 'Could not update meal.');
+      throw err;
     } finally {
       setIsSaving(false);
     }
+  }
+
+  async function handleSuccess() {
+    router.replace(`/meals/${id}`);
   }
 
   const editorState = meal ? mealToEditorState(meal) : null;
@@ -49,6 +53,7 @@ export default function EditMeal() {
       initialMeal={editorState.meal}
       initialComponents={editorState.components}
       onSave={submit}
+      onSaveSuccess={handleSuccess}
       onCancel={() => router.push(`/meals/${id}`)}
       saveLabel="Update Meal"
       saving={isSaving}

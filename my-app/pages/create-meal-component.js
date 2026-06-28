@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
-import useSWR from 'swr';
+import useSWR, { useSWRConfig } from 'swr';
 import { Alert, Badge, Button, Card, Col, Form, Modal, Row } from 'react-bootstrap';
 import AppBackButton from '../components/AppBackButton';
 import PageHeader from '../components/PageHeader';
@@ -11,6 +11,7 @@ import SmartFoodSuggestionCard from '../components/SmartFoodSuggestionCard';
 import UnitSelect from '../components/UnitSelect';
 import FoodImage from '../components/FoodImage';
 import MealImageUpload from '../components/MealImageUpload';
+import { buildOutsideFoodPayload, ManualNutritionCard, OutsideFoodToggle } from '../components/OutsideFoodControls';
 import { ErrorMessage, LoadingMessage } from '../components/StateMessage';
 import { apiFetch } from '../lib/api';
 import { clearMealDraft, hasMealDraftContent, loadMealDraft, saveMealDraft } from '../lib/mealDraft';
@@ -28,6 +29,8 @@ import { getCategoryLabel } from '../lib/categoryHelpers';
 import { MEAL_CATEGORIES, normalizeMealCategory } from '../lib/mealCategoryHelpers';
 import { getSmartFoodSuggestion } from '../lib/smartFoodBuilder';
 import { calculateNutritionWithUnit, getConversionWarning } from '../lib/unitConverter';
+import useUnsavedChanges from '../hooks/useUnsavedChanges';
+import UnsavedChangesModal from '../components/UnsavedChangesModal';
 
 function sameCategory(ingredient, categoryName) {
   const ingredientCategory = getCategoryLabel(ingredient.category || 'Other').toLowerCase();
@@ -59,10 +62,20 @@ function getUsedAmountLabel(originalItem, calculatedItem) {
 
 export default function CreateMealComponentPage() {
   const router = useRouter();
+  const { mutate } = useSWRConfig();
   const { data: ingredients, error } = useSWR('/api/ingredients');
   const [meal, setMeal] = useState({ name: '', category: '', imageUrl: '' });
   const [imageUploading, setImageUploading] = useState(false);
   const [components, setComponents] = useState([]);
+  const [outsideFood, setOutsideFood] = useState(false);
+  const [manualNutrition, setManualNutrition] = useState({
+    restaurantName: '',
+    calories: '',
+    protein: '',
+    carbs: '',
+    fats: '',
+    sugar: ''
+  });
   const [message, setMessage] = useState('');
   const [showLibrary, setShowLibrary] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -76,6 +89,11 @@ export default function CreateMealComponentPage() {
   const [draftReady, setDraftReady] = useState(false);
   const [showDraftBanner, setShowDraftBanner] = useState(false);
   const [showClearDraft, setShowClearDraft] = useState(false);
+  const [createdOutsideFoodMeal, setCreatedOutsideFoodMeal] = useState(null);
+  const [showAddTodayPrompt, setShowAddTodayPrompt] = useState(false);
+  const [addTodaySaving, setAddTodaySaving] = useState(false);
+  const [addTodaySuccess, setAddTodaySuccess] = useState('');
+  const [addTodayError, setAddTodayError] = useState('');
 
   useEffect(() => {
     const draft = loadMealDraft();
@@ -85,6 +103,15 @@ export default function CreateMealComponentPage() {
         category: draft.meal?.category ? normalizeMealCategory(draft.meal.category) : ''
       });
       setComponents(draft.components || []);
+      setOutsideFood(Boolean(draft.outsideFood));
+      setManualNutrition({
+        restaurantName: draft.manualNutrition?.restaurantName || '',
+        calories: draft.manualNutrition?.calories || '',
+        protein: draft.manualNutrition?.protein || '',
+        carbs: draft.manualNutrition?.carbs || '',
+        fats: draft.manualNutrition?.fats || '',
+        sugar: draft.manualNutrition?.sugar || ''
+      });
       setShowDraftBanner(true);
     }
     setDraftReady(true);
@@ -94,8 +121,8 @@ export default function CreateMealComponentPage() {
     if (!draftReady) return;
 
     // Keep the unfinished meal safe when the user refreshes or leaves to add an ingredient.
-    saveMealDraft({ meal, components });
-  }, [draftReady, meal, components]);
+    saveMealDraft({ meal, components, outsideFood, manualNutrition });
+  }, [draftReady, meal, components, outsideFood, manualNutrition]);
 
   useEffect(() => () => {
     if (successTimerRef.current) clearTimeout(successTimerRef.current);
@@ -114,11 +141,16 @@ export default function CreateMealComponentPage() {
       amountLabel: getUsedAmountLabel(originalComponent?.ingredients[index], item)
     }));
   });
-  const canSave = meal.name.trim() && flatIngredients.length > 0 && !imageUploading;
+  const canSave = meal.name.trim() && (outsideFood || flatIngredients.length > 0) && !imageUploading;
   const smartMealQuery = typeof router.query.smartMeal === 'string'
     ? router.query.smartMeal
     : typeof router.query.name === 'string' ? router.query.name : '';
   const smartMealSuggestion = useMemo(() => getSmartFoodSuggestion(smartMealQuery), [smartMealQuery]);
+  const hasLibraryDraft = Boolean(showLibrary && (selectedCategory || activeIngredient || amountUsed || unitUsed !== 'grams' || editingItem));
+  const hasUnsavedChanges = draftReady && (hasMealDraftContent({ meal, components, outsideFood, manualNutrition }) || hasLibraryDraft);
+  const { showModal, keepEditing, discardChanges, markSaved } = useUnsavedChanges(hasUnsavedChanges, {
+    onDiscard: clearMealDraft
+  });
 
   function resetLibraryForm() {
     setSelectedCategory('');
@@ -136,13 +168,15 @@ export default function CreateMealComponentPage() {
   }
 
   function saveCurrentDraft() {
-    saveMealDraft({ meal, components });
+    saveMealDraft({ meal, components, outsideFood, manualNutrition });
   }
 
   function resetDraft() {
     clearMealDraft();
     setMeal({ name: '', category: '', imageUrl: '' });
     setComponents([]);
+    setOutsideFood(false);
+    setManualNutrition({ restaurantName: '', calories: '', protein: '', carbs: '', fats: '', sugar: '' });
     setMessage('');
     resetLibraryForm();
     setShowDraftBanner(false);
@@ -285,21 +319,54 @@ export default function CreateMealComponentPage() {
 
   async function saveMeal() {
     if (!canSave) {
-      setMessage('Please enter a meal name and add at least one ingredient.');
+      setMessage(outsideFood ? 'Please enter a meal name.' : 'Please enter a meal name and add at least one ingredient.');
       return;
     }
 
-    await apiFetch('/api/meals', {
+    const outsideFoodPayload = buildOutsideFoodPayload(manualNutrition);
+    const createdMeal = await apiFetch('/api/meals', {
       method: 'POST',
       body: JSON.stringify({
         ...meal,
         category: meal.category ? normalizeMealCategory(meal.category) : 'Other',
-        ingredients: flatIngredients,
-        components
+        outsideFood,
+        ...(outsideFood ? outsideFoodPayload : { ingredients: flatIngredients, components })
       })
     });
+    markSaved();
     clearMealDraft();
+    if (outsideFood) {
+      setCreatedOutsideFoodMeal(createdMeal);
+      setShowAddTodayPrompt(true);
+      return;
+    }
     router.push('/meals');
+  }
+
+  function closeAddTodayPrompt() {
+    setShowAddTodayPrompt(false);
+    router.push('/meals');
+  }
+
+  async function addCreatedOutsideFoodToToday() {
+    if (addTodaySaving || addTodaySuccess || !createdOutsideFoodMeal?._id) return;
+
+    setAddTodaySaving(true);
+    setAddTodayError('');
+    try {
+      await apiFetch('/api/tracker/log', {
+        method: 'POST',
+        body: JSON.stringify({ mealId: createdOutsideFoodMeal._id, servings: 1 })
+      });
+      await mutate('/api/tracker/today');
+      await mutate(key => typeof key === 'string' && key.startsWith('/api/tracker/week'));
+      setAddTodaySuccess('Meal added');
+      window.setTimeout(() => router.push('/meals'), 900);
+    } catch (err) {
+      setAddTodayError(err.message || 'Could not add meal.');
+    } finally {
+      setAddTodaySaving(false);
+    }
   }
 
   const ingredientsInCategory = ingredients?.filter(ingredient => sameCategory(ingredient, selectedCategory)) || [];
@@ -327,7 +394,7 @@ export default function CreateMealComponentPage() {
                 <h4 className="mb-1">Meal Setup</h4>
                 <p className="text-muted mb-0">Name the meal first, then add ingredients into groups.</p>
               </div>
-              {hasMealDraftContent({ meal, components }) && <Button variant="outline-danger" size="sm" onClick={() => setShowClearDraft(true)}>Clear Draft</Button>}
+              {hasMealDraftContent({ meal, components, outsideFood, manualNutrition }) && <Button variant="outline-danger" size="sm" onClick={() => setShowClearDraft(true)}>Clear Draft</Button>}
             </div>
             <Row className="mt-3">
               <Col md={4}><Form.Group className="mb-3"><Form.Label>Meal Name</Form.Label><Form.Control value={meal.name} onChange={e => setMeal({ ...meal, name: e.target.value })} placeholder="Fajitas" /></Form.Group></Col>
@@ -348,6 +415,7 @@ export default function CreateMealComponentPage() {
                 </Form.Group>
               </Col>
             </Row>
+            <OutsideFoodToggle checked={outsideFood} onChange={setOutsideFood} />
           </Col>
           <Col lg={4}>
             <div className="meal-image-preview">
@@ -356,6 +424,10 @@ export default function CreateMealComponentPage() {
           </Col>
         </Row>
       </Card>
+
+      {outsideFood && (
+        <ManualNutritionCard values={manualNutrition} onChange={setManualNutrition} />
+      )}
 
       {showDraftBanner && (
         <Alert variant="success" className="draft-saved-alert">
@@ -370,7 +442,7 @@ export default function CreateMealComponentPage() {
         </Alert>
       )}
 
-      {components.length === 0 && (
+      {!outsideFood && components.length === 0 && (
         <Card className="page-card p-5 text-center mb-4 empty-builder-card">
           <h4>No ingredients added yet</h4>
           <p className="text-muted">Use the ingredient library to choose ingredients and place them into meal groups.</p>
@@ -378,7 +450,7 @@ export default function CreateMealComponentPage() {
         </Card>
       )}
 
-      {components.length > 0 && (
+      {!outsideFood && components.length > 0 && (
         <div className="meal-builder-toolbar">
           <div>
             <h4>Meal Ingredients</h4>
@@ -388,7 +460,7 @@ export default function CreateMealComponentPage() {
         </div>
       )}
 
-      {previewComponents.length > 0 && (
+      {!outsideFood && previewComponents.length > 0 && (
         <Row className="g-4 mb-4">
           {previewComponents.map(componentPreview => {
             const originalComponent = components.find(component => component.name === componentPreview.name);
@@ -440,7 +512,7 @@ export default function CreateMealComponentPage() {
         </Row>
       )}
 
-      {previewComponents.length > 0 && <>
+      {!outsideFood && previewComponents.length > 0 && <>
         <Card className="page-card builder-summary-card">
           <Card.Body>
             <div className="builder-summary-header">
@@ -536,6 +608,12 @@ export default function CreateMealComponentPage() {
         onSaveDraft={saveCurrentDraft}
       />
 
+      <UnsavedChangesModal
+        show={showModal}
+        onKeepEditing={keepEditing}
+        onDiscardChanges={discardChanges}
+      />
+
       <Modal show={showClearDraft} onHide={() => setShowClearDraft(false)} centered>
         <Modal.Header closeButton>
           <Modal.Title>Clear Draft?</Modal.Title>
@@ -544,6 +622,23 @@ export default function CreateMealComponentPage() {
         <Modal.Footer>
           <Button variant="outline-secondary" onClick={() => setShowClearDraft(false)}>Cancel</Button>
           <Button variant="danger" onClick={resetDraft}>Clear Draft</Button>
+        </Modal.Footer>
+      </Modal>
+
+      <Modal show={showAddTodayPrompt} onHide={closeAddTodayPrompt} centered contentClassName="confirm-delete-modal-content">
+        <Modal.Header closeButton>
+          <Modal.Title>Add to today?</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>Do you want to log this outside food meal for today?</p>
+          {addTodaySuccess && <div className="quick-add-success-alert" role="status">&#10003; {addTodaySuccess}</div>}
+          {addTodayError && <Alert variant="warning" className="mt-3">{addTodayError}</Alert>}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="outline-secondary" onClick={closeAddTodayPrompt} disabled={addTodaySaving}>Not now</Button>
+          <Button variant="success" onClick={addCreatedOutsideFoodToToday} disabled={addTodaySaving || !!addTodaySuccess}>
+            {addTodaySaving ? 'Adding...' : 'Add to today'}
+          </Button>
         </Modal.Footer>
       </Modal>
     </>}

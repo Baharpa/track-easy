@@ -3,6 +3,7 @@ const auth = require('../config/auth');
 const Meal = require('../models/Meal');
 const Ingredient = require('../models/Ingredient');
 const { calculateNutritionWithUnit, addTotals, calculateComponentPortion, round } = require('../utils/nutrition');
+const { hydrateMealDocument } = require('../utils/logHydration');
 const router = express.Router();
 
 async function buildMealIngredients(userId, selectedIngredients) {
@@ -78,6 +79,25 @@ async function buildMealComponents(userId, components) {
 }
 
 async function buildMealBody(req) {
+  const outsideFood = Boolean(req.body.outsideFood);
+  if (outsideFood) {
+    return {
+      name: req.body.name,
+      category: req.body.category || 'Meal',
+      imageUrl: req.body.imageUrl || '',
+      outsideFood: true,
+      restaurantName: req.body.restaurantName || '',
+      components: [],
+      ingredients: [],
+      totalCalories: round(req.body.totalCalories ?? req.body.calories),
+      totalProtein: round(req.body.totalProtein ?? req.body.protein),
+      totalCarbs: round(req.body.totalCarbs ?? req.body.carbs),
+      totalFats: round(req.body.totalFats ?? req.body.fats),
+      totalSugar: round(req.body.totalSugar ?? req.body.sugar),
+      userId: req.user._id
+    };
+  }
+
   let ingredients = [];
   let components = [];
 
@@ -95,6 +115,8 @@ async function buildMealBody(req) {
     name: req.body.name,
     category: req.body.category || 'Meal',
     imageUrl: req.body.imageUrl || '',
+    outsideFood: false,
+    restaurantName: '',
     components,
     ingredients,
     totalCalories: totals.calories,
@@ -108,7 +130,11 @@ async function buildMealBody(req) {
 
 router.get('/', auth, async (req, res) => {
   const meals = await Meal.find({ userId: req.user._id }).sort({ createdAt: -1 });
-  res.json(meals);
+  const hydratedMeals = [];
+  for (const meal of meals) {
+    hydratedMeals.push(await hydrateMealDocument(req.user._id, meal));
+  }
+  res.json(hydratedMeals);
 });
 
 router.post('/', auth, async (req, res) => {
@@ -116,7 +142,7 @@ router.post('/', auth, async (req, res) => {
     if (!req.body.name) return res.status(400).json({ message: 'Meal name is required.' });
     const mealBody = await buildMealBody(req);
     const meal = await Meal.create(mealBody);
-    res.status(201).json(meal);
+    res.status(201).json(await hydrateMealDocument(req.user._id, meal));
   } catch (err) {
     res.status(400).json({ message: 'Could not create meal.', error: err.message });
   }
@@ -125,7 +151,7 @@ router.post('/', auth, async (req, res) => {
 router.get('/:id', auth, async (req, res) => {
   const meal = await Meal.findOne({ _id: req.params.id, userId: req.user._id });
   if (!meal) return res.status(404).json({ message: 'Meal not found.' });
-  res.json(meal);
+  res.json(await hydrateMealDocument(req.user._id, meal));
 });
 
 router.put('/:id', auth, async (req, res) => {
@@ -140,7 +166,7 @@ router.put('/:id', auth, async (req, res) => {
     );
 
     if (!meal) return res.status(404).json({ message: 'Meal not found.' });
-    res.json(meal);
+    res.json(await hydrateMealDocument(req.user._id, meal));
   } catch (err) {
     res.status(400).json({ message: 'Could not update meal.', error: err.message });
   }

@@ -8,7 +8,8 @@ export default function ConfirmDeleteModal({
   onConfirm,
   confirmLabel = 'Delete',
   cancelLabel = 'Cancel',
-  confirmVariant = 'danger'
+  confirmVariant = 'danger',
+  confirmDisabled = false
 }) {
   return (
     <Modal show={show} onHide={onCancel} centered contentClassName="confirm-delete-modal-content">
@@ -18,7 +19,7 @@ export default function ConfirmDeleteModal({
       <Modal.Body>{message || 'Are you sure you want to delete this item?'}</Modal.Body>
       <Modal.Footer>
         <Button variant="secondary" onClick={onCancel}>{cancelLabel}</Button>
-        <Button variant={confirmVariant} onClick={onConfirm}>{confirmLabel}</Button>
+        <Button variant={confirmVariant} onClick={onConfirm} disabled={confirmDisabled}>{confirmLabel}</Button>
       </Modal.Footer>
     </Modal>
   );

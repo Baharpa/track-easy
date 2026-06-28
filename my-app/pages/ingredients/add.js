@@ -14,12 +14,15 @@ export default function AddIngredient() {
 
   async function submit(data) {
     await apiFetch('/api/ingredients', { method: 'POST', body: JSON.stringify(data) });
+  }
+
+  async function handleSuccess() {
     router.push(returnTo);
   }
 
   return <RouteGuard>
     <AppBackButton href="/ingredients" label="Back to Ingredients" />
     <PageHeader title="Add Ingredient" text="Add nutrition values for the full quantity you have." />
-    <IngredientForm key={category || 'new'} defaultValues={{ category }} onSubmit={submit} />
+    <IngredientForm key={category || 'new'} defaultValues={{ category }} onSubmit={submit} onSuccess={handleSuccess} />
   </RouteGuard>;
 }

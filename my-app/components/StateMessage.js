@@ -1,7 +1,13 @@
-import { Alert, Card, Spinner } from 'react-bootstrap';
+import { Alert, Card } from 'react-bootstrap';
+import AppLoadingBox from './AppLoadingBox';
 
 export function LoadingMessage({ text = 'Loading...' }) {
-  return <Card className="page-card p-4 text-center"><div><Spinner size="sm" className="me-2" />{text}</div></Card>;
+  return (
+    <Card className="page-card app-loading-panel">
+      <AppLoadingBox />
+      {text && <span className="app-loading-panel-text">{text}</span>}
+    </Card>
+  );
 }
 
 export function ErrorMessage({ text = 'Failed to load data.' }) {

@@ -11,6 +11,7 @@ import AppSearchBar from '../../components/AppSearchBar';
 import UnitSelect from '../../components/UnitSelect';
 import FoodImage from '../../components/FoodImage';
 import MealPickerModal from '../../components/MealPickerModal';
+import UnsavedChangesModal from '../../components/UnsavedChangesModal';
 import { ErrorMessage, LoadingMessage } from '../../components/StateMessage';
 import { apiFetch } from '../../lib/api';
 import { formatAmount, formatCalories, formatMacro, formatServingLabel, getIngredientServingNutrition } from '../../lib/formatNutrition';
@@ -18,6 +19,7 @@ import { calculateNutritionWithUnit, getConversionWarning } from '../../lib/unit
 import { getFoodImage } from '../../lib/foodVisuals';
 import { normalizeMealCategory } from '../../lib/mealCategoryHelpers';
 import { APP_CATEGORIES, normalizeCategory } from '../../lib/categoryHelpers';
+import useUnsavedChanges from '../../hooks/useUnsavedChanges';
 
 function sameCategory(ingredient, category) {
   return !category || normalizeCategory(ingredient.category) === category;
@@ -39,14 +41,26 @@ export default function LogFood() {
   const [ingredientAmount, setIngredientAmount] = useState('');
   const [ingredientUnit, setIngredientUnit] = useState('grams');
   const [ingredientErrorMessage, setIngredientErrorMessage] = useState('');
+  const [logSuccess, setLogSuccess] = useState('');
+  const selectedMealId = watch('mealId');
+  const selectedMeal = (meals || []).find(meal => meal._id === selectedMealId);
+  const hasComponents = selectedMeal?.components?.length > 0;
+  const hasUnsavedChanges = useMemo(() => Boolean(
+    activeTab === 'meal'
+      ? selectedMealId
+        || Object.keys(componentPortions).length > 0
+        || portionInfo.portion !== 1
+        || portionInfo.portionLabel !== '1 whole meal'
+      : selectedIngredient
+        || ingredientAmount
+        || ingredientUnit !== 'grams'
+  ), [activeTab, componentPortions, ingredientAmount, ingredientUnit, portionInfo.portion, portionInfo.portionLabel, selectedIngredient, selectedMealId]);
+  const { showModal, keepEditing, discardChanges, markSaved } = useUnsavedChanges(hasUnsavedChanges);
 
   useEffect(() => {
     if (router.query.tab === 'ingredient') setActiveTab('ingredient');
   }, [router.query.tab]);
 
-  const selectedMealId = watch('mealId');
-  const selectedMeal = (meals || []).find(meal => meal._id === selectedMealId);
-  const hasComponents = selectedMeal?.components?.length > 0;
   const ingredientPreview = selectedIngredient && ingredientAmount
     ? calculateNutritionWithUnit(Number(ingredientAmount), ingredientUnit, selectedIngredient)
     : getIngredientServingNutrition(selectedIngredient || {});
@@ -93,11 +107,14 @@ export default function LogFood() {
       body: JSON.stringify(body)
     });
 
+    markSaved();
     reset({ mealId: '' });
     setPortionInfo({ portion: 1, portionLabel: '1 whole meal' });
     setComponentPortions({});
+    setLogSuccess('Meal added');
+    window.setTimeout(() => setLogSuccess(''), 2600);
     mutate('/api/tracker/today');
-    mutate('/api/tracker/week');
+    mutate(key => typeof key === 'string' && key.startsWith('/api/tracker/week'));
   }
 
   async function logIngredient(event) {
@@ -125,11 +142,14 @@ export default function LogFood() {
       })
     });
 
+    markSaved();
     setSelectedIngredient(null);
     setIngredientAmount('');
     setIngredientUnit('grams');
+    setLogSuccess('Ingredient added');
+    window.setTimeout(() => setLogSuccess(''), 2600);
     mutate('/api/tracker/today');
-    mutate('/api/tracker/week');
+    mutate(key => typeof key === 'string' && key.startsWith('/api/tracker/week'));
   }
 
   return <RouteGuard>
@@ -145,6 +165,7 @@ export default function LogFood() {
         <button type="button" className={`segmented-control-button ${activeTab === 'ingredient' ? 'active' : ''}`} onClick={() => setActiveTab('ingredient')}>Log Ingredient</button>
       </div>
       {(mealError || ingredientError) && <ErrorMessage text="Failed to load food tracker data." />}
+      {logSuccess && <div className="quick-add-success-alert" role="status">✓ {logSuccess}</div>}
       {(!meals || !ingredients) && !(mealError || ingredientError) && <LoadingMessage text="Loading food tracker..." />}
 
       {meals && ingredients && <Row className="tracker-layout log-food-layout">
@@ -233,6 +254,12 @@ export default function LogFood() {
           </Card>
         </Col>
       </Row>}
+
+      <UnsavedChangesModal
+        show={showModal}
+        onKeepEditing={keepEditing}
+        onDiscardChanges={discardChanges}
+      />
     </div>
   </RouteGuard>;
 }

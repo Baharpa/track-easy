@@ -58,7 +58,13 @@ const loggedMealSchema = new mongoose.Schema({
       sugar: Number
     }
   }],
-  
+
+  componentPortions: [{
+    componentIndex: Number,
+    eatenAmount: Number,
+    unit: String
+  }],
+
   // For logging timestamp if needed
   loggedAt: { type: Date, default: Date.now }
 }, { _id: true });

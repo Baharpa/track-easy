@@ -5,6 +5,12 @@ const Ingredient = require('../models/Ingredient');
 const DailyLog = require('../models/DailyLog');
 const { addTotals, round, calculateNutritionWithUnit } = require('../utils/nutrition');
 const { convertToGrams, isValidUnit, normalizeUnit } = require('../utils/unitConverter');
+const {
+  hydrateLoggedMeal,
+  hydrateMealDocument,
+  buildPortionLogFromMeal,
+  buildComponentLogFromMeal
+} = require('../utils/logHydration');
 const router = express.Router();
 
 function todayString() {
@@ -13,6 +19,27 @@ function todayString() {
 
 function dateString(date) {
   return date.toISOString().slice(0, 10);
+}
+
+function requestedLogDate(req) {
+  return req.query.date || req.body.date || todayString();
+}
+
+function loggedMealTime(meal) {
+  const directDate = meal.loggedAt || meal.createdAt;
+  if (directDate) {
+    const time = new Date(directDate).getTime();
+    if (!Number.isNaN(time)) return time;
+  }
+
+  if (meal._id?.getTimestamp) return meal._id.getTimestamp().getTime();
+  const id = String(meal._id || '');
+  if (/^[a-f\d]{24}$/i.test(id)) return parseInt(id.slice(0, 8), 16) * 1000;
+  return 0;
+}
+
+function sortLoggedMealsNewestFirst(meals = []) {
+  return [...meals].sort((a, b) => loggedMealTime(b) - loggedMealTime(a));
 }
 
 function currentMonday(offsetWeeks = 0) {
@@ -31,98 +58,6 @@ function recalculate(log) {
   log.totalCarbs = round(log.meals.reduce((sum, meal) => sum + (Number(meal.carbs) || 0), 0));
   log.totalFats = round(log.meals.reduce((sum, meal) => sum + (Number(meal.fats) || 0), 0));
   log.totalSugar = round(log.meals.reduce((sum, meal) => sum + (Number(meal.sugar) || 0), 0));
-}
-
-function scaleIngredient(item, factor) {
-  return {
-    ingredientId: item.ingredientId,
-    name: item.name,
-    quantityUsed: round(Number(item.quantityUsed || item.gramsUsed || 0) * factor),
-    unit: 'grams',
-    calories: round(Number(item.calories || 0) * factor),
-    protein: round(Number(item.protein || 0) * factor),
-    carbs: round(Number(item.carbs || 0) * factor),
-    fats: round(Number(item.fats || 0) * factor),
-    sugar: round(Number(item.sugar || 0) * factor)
-  };
-}
-
-function buildPortionLog(meal, portion, portionLabel) {
-  const ingredients = (meal.ingredients || []).map(item => scaleIngredient(item, portion));
-  const components = (meal.components || []).map(component => {
-    const componentIngredients = (component.ingredients || []).map(item => scaleIngredient(item, portion));
-    return {
-      name: component.name,
-      category: component.category,
-      eatenWeight: round(Number(component.totalWeight || 0) * portion),
-      unit: 'grams',
-      ingredients: componentIngredients,
-      nutritionTotals: addTotals(componentIngredients)
-    };
-  });
-
-  const totals = addTotals(ingredients);
-  return {
-    type: 'meal',
-    mealId: meal._id,
-    name: meal.name,
-    portion,
-    portionLabel,
-    servings: portion,
-    calories: totals.calories,
-    protein: totals.protein,
-    carbs: totals.carbs,
-    fats: totals.fats,
-    sugar: totals.sugar,
-    ingredients,
-    components
-  };
-}
-
-function buildComponentLog(meal, componentPortions) {
-  const components = [];
-  const allIngredients = [];
-
-  for (const componentInput of componentPortions || []) {
-    const component = meal.components[Number(componentInput.componentIndex)];
-    if (!component) continue;
-
-    const eatenWeight = convertToGrams(Number(componentInput.eatenAmount), componentInput.unit || 'grams');
-    if (!eatenWeight || eatenWeight <= 0) throw new Error('Component eaten amount must be positive.');
-    if (Number(component.totalWeight) > 0 && eatenWeight > Number(component.totalWeight)) {
-      throw new Error('Component eaten amount cannot be bigger than the original component weight.');
-    }
-
-    const factor = Number(component.totalWeight) > 0 ? eatenWeight / Number(component.totalWeight) : 0;
-    const ingredients = (component.ingredients || []).map(item => scaleIngredient(item, factor));
-    const nutritionTotals = addTotals(ingredients);
-    allIngredients.push(...ingredients);
-    components.push({
-      name: component.name,
-      category: component.category,
-      eatenWeight: round(eatenWeight),
-      unit: 'grams',
-      ingredients,
-      nutritionTotals
-    });
-  }
-
-  const totals = addTotals(allIngredients);
-  return {
-    type: 'meal',
-    mealId: meal._id,
-    name: meal.name,
-    portion: 1,
-    portionLabel: 'custom component amounts',
-    servings: 1,
-    calories: totals.calories,
-    protein: totals.protein,
-    carbs: totals.carbs,
-    fats: totals.fats,
-    sugar: totals.sugar,
-    ingredients: allIngredients,
-    components
-  };
 }
 
 function buildIngredientLog(ingredient, amount, unit) {
@@ -179,9 +114,10 @@ router.post('/log', auth, async (req, res) => {
       const portion = Number(req.body.portion || req.body.servings || 1);
       if (!hasComponentAmounts && portion <= 0) return res.status(400).json({ message: 'Portion must be a positive number.' });
       const portionLabel = req.body.portionLabel || (req.body.servings ? `${portion} serving${portion === 1 ? '' : 's'}` : '1 whole meal');
+      const hydratedMeal = await hydrateMealDocument(req.user._id, meal);
       loggedMeal = hasComponentAmounts
-        ? buildComponentLog(meal, req.body.componentPortions)
-        : buildPortionLog(meal, portion, portionLabel);
+        ? buildComponentLogFromMeal(hydratedMeal, req.body.componentPortions)
+        : buildPortionLogFromMeal(hydratedMeal, portion, portionLabel);
     }
 
     log.meals.push(loggedMeal);
@@ -197,7 +133,19 @@ router.post('/log', auth, async (req, res) => {
 router.get('/today', auth, async (req, res) => {
   const date = todayString();
   const log = await DailyLog.findOne({ userId: req.user._id, date });
-  res.json(log || { date, meals: [], totalCalories: 0, totalProtein: 0, totalCarbs: 0, totalFats: 0, totalSugar: 0 });
+  if (!log) {
+    return res.json({ date, meals: [], totalCalories: 0, totalProtein: 0, totalCarbs: 0, totalFats: 0, totalSugar: 0 });
+  }
+
+  const hydratedMeals = [];
+  for (const meal of log.meals || []) {
+    hydratedMeals.push(await hydrateLoggedMeal(req.user._id, meal));
+  }
+
+  const result = log.toObject();
+  result.meals = sortLoggedMealsNewestFirst(hydratedMeals);
+  recalculate(result);
+  res.json(result);
 });
 
 router.get('/week', auth, async (req, res) => {
@@ -211,13 +159,24 @@ router.get('/week', auth, async (req, res) => {
   const startString = dateString(days[0]);
   const endString = dateString(days[6]);
   const logs = await DailyLog.find({ userId: req.user._id, date: { $gte: startString, $lte: endString } }).sort({ date: 1 });
-  const logsByDate = new Map(logs.map(log => [log.date, log]));
+  const hydratedLogs = [];
+  for (const log of logs) {
+    const hydratedMeals = [];
+    for (const meal of log.meals || []) {
+      hydratedMeals.push(await hydrateLoggedMeal(req.user._id, meal));
+    }
+    const item = log.toObject();
+    item.meals = sortLoggedMealsNewestFirst(hydratedMeals);
+    recalculate(item);
+    hydratedLogs.push(item);
+  }
+  const logsByDate = new Map(hydratedLogs.map(log => [log.date, log]));
 
   res.json(days.map(day => {
     const date = dateString(day);
     const log = logsByDate.get(date);
     return log ? {
-      ...log.toObject(),
+      ...log,
       dayLabel: day.toLocaleDateString('en-US', { weekday: 'short' }),
       hasLogs: (log.meals || []).length > 0
     } : {
@@ -236,41 +195,68 @@ router.get('/week', auth, async (req, res) => {
 
 // GET logged food by ID
 router.get('/log/:logMealId', auth, async (req, res) => {
-  const date = todayString();
+  const date = requestedLogDate(req);
   const log = await DailyLog.findOne({ userId: req.user._id, date });
   if (!log) return res.status(404).json({ message: 'No logs for today.' });
-  
-  // Find meal by checking index or ID
+
   const mealIndex = log.meals.findIndex(m => m._id && m._id.toString() === req.params.logMealId);
   if (mealIndex === -1) return res.status(404).json({ message: 'Logged meal not found.' });
-  
-  const meal = log.meals[mealIndex];
-  if (meal.type === 'ingredient') {
-    return res.status(400).json({ message: 'Ingredient logs cannot be edited here. Delete and log it again.' });
-  }
-  res.json({ ...meal.toObject(), date });
+
+  const meal = await hydrateLoggedMeal(req.user._id, log.meals[mealIndex]);
+  res.json({ ...meal, date });
 });
 
 // PUT update logged meal portion
 router.put('/log/:logMealId', auth, async (req, res) => {
-  const date = todayString();
+  const date = requestedLogDate(req);
   const log = await DailyLog.findOne({ userId: req.user._id, date });
   if (!log) return res.status(404).json({ message: 'No logs for today.' });
-  
+
   const mealIndex = log.meals.findIndex(m => m._id && m._id.toString() === req.params.logMealId);
   if (mealIndex === -1) return res.status(404).json({ message: 'Logged meal not found.' });
-  
+
   const meal = log.meals[mealIndex];
-  
-  // Get original meal to recalculate nutrition
-  const originalMeal = await Meal.findOne({ _id: meal.mealId, userId: req.user._id });
-  if (!originalMeal) return res.status(404).json({ message: 'Original meal not found.' });
-  
-  const newPortion = Number(req.body.portion || 1);
-  if (newPortion <= 0) return res.status(400).json({ message: 'Portion must be positive.' });
-  
-  log.meals[mealIndex] = buildPortionLog(originalMeal, newPortion, req.body.portionLabel || '1 whole meal');
-  
+  const existingLogMeta = {
+    _id: meal._id,
+    loggedAt: meal.loggedAt
+  };
+
+  if (meal.type === 'ingredient' || meal.ingredientId) {
+    const ingredient = await Ingredient.findOne({ _id: meal.ingredientId, userId: req.user._id });
+    if (!ingredient) return res.status(404).json({ message: 'Ingredient not found.' });
+
+    const amount = Number(req.body.amount || req.body.quantityUsed);
+    const unit = req.body.unit || meal.unit || ingredient.unit || 'grams';
+    if (!amount || amount <= 0) return res.status(400).json({ message: 'Amount must be positive.' });
+
+    const updatedIngredientLog = await hydrateLoggedMeal(req.user._id, {
+      ...meal.toObject(),
+      amount,
+      unit,
+      ingredientId: ingredient._id
+    });
+    log.meals[mealIndex] = { ...updatedIngredientLog, ...existingLogMeta };
+  } else {
+    const originalMeal = await Meal.findOne({ _id: meal.mealId, userId: req.user._id });
+    if (!originalMeal) return res.status(404).json({ message: 'Original meal not found.' });
+
+    const hydratedMeal = await hydrateMealDocument(req.user._id, originalMeal);
+    const hasComponentAmounts = Array.isArray(req.body.componentPortions) && req.body.componentPortions.length > 0;
+    if (hasComponentAmounts) {
+      log.meals[mealIndex] = {
+        ...buildComponentLogFromMeal(hydratedMeal, req.body.componentPortions),
+        ...existingLogMeta
+      };
+    } else {
+      const newPortion = Number(req.body.portion || req.body.servings || 1);
+      if (newPortion <= 0) return res.status(400).json({ message: 'Portion must be positive.' });
+      log.meals[mealIndex] = {
+        ...buildPortionLogFromMeal(hydratedMeal, newPortion, req.body.portionLabel || meal.portionLabel || '1 whole meal'),
+        ...existingLogMeta
+      };
+    }
+  }
+
   recalculate(log);
   await log.save();
   res.json(log);
@@ -278,7 +264,7 @@ router.put('/log/:logMealId', auth, async (req, res) => {
 
 // DELETE logged food
 router.delete('/log/:logMealId', auth, async (req, res) => {
-  const date = todayString();
+  const date = requestedLogDate(req);
   const log = await DailyLog.findOne({ userId: req.user._id, date });
   if (!log) return res.status(404).json({ message: 'No logs for today.' });
   

@@ -8,12 +8,24 @@ export default function FoodInfoCard({
   imageAlt,
   category = 'Other',
   nutritionRows = [],
+  premium = false,
+  showNutritionIcons = false,
   actions = null,
   footer = null,
   className = ''
 }) {
+  const cardClassName = [
+    'food-info-card',
+    premium ? 'food-info-card--premium' : '',
+    className
+  ].filter(Boolean).join(' ');
+  const nutritionClassName = [
+    'food-info-card__nutrition',
+    premium ? 'food-nutrition-rows--premium' : ''
+  ].filter(Boolean).join(' ');
+
   return (
-    <article className={`food-info-card ${className}`.trim()}>
+    <article className={cardClassName}>
       <div className="food-info-card__image-wrap">
         <FoodImage
           src={imageSrc}
@@ -33,7 +45,12 @@ export default function FoodInfoCard({
           {actions && <div className="food-info-card__actions">{actions}</div>}
         </div>
 
-        <NutritionRows rows={nutritionRows} showIcons={false} className="food-info-card__nutrition" />
+        <NutritionRows
+          rows={nutritionRows}
+          showIcons={showNutritionIcons}
+          premium={premium}
+          className={nutritionClassName}
+        />
 
         {footer && <div className="food-info-card__footer">{footer}</div>}
       </div>

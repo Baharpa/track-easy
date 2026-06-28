@@ -1,15 +1,15 @@
-import Link from 'next/link';
 import { useState } from 'react';
+import { useSWRConfig } from 'swr';
 import { Alert, Button, Form, Modal } from 'react-bootstrap';
 import FoodImage from './FoodImage';
 import { apiFetch } from '../lib/api';
 import { formatCalories, formatMacro } from '../lib/formatNutrition';
 import { normalizeMealCategory } from '../lib/mealCategoryHelpers';
 
-export default function QuickAddMealModal({ meal, show, onHide }) {
+export default function QuickAddMealModal({ meal, show, onHide, onLogged }) {
+  const { mutate } = useSWRConfig();
   const [servings, setServings] = useState('1');
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [saving, setSaving] = useState(false);
 
   const servingCount = Number(servings) || 0;
@@ -25,13 +25,13 @@ export default function QuickAddMealModal({ meal, show, onHide }) {
   function closeModal() {
     setServings('1');
     setError('');
-    setSuccess('');
     setSaving(false);
     onHide();
   }
 
   async function submitQuickAdd(event) {
     event.preventDefault();
+    if (saving || !meal?._id) return;
     const cleanServings = Number(servings);
 
     if (!cleanServings || cleanServings <= 0) {
@@ -47,7 +47,10 @@ export default function QuickAddMealModal({ meal, show, onHide }) {
         method: 'POST',
         body: JSON.stringify({ mealId: meal._id, servings: cleanServings })
       });
-      setSuccess('Meal added to today’s tracker.');
+      await mutate('/api/tracker/today');
+      await mutate(key => typeof key === 'string' && key.startsWith('/api/tracker/week'));
+      if (onLogged) onLogged('Meal added');
+      closeModal();
     } catch (err) {
       setError(err.message || 'Could not add meal to tracker.');
     } finally {
@@ -78,7 +81,6 @@ export default function QuickAddMealModal({ meal, show, onHide }) {
               </div>
             </div>
 
-            {success && <Alert variant="success">{success} <Link href="/tracker">Go to Log Food</Link></Alert>}
             {error && <Alert variant="warning">{error}</Alert>}
 
             <Form.Group className="mb-3">
@@ -109,7 +111,7 @@ export default function QuickAddMealModal({ meal, show, onHide }) {
         </Modal.Body>
         <Modal.Footer>
           <Button variant="outline-secondary" onClick={closeModal}>Cancel</Button>
-          <Button type="submit" variant="success" disabled={saving || !!success}>{saving ? 'Adding...' : 'Add to Tracker'}</Button>
+          <Button type="submit" variant="success" disabled={saving}>{saving ? 'Adding...' : 'Add to Tracker'}</Button>
         </Modal.Footer>
       </Form>
     </Modal>

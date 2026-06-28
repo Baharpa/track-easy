@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Badge, Button, Card, Col, Form, Modal, Row } from 'react-bootstrap';
 import FoodImage from './FoodImage';
 import MealImageUpload from './MealImageUpload';
+import { buildOutsideFoodPayload, ManualNutritionCard, OutsideFoodToggle } from './OutsideFoodControls';
 import ServingAmountSelector from './ServingAmountSelector';
 import UnitSelect from './UnitSelect';
 import { addTotals, buildPreviewComponents } from '../lib/mealMath';
@@ -17,6 +18,8 @@ import { CATEGORY_LIBRARY, getCategoryClass, getCategoryIcon, getFoodImage } fro
 import { getCategoryLabel } from '../lib/categoryHelpers';
 import { MEAL_CATEGORIES, normalizeMealCategory } from '../lib/mealCategoryHelpers';
 import { calculateNutritionWithUnit, getConversionWarning } from '../lib/unitConverter';
+import useUnsavedChanges from '../hooks/useUnsavedChanges';
+import UnsavedChangesModal from './UnsavedChangesModal';
 
 function sameCategory(ingredient, categoryName) {
   const ingredientCategory = getCategoryLabel(ingredient.category || 'Other').toLowerCase();
@@ -58,7 +61,14 @@ export function mealToEditorState(meal) {
     meal: {
       name: meal?.name || '',
       category: meal?.category ? normalizeMealCategory(meal.category) : '',
-      imageUrl: meal?.imageUrl || ''
+      imageUrl: meal?.imageUrl || '',
+      outsideFood: Boolean(meal?.outsideFood),
+      restaurantName: meal?.restaurantName || '',
+      totalCalories: meal?.totalCalories || '',
+      totalProtein: meal?.totalProtein || '',
+      totalCarbs: meal?.totalCarbs || '',
+      totalFats: meal?.totalFats || '',
+      totalSugar: meal?.totalSugar || ''
     },
     components: hasComponents
       ? meal.components.map(component => normalizeComponent(component, meal.category)).filter(component => component.ingredients.length > 0)
@@ -91,6 +101,7 @@ export default function ComponentMealEditor({
   initialMeal,
   initialComponents = [],
   onSave,
+  onSaveSuccess,
   onCancel,
   saveLabel = 'Save Meal',
   saving = false,
@@ -98,6 +109,15 @@ export default function ComponentMealEditor({
 }) {
   const [meal, setMeal] = useState(initialMeal || { name: '', category: '', imageUrl: '' });
   const [components, setComponents] = useState(initialComponents || []);
+  const [outsideFood, setOutsideFood] = useState(Boolean(initialMeal?.outsideFood));
+  const [manualNutrition, setManualNutrition] = useState({
+    restaurantName: initialMeal?.restaurantName || '',
+    calories: initialMeal?.totalCalories || '',
+    protein: initialMeal?.totalProtein || '',
+    carbs: initialMeal?.totalCarbs || '',
+    fats: initialMeal?.totalFats || '',
+    sugar: initialMeal?.totalSugar || ''
+  });
   const [imageUploading, setImageUploading] = useState(false);
   const [message, setMessage] = useState('');
   const [showLibrary, setShowLibrary] = useState(false);
@@ -109,6 +129,26 @@ export default function ComponentMealEditor({
   const [libraryError, setLibraryError] = useState('');
   const [librarySuccess, setLibrarySuccess] = useState('');
   const successTimerRef = useRef(null);
+  const initialSnapshot = useMemo(() => JSON.stringify({
+    meal: initialMeal || { name: '', category: '', imageUrl: '' },
+    components: initialComponents || [],
+    outsideFood: Boolean(initialMeal?.outsideFood),
+    manualNutrition: {
+      restaurantName: initialMeal?.restaurantName || '',
+      calories: initialMeal?.totalCalories || '',
+      protein: initialMeal?.totalProtein || '',
+      carbs: initialMeal?.totalCarbs || '',
+      fats: initialMeal?.totalFats || '',
+      sugar: initialMeal?.totalSugar || ''
+    }
+  }), [initialComponents, initialMeal]);
+  const currentSnapshot = useMemo(() => JSON.stringify({
+    meal,
+    components,
+    outsideFood,
+    manualNutrition
+  }), [meal, components, outsideFood, manualNutrition]);
+  const { showModal, keepEditing, discardChanges, markSaved } = useUnsavedChanges(initialSnapshot !== currentSnapshot && !saving);
 
   useEffect(() => () => {
     if (successTimerRef.current) clearTimeout(successTimerRef.current);
@@ -127,7 +167,7 @@ export default function ComponentMealEditor({
       amountLabel: getUsedAmountLabel(originalComponent?.ingredients[index], item)
     }));
   });
-  const canSave = meal.name.trim() && flatIngredients.length > 0 && !saving && !imageUploading;
+  const canSave = meal.name.trim() && (outsideFood || flatIngredients.length > 0) && !saving && !imageUploading;
   const ingredientsInCategory = ingredients.filter(ingredient => sameCategory(ingredient, selectedCategory));
 
   function resetLibraryForm() {
@@ -261,16 +301,25 @@ export default function ComponentMealEditor({
 
   async function saveMeal() {
     if (!canSave) {
-      setMessage('Please enter a meal name and add at least one ingredient.');
+      setMessage(outsideFood ? 'Please enter a meal name.' : 'Please enter a meal name and add at least one ingredient.');
       return;
     }
 
-    await onSave({
-      ...meal,
-      category: meal.category ? normalizeMealCategory(meal.category) : 'Other',
-      ingredients: flatIngredients,
-      components
-    });
+    const outsideFoodPayload = buildOutsideFoodPayload(manualNutrition);
+    try {
+      await onSave({
+        ...meal,
+        category: meal.category ? normalizeMealCategory(meal.category) : 'Other',
+        outsideFood,
+        ...(outsideFood ? outsideFoodPayload : { ingredients: flatIngredients, components })
+      });
+    } catch {
+      return;
+    }
+    markSaved();
+    if (onSaveSuccess) {
+      await onSaveSuccess();
+    }
   }
 
   return <>
@@ -308,6 +357,7 @@ export default function ComponentMealEditor({
               </Form.Group>
             </Col>
           </Row>
+          <OutsideFoodToggle checked={outsideFood} onChange={setOutsideFood} />
         </Col>
         <Col lg={4}>
           <div className="meal-image-preview">
@@ -317,7 +367,11 @@ export default function ComponentMealEditor({
       </Row>
     </Card>
 
-    {components.length === 0 && (
+    {outsideFood && (
+      <ManualNutritionCard values={manualNutrition} onChange={setManualNutrition} />
+    )}
+
+    {!outsideFood && components.length === 0 && (
       <Card className="page-card p-5 text-center mb-4 empty-builder-card">
         <h4>No ingredients added yet</h4>
         <p className="text-muted">Use the ingredient library to choose ingredients and place them into meal groups.</p>
@@ -325,7 +379,7 @@ export default function ComponentMealEditor({
       </Card>
     )}
 
-    {components.length > 0 && (
+    {!outsideFood && components.length > 0 && (
       <div className="meal-builder-toolbar">
         <div>
           <h4>Meal Ingredients</h4>
@@ -335,7 +389,7 @@ export default function ComponentMealEditor({
       </div>
     )}
 
-    {previewComponents.length > 0 && (
+    {!outsideFood && previewComponents.length > 0 && (
       <Row className="g-4 mb-4">
         {previewComponents.map(componentPreview => {
           const originalComponent = components.find(component => component.name === componentPreview.name);
@@ -387,7 +441,7 @@ export default function ComponentMealEditor({
       </Row>
     )}
 
-    {previewComponents.length > 0 && (
+    {!outsideFood && previewComponents.length > 0 && (
       <Card className="page-card builder-summary-card">
         <Card.Body>
           <div className="builder-summary-header">
@@ -481,6 +535,11 @@ export default function ComponentMealEditor({
       isEditing={!!editingItem}
       libraryError={libraryError}
       librarySuccess={librarySuccess}
+      />
+    <UnsavedChangesModal
+      show={showModal}
+      onKeepEditing={keepEditing}
+      onDiscardChanges={discardChanges}
     />
   </>;
 }

@@ -9,6 +9,8 @@ import RouteGuard from '../../components/RouteGuard';
 import ServingAmountSelector from '../../components/ServingAmountSelector';
 import { TrackEasyIcon } from '../../components/TrackEasyIcons';
 import { apiFetch } from '../../lib/api';
+import useUnsavedChanges from '../../hooks/useUnsavedChanges';
+import UnsavedChangesModal from '../../components/UnsavedChangesModal';
 import {
   buildCustomServing,
   formatLibraryIngredientPayload,
@@ -152,6 +154,8 @@ export default function IngredientLibrary() {
   const canAdd = selectedFood && selectedVariation && finalServing && customAmountReady && !adding;
   const selectedIngredientName = ingredientPayload?.name || '';
   const nutritionRows = buildNutritionRows(nutritionPreview?.nutrition);
+  const hasUnsavedChanges = Boolean(selectedFoodId || selectedVariationId || selectedServingLabel || customAmount);
+  const { showModal, keepEditing, discardChanges, markSaved } = useUnsavedChanges(hasUnsavedChanges);
 
   function rememberFood(foodId) {
     if (!foodId) return;
@@ -211,6 +215,7 @@ export default function IngredientLibrary() {
         body: JSON.stringify(ingredientPayload)
       });
 
+      markSaved();
       router.push({
         pathname: '/ingredients',
         query: { added: selectedIngredientName }
@@ -363,6 +368,12 @@ export default function IngredientLibrary() {
           />
         </Modal.Body>
       </Modal>
+
+      <UnsavedChangesModal
+        show={showModal}
+        onKeepEditing={keepEditing}
+        onDiscardChanges={discardChanges}
+      />
     </div>
   </RouteGuard>;
 }

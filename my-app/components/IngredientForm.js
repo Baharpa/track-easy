@@ -9,6 +9,8 @@ import { CATEGORY_LIBRARY } from '../lib/foodVisuals';
 import { normalizeCategory } from '../lib/categoryHelpers';
 import { getIngredientServingNutrition } from '../lib/formatNutrition';
 import { getSmartFoodMatch, normalizeFoodQuery } from '../lib/smartFoodBuilder';
+import useUnsavedChanges from '../hooks/useUnsavedChanges';
+import UnsavedChangesModal from './UnsavedChangesModal';
 
 function hasValue(value) {
   return value !== undefined && value !== null && value !== '';
@@ -31,10 +33,11 @@ function buildDefaultValues(defaultValues) {
   };
 }
 
-export default function IngredientForm({ defaultValues = {}, onSubmit, buttonText = 'Save Ingredient' }) {
+export default function IngredientForm({ defaultValues = {}, onSubmit, onSuccess, buttonText = 'Save Ingredient' }) {
   const [imageUploading, setImageUploading] = useState(false);
   const [dismissedSmartQuery, setDismissedSmartQuery] = useState('');
-  const { register, handleSubmit, formState: { errors, isSubmitting }, control, setValue, watch } = useForm({ defaultValues: buildDefaultValues(defaultValues) });
+  const { register, handleSubmit, formState: { errors, isSubmitting, isDirty }, control, setValue, watch } = useForm({ defaultValues: buildDefaultValues(defaultValues) });
+  const { showModal, keepEditing, discardChanges, markSaved } = useUnsavedChanges(isDirty && !isSubmitting);
   const imageUrl = watch('imageUrl');
   const nameValue = watch('name') || '';
   const normalizedName = normalizeFoodQuery(nameValue);
@@ -73,9 +76,14 @@ export default function IngredientForm({ defaultValues = {}, onSubmit, buttonTex
   }
 
   return (
-    <Card className="page-card p-4">
-      <Form onSubmit={handleSubmit(onSubmit)}>
-        {Object.keys(errors).length > 0 && <Alert variant="warning">Please fix the highlighted fields.</Alert>}
+    <>
+      <Card className="page-card p-4">
+        <Form onSubmit={handleSubmit(async data => {
+          await onSubmit(data);
+          markSaved();
+          if (onSuccess) await onSuccess(data);
+        })}>
+          {Object.keys(errors).length > 0 && <Alert variant="warning">Please fix the highlighted fields.</Alert>}
 
         <Row>
           <Col md={6}>
@@ -161,8 +169,15 @@ export default function IngredientForm({ defaultValues = {}, onSubmit, buttonTex
           <MealImageUpload imageUrl={imageUrl} onUploaded={uploadedUrl => setValue('imageUrl', uploadedUrl, { shouldDirty: true })} onUploadingChange={setImageUploading} />
         </Form.Group>
 
-        <Button type="submit" variant="success" className="ingredient-form-submit" disabled={isSubmitting || imageUploading}>{imageUploading ? 'Uploading photo...' : isSubmitting ? 'Saving...' : buttonText}</Button>
-      </Form>
-    </Card>
+          <Button type="submit" variant="success" className="ingredient-form-submit" disabled={isSubmitting || imageUploading}>{imageUploading ? 'Uploading photo...' : isSubmitting ? 'Saving...' : buttonText}</Button>
+        </Form>
+      </Card>
+
+      <UnsavedChangesModal
+        show={showModal}
+        onKeepEditing={keepEditing}
+        onDiscardChanges={discardChanges}
+      />
+    </>
   );
 }

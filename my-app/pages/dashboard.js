@@ -2,11 +2,13 @@ import { useMemo } from 'react';
 import Link from 'next/link';
 import useSWR from 'swr';
 import { Card } from 'react-bootstrap';
+import AppLoadingBox from '../components/AppLoadingBox';
 import LoggedFoodCard, { EmptyLoggedFoodCard } from '../components/LoggedFoodCard';
 import RouteGuard from '../components/RouteGuard';
-import { ErrorMessage, LoadingMessage } from '../components/StateMessage';
+import { ErrorMessage } from '../components/StateMessage';
 import { TrackEasyIcon } from '../components/TrackEasyIcons';
 import { apiFetch } from '../lib/api';
+import { sortLoggedFoodsNewestFirst } from '../lib/loggedFoodOrder';
 
 const defaultGoals = {
   calorieGoal: 1700,
@@ -61,7 +63,7 @@ export default function Dashboard() {
   const { data: goals, error: goalsError } = useSWR('/api/user/goals');
   const stats = useMemo(() => getNutritionStats(today), [today]);
   const overallPercent = useMemo(() => getOverallGoalPercent(stats, goals), [stats, goals]);
-  const todaysFood = (today?.meals || []).slice(0, 5);
+  const todaysFood = sortLoggedFoodsNewestFirst(today?.meals || []).slice(0, 5);
 
   async function removeLoggedFood(item) {
     await apiFetch(`/api/tracker/log/${item._id}`, { method: 'DELETE' });
@@ -77,45 +79,33 @@ export default function Dashboard() {
         </section>
 
         {(todayError || goalsError) && <ErrorMessage text="Failed to load dashboard data." />}
-        {(!today || !goals) && !(todayError || goalsError) && <LoadingMessage text="Loading your dashboard..." />}
 
-        {today && goals && (
-          <div className="dashboard-stack">
-            <Card className="mindset-card">
-              <div className="mindset-icon">
-                <TrackEasyIcon name="sparkle" size={22} />
-              </div>
-              <div className="mindset-copy">
-                <span>Today&apos;s Mindset</span>
-                <p>Fresh food, calm tracking, and one good decision at a time.</p>
-              </div>
-              <div className="mindset-leaf mindset-leaf-one" />
-              <div className="mindset-leaf mindset-leaf-two" />
-            </Card>
+        <div className="dashboard-stack">
+          <Card className="mindset-card">
+            <div className="mindset-icon">
+              <TrackEasyIcon name="sparkle" size={22} />
+            </div>
+            <div className="mindset-copy">
+              <span>Today&apos;s Mindset</span>
+              <p>Fresh food, calm tracking, and one good decision at a time.</p>
+            </div>
+            <div className="mindset-leaf mindset-leaf-one" />
+            <div className="mindset-leaf mindset-leaf-two" />
+          </Card>
 
-            <section className="nutrition-section" aria-labelledby="nutrition-title">
-              <div className="dashboard-section-header dashboard-section-header-tight">
-                <span className="dashboard-section-kicker" id="nutrition-title">Today&apos;s Nutrition</span>
-              </div>
-              <div className="nutrition-stat-grid">
-                {stats.map(stat => (
-                  <Card className={`dashboard-nutrition-card nutrition-${stat.color}`} key={stat.label}>
-                    <span className="dashboard-stat-icon">
-                      <TrackEasyIcon name={stat.icon} size={16} />
-                    </span>
-                    <span className="dashboard-stat-label">{stat.label}</span>
-                    <strong className="dashboard-stat-value">{stat.value}</strong>
-                  </Card>
-                ))}
-              </div>
-            </section>
+          <Card className="goal-progress-card">
+            <div className="dashboard-section-header goal-card-header">
+              <span className="dashboard-section-kicker">Goal Progress</span>
+              <Link href="/profile/goals" className="dashboard-section-link">Edit goals</Link>
+            </div>
 
-            <Card className="goal-progress-card">
-              <div className="dashboard-section-header goal-card-header">
-                <span className="dashboard-section-kicker">Goal Progress</span>
-                <Link href="/profile/goals" className="dashboard-section-link">Edit goals</Link>
+            {!today || !goals ? (
+              <div className="app-loading-panel app-loading-panel-embedded">
+                <AppLoadingBox />
+                <span className="app-loading-panel-text">Loading progress...</span>
               </div>
-
+            ) : (
+              <>
               <div className="goal-progress-top">
                 <div className="goal-progress-copy">
                   <h2>Stay on pace</h2>
@@ -157,17 +147,26 @@ export default function Dashboard() {
                   </div>
                 </div>
               </div>
-            </Card>
+              </>
+            )}
+          </Card>
 
-            <Card className="mini-log-card">
-              <div className="dashboard-section-header mini-log-header">
-                <div>
-                  <span className="dashboard-section-kicker">Today&apos;s Food</span>
-                  <h3>Mini log</h3>
-                </div>
-                <Link href="/tracker" className="dashboard-section-link">View tracker</Link>
+          <Card className="mini-log-card">
+            <div className="dashboard-section-header mini-log-header">
+              <div>
+                <span className="dashboard-section-kicker">Today&apos;s Food</span>
+                <h3>Mini log</h3>
               </div>
+              <Link href="/tracker" className="dashboard-section-link">View tracker</Link>
+            </div>
 
+            {!today ? (
+              <div className="app-loading-panel app-loading-panel-embedded">
+                <AppLoadingBox />
+                <span className="app-loading-panel-text">Loading today&apos;s food...</span>
+              </div>
+            ) : (
+              <>
               {todaysFood.length === 0 ? (
                 <EmptyLoggedFoodCard />
               ) : (
@@ -177,9 +176,10 @@ export default function Dashboard() {
                   ))}
                 </div>
               )}
-            </Card>
-          </div>
-        )}
+              </>
+            )}
+          </Card>
+        </div>
       </main>
     </RouteGuard>
   );

@@ -9,18 +9,18 @@ import FoodInfoCard from './FoodInfoCard';
 import { TrackEasyIcon } from './TrackEasyIcons';
 
 const mealStats = [
-  { label: 'Calories', getValue: meal => `${formatCalories(meal.totalCalories)} cal` },
-  { label: 'Protein', getValue: meal => `${formatMacro(meal.totalProtein)}g` },
-  { label: 'Carbs', getValue: meal => `${formatMacro(meal.totalCarbs)}g` },
-  { label: 'Sugar', getValue: meal => `${formatMacro(meal.totalSugar)}g` },
-  { label: 'Fats', getValue: meal => `${formatMacro(meal.totalFats)}g` }
+  { label: 'Calories', displayLabel: 'cal', getValue: meal => formatCalories(meal.totalCalories) },
+  { label: 'Protein', displayLabel: 'protein', getValue: meal => `${formatMacro(meal.totalProtein)}g` },
+  { label: 'Carbs', displayLabel: 'carbs', getValue: meal => `${formatMacro(meal.totalCarbs)}g` },
+  { label: 'Sugar', displayLabel: 'sugar', getValue: meal => `${formatMacro(meal.totalSugar)}g` },
+  { label: 'Fats', displayLabel: 'fats', getValue: meal => `${formatMacro(meal.totalFats)}g` }
 ];
 
 export default function MealCard({ meal, isFavourite = false, onFavouriteChange, onQuickAdd }) {
   const [saving, setSaving] = useState(false);
   const [showFavouriteRemove, setShowFavouriteRemove] = useState(false);
   const mealCategory = normalizeMealCategory(meal.category);
-  const nutritionRows = mealStats.map(stat => ({ label: stat.label, value: stat.getValue(meal) }));
+  const nutritionRows = mealStats.map(stat => ({ label: stat.label, displayLabel: stat.displayLabel, value: stat.getValue(meal) }));
 
   async function toggleFavourite() {
     if (isFavourite) {
@@ -46,10 +46,11 @@ export default function MealCard({ meal, isFavourite = false, onFavouriteChange,
     <>
       <FoodInfoCard
         title={meal.name}
-        subtitle={mealCategory}
         imageSrc={meal.imageUrl}
         category={mealCategory}
         nutritionRows={nutritionRows}
+        premium
+        showNutritionIcons
         className="meal-display-card"
         actions={(
           <>

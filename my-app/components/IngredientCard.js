@@ -11,12 +11,13 @@ import { TrackEasyIcon } from './TrackEasyIcons';
 export default function IngredientCard({ ingredient, onDeleted }) {
   const [showDelete, setShowDelete] = useState(false);
   const category = normalizeCategory(ingredient.category);
+  const servingText = `${formatAmount(ingredient.quantity)} ${ingredient.unit || ''}`.trim();
   const nutritionRows = [
-    { label: 'Calories', value: `${formatCalories(ingredient.calories)} cal` },
-    { label: 'Protein', value: `${formatMacro(ingredient.protein)}g` },
-    { label: 'Carbs', value: `${formatMacro(ingredient.carbs)}g` },
-    { label: 'Sugar', value: `${formatMacro(ingredient.sugar)}g` },
-    { label: 'Fats', value: `${formatMacro(ingredient.fats)}g` }
+    { label: 'Calories', displayLabel: 'cal', value: formatCalories(ingredient.calories) },
+    { label: 'Protein', displayLabel: 'protein', value: `${formatMacro(ingredient.protein)}g` },
+    { label: 'Carbs', displayLabel: 'carbs', value: `${formatMacro(ingredient.carbs)}g` },
+    { label: 'Sugar', displayLabel: 'sugar', value: `${formatMacro(ingredient.sugar)}g` },
+    { label: 'Fats', displayLabel: 'fats', value: `${formatMacro(ingredient.fats)}g` }
   ];
 
   async function deleteIngredient() {
@@ -29,11 +30,12 @@ export default function IngredientCard({ ingredient, onDeleted }) {
     <>
       <FoodInfoCard
         title={ingredient.name}
-        subtitle={`${formatAmount(ingredient.quantity)} ${ingredient.unit}`}
+        subtitle={servingText}
         imageSrc={ingredient.imageUrl}
         category={category}
         nutritionRows={nutritionRows}
-        className="ingredient-card"
+        premium
+        showNutritionIcons
         actions={(
           <>
             <Button

@@ -14,6 +14,9 @@ export default function EditIngredient() {
 
   async function submit(data) {
     await apiFetch(`/api/ingredients/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+  }
+
+  async function handleSuccess() {
     router.push('/ingredients');
   }
 
@@ -22,6 +25,6 @@ export default function EditIngredient() {
     <PageHeader title="Edit Ingredient" text="Update this ingredient." />
     {error && <ErrorMessage text="Failed to load ingredient." />}
     {!ingredient && !error && <LoadingMessage text="Loading ingredient..." />}
-    {ingredient && <IngredientForm defaultValues={ingredient} onSubmit={submit} buttonText="Update Ingredient" />}
+    {ingredient && <IngredientForm defaultValues={ingredient} onSubmit={submit} onSuccess={handleSuccess} buttonText="Update Ingredient" />}
   </RouteGuard>;
 }

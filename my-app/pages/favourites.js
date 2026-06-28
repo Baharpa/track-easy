@@ -46,6 +46,7 @@ function groupFavourites(items = []) {
 export default function Favourites() {
   const { data: favourites, error, mutate } = useSWR('/api/user/favourites');
   const [quickAddMeal, setQuickAddMeal] = useState(null);
+  const [quickAddSuccess, setQuickAddSuccess] = useState('');
   const [expandedSections, setExpandedSections] = useState({});
   const grouped = groupFavourites(favourites || []);
 
@@ -59,6 +60,7 @@ export default function Favourites() {
       <PageHeader title="Favourites" text="Your saved favourite foods and meals." />
       {error && <ErrorMessage text="Failed to load favourites." />}
       {!favourites && !error && <LoadingMessage text="Loading favourites..." />}
+      {quickAddSuccess && <div className="quick-add-success-alert" role="status">✓ {quickAddSuccess}</div>}
 
       {favourites && (
         <Row className="favourites-grid mobile-card-grid">
@@ -107,7 +109,15 @@ export default function Favourites() {
         </Row>
       )}
 
-      <QuickAddMealModal meal={quickAddMeal} show={!!quickAddMeal} onHide={() => setQuickAddMeal(null)} />
+      <QuickAddMealModal
+        meal={quickAddMeal}
+        show={!!quickAddMeal}
+        onHide={() => setQuickAddMeal(null)}
+        onLogged={message => {
+          setQuickAddSuccess(message);
+          window.setTimeout(() => setQuickAddSuccess(''), 2600);
+        }}
+      />
     </div>
   </RouteGuard>;
 }

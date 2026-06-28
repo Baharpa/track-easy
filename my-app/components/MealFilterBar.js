@@ -9,6 +9,8 @@ export default function MealFilterBar({
   setCategory,
   showPastWeek,
   setShowPastWeek,
+  showOutsideFood,
+  setShowOutsideFood,
   showPastWeekOption = true,
   categoryOptions,
   searchPlaceholder = 'Search meals...',
@@ -56,6 +58,18 @@ export default function MealFilterBar({
               checked={showPastWeek}
               onChange={e => setShowPastWeek(e.target.checked)}
               label="Meals from past week"
+            />
+          </Col>
+        )}
+        {setShowOutsideFood && (
+          <Col sm={6} lg={3}>
+            <Form.Check
+              type="switch"
+              id="meal-filter-outside-food"
+              className="meal-filter-week-toggle"
+              checked={showOutsideFood}
+              onChange={e => setShowOutsideFood(e.target.checked)}
+              label="Outside food"
             />
           </Col>
         )}

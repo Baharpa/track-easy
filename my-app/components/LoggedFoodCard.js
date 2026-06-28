@@ -73,7 +73,7 @@ export default function LoggedFoodCard({ item, onOpen, onRemove, className = '' 
                 {logHref ? (
                   <>
                     <Dropdown.Item as={Link} href={logHref}>View details</Dropdown.Item>
-                    <Dropdown.Item as={Link} href={logHref}>Edit log</Dropdown.Item>
+                    <Dropdown.Item as={Link} href={{ pathname: logHref, query: { mode: 'edit' } }}>Edit log</Dropdown.Item>
                   </>
                 ) : (
                   <Dropdown.Item onClick={handleOpen} disabled={typeof onOpen !== 'function'}>View details</Dropdown.Item>

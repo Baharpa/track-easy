@@ -1,11 +1,14 @@
 import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import useSWR from 'swr';
 import { Card } from 'react-bootstrap';
-import LoggedFoodCard, { EmptyLoggedFoodCard } from '../components/LoggedFoodCard';
+import AppLoadingBox from '../components/AppLoadingBox';
+import { EmptyLoggedFoodCard } from '../components/LoggedFoodCard';
+import FoodImage from '../components/FoodImage';
 import RouteGuard from '../components/RouteGuard';
-import { ErrorMessage, LoadingMessage } from '../components/StateMessage';
-import { apiFetch } from '../lib/api';
+import { ErrorMessage } from '../components/StateMessage';
 import { TrackEasyIcon } from '../components/TrackEasyIcons';
+import { sortLoggedFoodsNewestFirst } from '../lib/loggedFoodOrder';
 
 const nutrients = [
   { label: 'Calories', key: 'totalCalories', shortKey: 'calories', goalKey: 'calorieGoal', icon: 'flame', className: 'tracker-calories', unit: 'cal' },
@@ -44,12 +47,6 @@ function formatDayName(dateString) {
   return new Date(`${dateString}T00:00:00`).toLocaleDateString(undefined, { weekday: 'long' });
 }
 
-function formatFoodStat(value, unit = '') {
-  const numeric = Number(value) || 0;
-  const rounded = Math.round(numeric * 10) / 10;
-  return `${Number.isInteger(rounded) ? rounded.toLocaleString() : rounded.toLocaleString(undefined, { maximumFractionDigits: 1 })}${unit}`;
-}
-
 function buildSmoothPath(points) {
   if (!points.length) return '';
   if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
@@ -77,7 +74,7 @@ function normalizeWeek(weekLogs = []) {
     totalCarbs: Number(item.totalCarbs ?? item.carbs) || 0,
     totalFats: Number(item.totalFats ?? item.fats) || 0,
     totalSugar: Number(item.totalSugar ?? item.sugar) || 0,
-    meals: item.meals || item.foods || [],
+    meals: sortLoggedFoodsNewestFirst(item.meals || item.foods || []),
     hasLogs: item.hasLogs ?? (item.meals || item.foods || []).length > 0
   }));
 }
@@ -127,18 +124,13 @@ function getAnalysis(days, goals) {
 }
 
 export default function ProfileTracker() {
-  const { data: today, error: todayError, mutate } = useSWR('/api/tracker/today');
+  const { data: today, error: todayError } = useSWR('/api/tracker/today');
   const { data: goals, error: goalsError } = useSWR('/api/user/goals');
   const [view, setView] = useState('day');
   const [selectedWeekOffset, setSelectedWeekOffset] = useState(0);
   const { data: weekLogs, error: weekError } = useSWR(`/api/tracker/week?offset=${selectedWeekOffset}`);
   const weekDays = useMemo(() => normalizeWeek(weekLogs || []), [weekLogs]);
   const analysis = weekDays.length ? getAnalysis(weekDays, goals) : null;
-
-  async function deleteLog(item) {
-    await apiFetch(`/api/tracker/log/${item._id}`, { method: 'DELETE' });
-    mutate();
-  }
 
   return (
     <RouteGuard>
@@ -151,19 +143,25 @@ export default function ProfileTracker() {
         </div>
 
         {(todayError || weekError || goalsError) && <ErrorMessage text="Failed to load tracker data." />}
-        {(!today || !weekLogs || !goals) && !(todayError || weekError || goalsError) && <LoadingMessage text="Loading tracker..." />}
+
+        <div className="segmented-control" role="tablist" aria-label="Tracker view">
+          <button type="button" className={`segmented-control-button ${view === 'day' ? 'active' : ''}`} onClick={() => setView('day')}>Day</button>
+          <button type="button" className={`segmented-control-button ${view === 'week' ? 'active' : ''}`} onClick={() => setView('week')}>Week</button>
+        </div>
+
+        {(!today || !weekLogs || !goals) && !(todayError || weekError || goalsError) && (
+          <div className="app-loading-panel">
+            <AppLoadingBox />
+            <span className="app-loading-panel-text">Loading tracker...</span>
+          </div>
+        )}
 
         {today && weekLogs && goals && (
           <>
-            <div className="segmented-control" role="tablist" aria-label="Tracker view">
-              <button type="button" className={`segmented-control-button ${view === 'day' ? 'active' : ''}`} onClick={() => setView('day')}>Day</button>
-              <button type="button" className={`segmented-control-button ${view === 'week' ? 'active' : ''}`} onClick={() => setView('week')}>Week</button>
-            </div>
-
             {view === 'day' && (
               <>
                 <ProgressCard item={today} goals={goals} title="Today" />
-                <FoodList title="Foods logged today" foods={today.meals || []} onDelete={deleteLog} />
+                <FoodList title="Foods logged today" foods={today.meals || []} date={today.date} />
               </>
             )}
 
@@ -337,13 +335,8 @@ function WeeklyMealsByDay({ days }) {
               <p className="weekly-meal-empty">No food logged</p>
             ) : (
               <div className="weekly-meal-list">
-                {(day.meals || []).map(food => (
-                  <div className="weekly-meal-row" key={food._id || `${day.date}-${food.name}-${food.loggedAt || ''}`}>
-                    <span className="weekly-meal-name">{food.name || 'Logged food'}</span>
-                    <span className="weekly-meal-stats">
-                      {formatFoodStat(food.calories, ' cal')}, {formatFoodStat(food.protein, 'g')} protein
-                    </span>
-                  </div>
+                {sortLoggedFoodsNewestFirst(day.meals || []).map(food => (
+                  <HistoryFoodCard food={food} date={day.date} key={food._id || `${day.date}-${food.name}-${food.loggedAt || ''}`} />
                 ))}
               </div>
             )}
@@ -354,13 +347,43 @@ function WeeklyMealsByDay({ days }) {
   );
 }
 
-function FoodList({ title, foods = [], onDelete, compact = false }) {
-  const content = foods.length === 0 ? (
+function loggedFoodImage(item = {}) {
+  return item.imageUrl || item.image || item.photoUrl || item.thumbnailUrl || item.mealImageUrl || item.ingredientImageUrl || '';
+}
+
+function logDetailHref(food, date) {
+  return {
+    pathname: '/logs/[id]',
+    query: {
+      id: food._id,
+      ...(date ? { date } : {})
+    }
+  };
+}
+
+function HistoryFoodCard({ food, date }) {
+  return (
+    <Link href={logDetailHref(food, date)} className="history-food-card">
+      <FoodImage
+        src={loggedFoodImage(food)}
+        alt={food.name || 'Logged food'}
+        category={food.type === 'ingredient' ? 'Other' : food.category || 'Meal'}
+        className="history-food-card__image"
+        placeholderClassName="history-food-card__placeholder"
+      />
+      <span className="history-food-card__title">{food.name || 'Logged food'}</span>
+    </Link>
+  );
+}
+
+function FoodList({ title, foods = [], date, compact = false }) {
+  const sortedFoods = sortLoggedFoodsNewestFirst(foods);
+  const content = sortedFoods.length === 0 ? (
     <EmptyLoggedFoodCard />
   ) : (
-    <div className="logged-food-list">
-      {foods.map(food => (
-        <LoggedFoodCard item={food} onRemove={onDelete} key={food._id || `${food.name}-${food.loggedAt}`} />
+    <div className="history-food-card-grid">
+      {sortedFoods.map(food => (
+        <HistoryFoodCard food={food} date={date} key={food._id || `${food.name}-${food.loggedAt}`} />
       ))}
     </div>
   );

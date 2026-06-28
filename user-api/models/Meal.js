@@ -34,6 +34,8 @@ const mealSchema = new mongoose.Schema({
   name: { type: String, required: true },
   category: { type: String, default: 'Meal' },
   imageUrl: { type: String, default: '' },
+  outsideFood: { type: Boolean, default: false },
+  restaurantName: { type: String, default: '' },
   components: [mealComponentSchema],
   ingredients: [mealIngredientSchema],
   totalCalories: { type: Number, default: 0 },

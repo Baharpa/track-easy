@@ -6,6 +6,13 @@ export function hasMealDraftContent(draft) {
     meal.name?.trim() ||
     meal.category?.trim() ||
     meal.imageUrl?.trim() ||
+    draft?.outsideFood ||
+    draft?.manualNutrition?.restaurantName?.trim() ||
+    Number(draft?.manualNutrition?.calories) > 0 ||
+    Number(draft?.manualNutrition?.protein) > 0 ||
+    Number(draft?.manualNutrition?.carbs) > 0 ||
+    Number(draft?.manualNutrition?.fats) > 0 ||
+    Number(draft?.manualNutrition?.sugar) > 0 ||
     draft?.components?.length
   );
 }
@@ -34,6 +41,8 @@ export function saveMealDraft(draft) {
   localStorage.setItem(MEAL_DRAFT_KEY, JSON.stringify({
     meal: draft.meal,
     components: draft.components || [],
+    outsideFood: Boolean(draft.outsideFood),
+    manualNutrition: draft.manualNutrition || {},
     updatedAt: new Date().toISOString()
   }));
 }
