@@ -1,28 +1,52 @@
-const express = require('express');
-const auth = require('../config/auth');
-const Meal = require('../models/Meal');
-const Ingredient = require('../models/Ingredient');
-const { calculateNutritionWithUnit, addTotals, calculateComponentPortion, round } = require('../utils/nutrition');
-const { convertToGrams, normalizeUnit, getIngredientServingOptions } = require('../utils/unitConverter');
-const { hydrateMealDocument } = require('../utils/logHydration');
+const express = require("express");
+const auth = require("../config/auth");
+const Meal = require("../models/Meal");
+const Ingredient = require("../models/Ingredient");
+const {
+  calculateNutritionWithUnit,
+  addTotals,
+  calculateComponentPortion,
+  round,
+} = require("../utils/nutrition");
+const {
+  convertToGrams,
+  normalizeUnit,
+  getIngredientServingOptions,
+} = require("../utils/unitConverter");
+const { hydrateMealDocument } = require("../utils/logHydration");
 const router = express.Router();
 
 async function buildMealIngredients(userId, selectedIngredients) {
   const built = [];
 
   for (const item of selectedIngredients || []) {
-    const ingredient = await Ingredient.findOne({ _id: item.ingredientId, userId });
+    const ingredient = await Ingredient.findOne({
+      _id: item.ingredientId,
+      userId,
+    });
 
     if (ingredient) {
       const quantityUsed = Number(item.quantityUsed);
-      const unit = normalizeUnit(item.unit || 'grams');
-      const matchingServing = getIngredientServingOptions(ingredient).find(option => normalizeUnit(option.unit) === unit && Number(option.amount) === quantityUsed);
-      const gramsUsed = matchingServing?.gramsEquivalent > 0
-        ? round(quantityUsed * (matchingServing.gramsEquivalent / matchingServing.amount))
-        : convertToGrams(quantityUsed, unit, ingredient);
-      
+      const unit = normalizeUnit(item.unit || "grams");
+      const matchingServing = getIngredientServingOptions(ingredient).find(
+        (option) =>
+          normalizeUnit(option.unit) === unit &&
+          Number(option.amount) === quantityUsed,
+      );
+      const gramsUsed =
+        matchingServing?.gramsEquivalent > 0
+          ? round(
+              quantityUsed *
+                (matchingServing.gramsEquivalent / matchingServing.amount),
+            )
+          : convertToGrams(quantityUsed, unit, ingredient);
+
       // Use new per-100g calculation with unit conversion
-      const nutrition = calculateNutritionWithUnit(quantityUsed, unit, ingredient);
+      const nutrition = calculateNutritionWithUnit(
+        quantityUsed,
+        unit,
+        ingredient,
+      );
 
       built.push({
         ingredientId: ingredient._id,
@@ -30,7 +54,7 @@ async function buildMealIngredients(userId, selectedIngredients) {
         quantityUsed,
         unit,
         gramsUsed: gramsUsed > 0 ? round(gramsUsed) : null,
-        ...nutrition
+        ...nutrition,
       });
     }
   }
@@ -43,32 +67,56 @@ async function buildMealComponents(userId, components) {
   const allConsumedIngredients = [];
 
   for (const component of components || []) {
-    const originalIngredients = await buildMealIngredients(userId, component.ingredients || []);
-    const totalWeight = originalIngredients.reduce((sum, item) => sum + Number(item.gramsUsed || 0), 0);
+    const originalIngredients = await buildMealIngredients(
+      userId,
+      component.ingredients || [],
+    );
+    const totalWeight = originalIngredients.reduce(
+      (sum, item) => sum + Number(item.gramsUsed || 0),
+      0,
+    );
     const consumedWeight = Number(component.consumedWeight || totalWeight);
 
     // This is the proportional logic from the planning sheet.
     // Example: 300g carrots + 50g parsley, eaten 100g total => 85.7g and 14.3g.
-    const proportionalAmounts = calculateComponentPortion(originalIngredients, consumedWeight);
+    const proportionalAmounts = calculateComponentPortion(
+      originalIngredients,
+      consumedWeight,
+    );
     const consumedIngredients = [];
 
     for (const item of proportionalAmounts) {
-      const ingredient = await Ingredient.findOne({ _id: item.ingredientId, userId });
+      const ingredient = await Ingredient.findOne({
+        _id: item.ingredientId,
+        userId,
+      });
       if (ingredient) {
         // Use new per-100g calculation with unit conversion
-        const nutrition = calculateNutritionWithUnit(item.quantityUsed, item.unit, ingredient);
-        const matchingServing = getIngredientServingOptions(ingredient).find(option => normalizeUnit(option.unit) === normalizeUnit(item.unit) && Number(option.amount) === Number(item.quantityUsed));
-        const gramsUsed = matchingServing?.gramsEquivalent > 0
-          ? round(Number(item.quantityUsed) * (matchingServing.gramsEquivalent / matchingServing.amount))
-          : convertToGrams(item.quantityUsed, item.unit, ingredient);
-        
+        const nutrition = calculateNutritionWithUnit(
+          item.quantityUsed,
+          item.unit,
+          ingredient,
+        );
+        const matchingServing = getIngredientServingOptions(ingredient).find(
+          (option) =>
+            normalizeUnit(option.unit) === normalizeUnit(item.unit) &&
+            Number(option.amount) === Number(item.quantityUsed),
+        );
+        const gramsUsed =
+          matchingServing?.gramsEquivalent > 0
+            ? round(
+                Number(item.quantityUsed) *
+                  (matchingServing.gramsEquivalent / matchingServing.amount),
+              )
+            : convertToGrams(item.quantityUsed, item.unit, ingredient);
+
         consumedIngredients.push({
           ingredientId: ingredient._id,
           name: ingredient.name,
           quantityUsed: item.quantityUsed,
           unit: item.unit,
           gramsUsed: gramsUsed > 0 ? round(gramsUsed) : null,
-          ...nutrition
+          ...nutrition,
         });
       }
     }
@@ -77,12 +125,12 @@ async function buildMealComponents(userId, components) {
     allConsumedIngredients.push(...consumedIngredients);
 
     builtComponents.push({
-      name: component.name || 'Component',
-      category: component.category || 'Other',
+      name: component.name || "Component",
+      category: component.category || "Other",
       ingredients: consumedIngredients,
       totalWeight: round(totalWeight),
       consumedWeight: round(consumedWeight),
-      nutritionTotals: totals
+      nutritionTotals: totals,
     });
   }
 
@@ -91,56 +139,67 @@ async function buildMealComponents(userId, components) {
 
 async function buildMealBody(req) {
   const outsideFood = Boolean(req.body.outsideFood);
+  const mealPartSource =
+    Array.isArray(req.body.mealParts) && req.body.mealParts.length > 0
+      ? req.body.mealParts
+      : req.body.components;
   if (outsideFood) {
     return {
       name: req.body.name,
-      category: req.body.category || 'Meal',
-      imageUrl: req.body.imageUrl || '',
+      category: req.body.category || "Meal",
+      imageUrl: req.body.imageUrl || "",
       outsideFood: true,
-      restaurantName: req.body.restaurantName || '',
+      restaurantName: req.body.restaurantName || "",
       components: [],
+      mealParts: [],
       ingredients: [],
       totalCalories: round(req.body.totalCalories ?? req.body.calories),
       totalProtein: round(req.body.totalProtein ?? req.body.protein),
       totalCarbs: round(req.body.totalCarbs ?? req.body.carbs),
       totalFats: round(req.body.totalFats ?? req.body.fats),
       totalSugar: round(req.body.totalSugar ?? req.body.sugar),
-      userId: req.user._id
+      userId: req.user._id,
     };
   }
 
   let ingredients = [];
   let components = [];
 
-  if (req.body.components && req.body.components.length > 0) {
-    const result = await buildMealComponents(req.user._id, req.body.components);
+  if (mealPartSource && mealPartSource.length > 0) {
+    const result = await buildMealComponents(req.user._id, mealPartSource);
     components = result.builtComponents;
     ingredients = result.allConsumedIngredients;
   } else {
-    ingredients = await buildMealIngredients(req.user._id, req.body.ingredients);
+    ingredients = await buildMealIngredients(
+      req.user._id,
+      req.body.ingredients,
+    );
   }
 
   const totals = addTotals(ingredients);
 
   return {
     name: req.body.name,
-    category: req.body.category || 'Meal',
-    imageUrl: req.body.imageUrl || '',
+    category: req.body.category || "Meal",
+    imageUrl: req.body.imageUrl || "",
     outsideFood: false,
-    restaurantName: '',
+    restaurantName: "",
     components,
+    mealParts: components,
     ingredients,
     totalCalories: totals.calories,
     totalProtein: totals.protein,
     totalCarbs: totals.carbs,
     totalFats: totals.fats,
     totalSugar: totals.sugar,
-    userId: req.user._id
+    userId: req.user._id,
   };
 }
 
-router.get('/', auth, async (req, res) => {
-  const meals = await Meal.find({ userId: req.user._id }).sort({ createdAt: -1 });
+router.get("/", auth, async (req, res) => {
+  const meals = await Meal.find({ userId: req.user._id }).sort({
+    createdAt: -1,
+  });
   const hydratedMeals = [];
   for (const meal of meals) {
     hydratedMeals.push(await hydrateMealDocument(req.user._id, meal));
@@ -148,24 +207,27 @@ router.get('/', auth, async (req, res) => {
   res.json(hydratedMeals);
 });
 
-router.post('/', auth, async (req, res) => {
+router.post("/", auth, async (req, res) => {
   try {
-    if (!req.body.name) return res.status(400).json({ message: 'Meal name is required.' });
+    if (!req.body.name)
+      return res.status(400).json({ message: "Meal name is required." });
     const mealBody = await buildMealBody(req);
     const meal = await Meal.create(mealBody);
     res.status(201).json(await hydrateMealDocument(req.user._id, meal));
   } catch (err) {
-    res.status(400).json({ message: 'Could not create meal.', error: err.message });
+    res
+      .status(400)
+      .json({ message: "Could not create meal.", error: err.message });
   }
 });
 
-router.get('/:id', auth, async (req, res) => {
+router.get("/:id", auth, async (req, res) => {
   const meal = await Meal.findOne({ _id: req.params.id, userId: req.user._id });
-  if (!meal) return res.status(404).json({ message: 'Meal not found.' });
+  if (!meal) return res.status(404).json({ message: "Meal not found." });
   res.json(await hydrateMealDocument(req.user._id, meal));
 });
 
-router.put('/:id', auth, async (req, res) => {
+router.put("/:id", auth, async (req, res) => {
   try {
     const mealBody = await buildMealBody(req);
     delete mealBody.userId;
@@ -173,20 +235,25 @@ router.put('/:id', auth, async (req, res) => {
     const meal = await Meal.findOneAndUpdate(
       { _id: req.params.id, userId: req.user._id },
       mealBody,
-      { new: true }
+      { new: true },
     );
 
-    if (!meal) return res.status(404).json({ message: 'Meal not found.' });
+    if (!meal) return res.status(404).json({ message: "Meal not found." });
     res.json(await hydrateMealDocument(req.user._id, meal));
   } catch (err) {
-    res.status(400).json({ message: 'Could not update meal.', error: err.message });
+    res
+      .status(400)
+      .json({ message: "Could not update meal.", error: err.message });
   }
 });
 
-router.delete('/:id', auth, async (req, res) => {
-  const meal = await Meal.findOneAndDelete({ _id: req.params.id, userId: req.user._id });
-  if (!meal) return res.status(404).json({ message: 'Meal not found.' });
-  res.json({ message: 'Meal deleted.' });
+router.delete("/:id", auth, async (req, res) => {
+  const meal = await Meal.findOneAndDelete({
+    _id: req.params.id,
+    userId: req.user._id,
+  });
+  if (!meal) return res.status(404).json({ message: "Meal not found." });
+  res.json({ message: "Meal deleted." });
 });
 
 module.exports = router;

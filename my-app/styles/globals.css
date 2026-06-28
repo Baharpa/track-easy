@@ -1583,6 +1583,15 @@ Purpose: Keep meal-building forms and component summaries together.
   flex: 1 1 auto;
 }
 
+.component-card-eyebrow {
+  color: var(--te-green);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.2rem;
+  text-transform: uppercase;
+}
+
 .component-name-row {
   display: flex;
   align-items: center;

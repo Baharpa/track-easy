@@ -1,93 +1,130 @@
-import Link from 'next/link';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Badge, Button, Card, Col, Form, Modal, Row } from 'react-bootstrap';
-import FoodImage from './FoodImage';
-import MealImageUpload from './MealImageUpload';
-import { buildOutsideFoodPayload, ManualNutritionCard, OutsideFoodToggle } from './OutsideFoodControls';
-import ServingAmountSelector from './ServingAmountSelector';
-import UnitSelect from './UnitSelect';
-import { addTotals, buildPreviewComponents } from '../lib/mealMath';
+import Link from "next/link";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  Col,
+  Form,
+  Modal,
+  Row,
+} from "react-bootstrap";
+import FoodImage from "./FoodImage";
+import MealImageUpload from "./MealImageUpload";
+import {
+  buildOutsideFoodPayload,
+  ManualNutritionCard,
+  OutsideFoodToggle,
+} from "./OutsideFoodControls";
+import ServingAmountSelector from "./ServingAmountSelector";
+import UnitSelect from "./UnitSelect";
+import { addTotals, buildPreviewComponents } from "../lib/mealMath";
 import {
   formatAmount,
   formatCalories,
   formatMacro,
   formatServingLabel,
-  getIngredientServingNutrition
-} from '../lib/formatNutrition';
-import { CATEGORY_LIBRARY, getCategoryClass, getCategoryIcon, getFoodImage } from '../lib/foodVisuals';
-import { getCategoryLabel } from '../lib/categoryHelpers';
-import { MEAL_CATEGORIES, normalizeMealCategory } from '../lib/mealCategoryHelpers';
-import { calculateNutritionWithUnit, getConversionWarning, getIngredientServingOptions, getIngredientServingUnits, normalizeUnit } from '../lib/unitConverter';
-import useUnsavedChanges from '../hooks/useUnsavedChanges';
-import UnsavedChangesModal from './UnsavedChangesModal';
+  getIngredientServingNutrition,
+} from "../lib/formatNutrition";
+import {
+  CATEGORY_LIBRARY,
+  getCategoryClass,
+  getCategoryIcon,
+  getFoodImage,
+} from "../lib/foodVisuals";
+import { getCategoryLabel } from "../lib/categoryHelpers";
+import {
+  MEAL_CATEGORIES,
+  normalizeMealCategory,
+} from "../lib/mealCategoryHelpers";
+import {
+  calculateNutritionWithUnit,
+  getConversionWarning,
+  getIngredientServingOptions,
+  getIngredientServingUnits,
+  normalizeUnit,
+} from "../lib/unitConverter";
+import useUnsavedChanges from "../hooks/useUnsavedChanges";
+import UnsavedChangesModal from "./UnsavedChangesModal";
 import {
   clearMealDraft,
   getMealDraftKey,
   loadMealDraft,
-  saveMealDraft
-} from '../lib/mealDraft';
+  saveMealDraft,
+} from "../lib/mealDraft";
+import {
+  createDefaultMealPart,
+  MEAL_PART_NAME_OPTIONS,
+  mealToMealParts,
+  normalizeMealParts,
+} from "../lib/mealParts";
 
 function sameCategory(ingredient, categoryName) {
-  const ingredientCategory = getCategoryLabel(ingredient.category || 'Other').toLowerCase();
-  const selectedCategory = getCategoryLabel(categoryName || 'Other').toLowerCase();
-  const knownCategories = CATEGORY_LIBRARY.map(item => item.name.toLowerCase());
+  const ingredientCategory = getCategoryLabel(
+    ingredient.category || "Other",
+  ).toLowerCase();
+  const selectedCategory = getCategoryLabel(
+    categoryName || "Other",
+  ).toLowerCase();
+  const knownCategories = CATEGORY_LIBRARY.map((item) =>
+    item.name.toLowerCase(),
+  );
 
-  if (selectedCategory === 'other') {
-    return ingredientCategory === 'other' || !knownCategories.includes(ingredientCategory);
+  if (selectedCategory === "other") {
+    return (
+      ingredientCategory === "other" ||
+      !knownCategories.includes(ingredientCategory)
+    );
   }
 
   return ingredientCategory === selectedCategory;
 }
 
 function ingredientIdOf(item) {
-  return String(item?.ingredientId?._id || item?.ingredientId || item?._id || '');
+  return String(
+    item?.ingredientId?._id || item?.ingredientId || item?._id || "",
+  );
 }
 
 function normalizeMealIngredient(item) {
   return {
     ingredientId: ingredientIdOf(item),
-    quantityUsed: Number(item?.originalQuantityUsed ?? item?.quantityUsed ?? ''),
-    unit: item?.originalUnit || item?.unit || 'grams'
-  };
-}
-
-function normalizeComponent(component, fallbackCategory = 'Other') {
-  const name = component?.name || component?.category || fallbackCategory || 'Other';
-  return {
-    name,
-    category: component?.category || name,
-    ingredients: (component?.ingredients || []).map(normalizeMealIngredient).filter(item => item.ingredientId)
+    quantityUsed: Number(
+      item?.originalQuantityUsed ?? item?.quantityUsed ?? "",
+    ),
+    unit: item?.originalUnit || item?.unit || "grams",
   };
 }
 
 export function mealToEditorState(meal) {
-  const hasComponents = meal?.components?.length > 0;
-
   return {
     meal: {
-      name: meal?.name || '',
-      category: meal?.category ? normalizeMealCategory(meal.category) : '',
-      imageUrl: meal?.imageUrl || '',
+      name: meal?.name || "",
+      category: meal?.category ? normalizeMealCategory(meal.category) : "",
+      imageUrl: meal?.imageUrl || "",
       outsideFood: Boolean(meal?.outsideFood),
-      restaurantName: meal?.restaurantName || '',
-      totalCalories: meal?.totalCalories || '',
-      totalProtein: meal?.totalProtein || '',
-      totalCarbs: meal?.totalCarbs || '',
-      totalFats: meal?.totalFats || '',
-      totalSugar: meal?.totalSugar || ''
+      restaurantName: meal?.restaurantName || "",
+      totalCalories: meal?.totalCalories || "",
+      totalProtein: meal?.totalProtein || "",
+      totalCarbs: meal?.totalCarbs || "",
+      totalFats: meal?.totalFats || "",
+      totalSugar: meal?.totalSugar || "",
     },
-    components: hasComponents
-      ? meal.components.map(component => normalizeComponent(component, meal.category)).filter(component => component.ingredients.length > 0)
-      : [{
-          name: meal?.category || 'Meal',
-          category: meal?.category || 'Meal',
-          ingredients: (meal?.ingredients || []).map(normalizeMealIngredient).filter(item => item.ingredientId)
-        }].filter(component => component.ingredients.length > 0)
+    components: normalizeMealParts(
+      mealToMealParts(meal).map((component) => ({
+        ...component,
+        ingredients: (component?.ingredients || [])
+          .map(normalizeMealIngredient)
+          .filter((item) => item.ingredientId),
+      })),
+      meal?.category || "Main",
+    ),
   };
 }
 
 function componentIngredientLabel(count) {
-  return `${count} ingredient${count === 1 ? '' : 's'}`;
+  return `${count} ingredient${count === 1 ? "" : "s"}`;
 }
 
 function getUsedAmountLabel(originalItem, calculatedItem) {
@@ -99,7 +136,7 @@ function getUsedAmountLabel(originalItem, calculatedItem) {
 }
 
 function findIngredient(ingredients, ingredientId) {
-  return ingredients.find(ingredient => ingredient._id === ingredientId);
+  return ingredients.find((ingredient) => ingredient._id === ingredientId);
 }
 
 export default function ComponentMealEditor({
@@ -109,67 +146,93 @@ export default function ComponentMealEditor({
   onSave,
   onSaveSuccess,
   onCancel,
-  saveLabel = 'Save Meal',
+  saveLabel = "Save Meal",
   saving = false,
-  error = '',
-  draftKey: draftKeyProp = ''
+  error = "",
+  draftKey: draftKeyProp = "",
 }) {
-  const [meal, setMeal] = useState(initialMeal || { name: '', category: '', imageUrl: '' });
-  const [components, setComponents] = useState(initialComponents || []);
-  const [outsideFood, setOutsideFood] = useState(Boolean(initialMeal?.outsideFood));
+  const [meal, setMeal] = useState(
+    initialMeal || { name: "", category: "", imageUrl: "" },
+  );
+  const [components, setComponents] = useState(
+    initialComponents?.length > 0
+      ? initialComponents
+      : [createDefaultMealPart()],
+  );
+  const [outsideFood, setOutsideFood] = useState(
+    Boolean(initialMeal?.outsideFood),
+  );
   const [manualNutrition, setManualNutrition] = useState({
-    restaurantName: initialMeal?.restaurantName || '',
-    calories: initialMeal?.totalCalories || '',
-    protein: initialMeal?.totalProtein || '',
-    carbs: initialMeal?.totalCarbs || '',
-    fats: initialMeal?.totalFats || '',
-    sugar: initialMeal?.totalSugar || ''
+    restaurantName: initialMeal?.restaurantName || "",
+    calories: initialMeal?.totalCalories || "",
+    protein: initialMeal?.totalProtein || "",
+    carbs: initialMeal?.totalCarbs || "",
+    fats: initialMeal?.totalFats || "",
+    sugar: initialMeal?.totalSugar || "",
   });
   const [imageUploading, setImageUploading] = useState(false);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
   const [showLibrary, setShowLibrary] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState("");
   const [activeIngredient, setActiveIngredient] = useState(null);
-  const [amountUsed, setAmountUsed] = useState('');
-  const [unitUsed, setUnitUsed] = useState('grams');
+  const [amountUsed, setAmountUsed] = useState("");
+  const [unitUsed, setUnitUsed] = useState("grams");
   const [editingItem, setEditingItem] = useState(null);
-  const [libraryError, setLibraryError] = useState('');
-  const [librarySuccess, setLibrarySuccess] = useState('');
-  const [selectedMealPart, setSelectedMealPart] = useState(initialComponents?.[0]?.name || '');
+  const [libraryError, setLibraryError] = useState("");
+  const [librarySuccess, setLibrarySuccess] = useState("");
+  const [selectedMealPart, setSelectedMealPart] = useState(
+    initialComponents?.[0]?.name || "Main",
+  );
   const [draftState, setDraftState] = useState(null);
   const [showDraftCard, setShowDraftCard] = useState(false);
   const successTimerRef = useRef(null);
-  const draftKey = draftKeyProp || getMealDraftKey({ mealId: initialMeal?._id || '' });
-  const initialSnapshot = useMemo(() => JSON.stringify({
-    meal: initialMeal || { name: '', category: '', imageUrl: '' },
-    components: initialComponents || [],
-    outsideFood: Boolean(initialMeal?.outsideFood),
-    manualNutrition: {
-      restaurantName: initialMeal?.restaurantName || '',
-      calories: initialMeal?.totalCalories || '',
-      protein: initialMeal?.totalProtein || '',
-      carbs: initialMeal?.totalCarbs || '',
-      fats: initialMeal?.totalFats || '',
-      sugar: initialMeal?.totalSugar || ''
-    }
-  }), [initialComponents, initialMeal]);
-  const currentSnapshot = useMemo(() => JSON.stringify({
-    meal,
-    components,
-    outsideFood,
-    manualNutrition
-  }), [meal, components, outsideFood, manualNutrition]);
-  const { showModal, keepEditing, discardChanges, saveDraft, markSaved } = useUnsavedChanges(initialSnapshot !== currentSnapshot && !saving, {
-    onDiscard: () => clearMealDraft(draftKey),
-    onSaveDraft: async () => {
-      saveMealDraft({ meal, components, outsideFood, manualNutrition }, draftKey);
-      setDraftState({ meal, components, outsideFood, manualNutrition });
-    }
-  });
+  const draftKey =
+    draftKeyProp || getMealDraftKey({ mealId: initialMeal?._id || "" });
+  const initialSnapshot = useMemo(
+    () =>
+      JSON.stringify({
+        meal: initialMeal || { name: "", category: "", imageUrl: "" },
+        components: initialComponents || [],
+        outsideFood: Boolean(initialMeal?.outsideFood),
+        manualNutrition: {
+          restaurantName: initialMeal?.restaurantName || "",
+          calories: initialMeal?.totalCalories || "",
+          protein: initialMeal?.totalProtein || "",
+          carbs: initialMeal?.totalCarbs || "",
+          fats: initialMeal?.totalFats || "",
+          sugar: initialMeal?.totalSugar || "",
+        },
+      }),
+    [initialComponents, initialMeal],
+  );
+  const currentSnapshot = useMemo(
+    () =>
+      JSON.stringify({
+        meal,
+        components,
+        outsideFood,
+        manualNutrition,
+      }),
+    [meal, components, outsideFood, manualNutrition],
+  );
+  const { showModal, keepEditing, discardChanges, saveDraft, markSaved } =
+    useUnsavedChanges(initialSnapshot !== currentSnapshot && !saving, {
+      onDiscard: () => clearMealDraft(draftKey),
+      onSaveDraft: async () => {
+        saveMealDraft(
+          { meal, components, outsideFood, manualNutrition },
+          draftKey,
+        );
+        setDraftState({ meal, components, outsideFood, manualNutrition });
+      },
+    });
 
-  useEffect(() => () => {
-    if (successTimerRef.current) clearTimeout(successTimerRef.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (successTimerRef.current) clearTimeout(successTimerRef.current);
+    },
+    [],
+  );
 
   useEffect(() => {
     const storedDraft = loadMealDraft(draftKey);
@@ -177,37 +240,67 @@ export default function ComponentMealEditor({
     setShowDraftCard(Boolean(storedDraft));
   }, [draftKey]);
 
+  useEffect(() => {
+    if (outsideFood || components.length > 0) return;
+    setComponents([createDefaultMealPart()]);
+    setSelectedMealPart("Main");
+  }, [components.length, outsideFood]);
+
   const previewComponents = useMemo(
     () => buildPreviewComponents(ingredients, components),
-    [ingredients, components]
+    [ingredients, components],
   );
-  const mealTotals = addTotals(previewComponents.map(item => item.nutritionTotals || {}));
-  const flatIngredients = components.flatMap(component => component.ingredients);
-  const summaryRows = previewComponents.flatMap(componentPreview => {
-    const originalComponent = components.find(component => component.name === componentPreview.name);
+  const hasMealIngredients = previewComponents.some(
+    (component) => component.ingredients.length > 0,
+  );
+  const mealTotals = addTotals(
+    previewComponents.map((item) => item.nutritionTotals || {}),
+  );
+  const flatIngredients = components.flatMap(
+    (component) => component.ingredients,
+  );
+  const summaryRows = previewComponents.flatMap((componentPreview) => {
+    const originalComponent = components.find(
+      (component) => component.name === componentPreview.name,
+    );
     return componentPreview.ingredients.map((item, index) => ({
       ...item,
-      amountLabel: getUsedAmountLabel(originalComponent?.ingredients[index], item)
+      amountLabel: getUsedAmountLabel(
+        originalComponent?.ingredients[index],
+        item,
+      ),
     }));
   });
-  const canSave = meal.name.trim() && (outsideFood || flatIngredients.length > 0) && !saving && !imageUploading;
-  const ingredientsInCategory = ingredients.filter(ingredient => sameCategory(ingredient, selectedCategory));
+  const canSave =
+    meal.name.trim() &&
+    (outsideFood || flatIngredients.length > 0) &&
+    !saving &&
+    !imageUploading;
+  const ingredientsInCategory = ingredients.filter((ingredient) =>
+    sameCategory(ingredient, selectedCategory),
+  );
 
   function resetLibraryForm() {
-    setSelectedCategory('');
+    setSelectedCategory("");
     setActiveIngredient(null);
-    setAmountUsed('');
-    setUnitUsed('grams');
+    setAmountUsed("");
+    setUnitUsed("grams");
     setEditingItem(null);
-    setLibraryError('');
-    setLibrarySuccess('');
+    setLibraryError("");
+    setLibrarySuccess("");
   }
 
-  function openLibrary(partName = '') {
+  function openLibrary(partName = "") {
     resetLibraryForm();
     if (partName) setSelectedMealPart(partName);
-    if (partName && !components.some(component => component.name === partName)) {
-      setComponents(current => [...current, { name: partName, category: partName, ingredients: [] }]);
+    if (
+      partName &&
+      !components.some((component) => component.name === partName)
+    ) {
+      setComponents((current) => [
+        ...current,
+        { name: partName, category: partName, ingredients: [] },
+      ]);
     }
     setShowLibrary(true);
   }
@@ -220,129 +313,174 @@ export default function ComponentMealEditor({
   function chooseLibraryCategory(categoryName) {
     setSelectedCategory(categoryName);
     setActiveIngredient(null);
-    setAmountUsed('');
-    setUnitUsed('grams');
-    setLibraryError('');
-    setLibrarySuccess('');
+    setAmountUsed("");
+    setUnitUsed("grams");
+    setLibraryError("");
+    setLibrarySuccess("");
   }
 
   function addMealPart() {
-    const nextName = ['Flatbread', 'Eggs', 'Avocado', 'Pasta', 'Meat sauce', 'Toppings'].find(name => !components.some(component => component.name === name))
-      || `Meal Part ${components.length + 1}`;
-    setComponents(current => [...current, { name: nextName, category: nextName, ingredients: [] }]);
+    const nextName =
+      MEAL_PART_NAME_OPTIONS.find(
+        (name) => !components.some((component) => component.name === name),
+      ) || `Meal Part ${components.length + 1}`;
+    setComponents((current) => [
+      ...current,
+      { name: nextName, category: nextName, ingredients: [] },
+    ]);
     setSelectedMealPart(nextName);
   }
 
   function removeMealPart(partName) {
-    setComponents(current => current.filter(component => component.name !== partName));
-    setSelectedMealPart(current => (current === partName ? '' : current));
+    if (components.length <= 1) return;
+    setComponents((current) =>
+      current.filter((component) => component.name !== partName),
+    );
+    setSelectedMealPart((current) => (current === partName ? "" : current));
   }
 
   function selectIngredient(ingredient) {
     const primaryServing = getIngredientServingOptions(ingredient)[0];
     setActiveIngredient(ingredient);
-    setAmountUsed(primaryServing?.amount || ingredient.quantity || '');
-    setUnitUsed(normalizeUnit(primaryServing?.unit || ingredient.unit || 'grams') || primaryServing?.unit || ingredient.unit || 'grams');
-    setLibraryError('');
-    setLibrarySuccess('');
+    setAmountUsed(primaryServing?.amount || ingredient.quantity || "");
+    setUnitUsed(
+      normalizeUnit(primaryServing?.unit || ingredient.unit || "grams") ||
+        primaryServing?.unit ||
+        ingredient.unit ||
+        "grams",
+    );
+    setLibraryError("");
+    setLibrarySuccess("");
   }
 
   function addIngredientToMeal() {
-    const groupName = selectedMealPart || components[0]?.name || 'Main';
+    const groupName = selectedMealPart || components[0]?.name || "Main";
     const amount = Number(amountUsed);
     const ingredientName = activeIngredient?.name;
 
     if (!activeIngredient) {
-      setLibraryError('Please choose an ingredient.');
+      setLibraryError("Please choose an ingredient.");
       return;
     }
 
     if (!amount || amount <= 0) {
-      setLibraryError('Amount used is required and must be greater than 0.');
+      setLibraryError("Amount used is required and must be greater than 0.");
       return;
     }
 
     if (!unitUsed) {
-      setLibraryError('Please choose a unit.');
+      setLibraryError("Please choose a unit.");
       return;
     }
 
     const newItem = {
       ingredientId: activeIngredient._id,
       quantityUsed: amount,
-      unit: unitUsed || activeIngredient.unit || 'grams'
+      unit: unitUsed || activeIngredient.unit || "grams",
     };
 
-    setComponents(currentComponents => {
-      let nextComponents = currentComponents.map(component => ({
+    setComponents((currentComponents) => {
+      let nextComponents = currentComponents.map((component) => ({
         ...component,
-        ingredients: editingItem && component.name === editingItem.componentName
-          ? component.ingredients.filter((item, index) => index !== editingItem.ingredientIndex)
-          : component.ingredients
+        ingredients:
+          editingItem && component.name === editingItem.componentName
+            ? component.ingredients.filter(
+                (item, index) => index !== editingItem.ingredientIndex,
+              )
+            : component.ingredients,
       }));
 
-      const existingIndex = nextComponents.findIndex(component => component.name === groupName);
+      const existingIndex = nextComponents.findIndex(
+        (component) => component.name === groupName,
+      );
       if (existingIndex >= 0) {
         nextComponents[existingIndex] = {
           ...nextComponents[existingIndex],
-          ingredients: [...nextComponents[existingIndex].ingredients, newItem]
+          ingredients: [...nextComponents[existingIndex].ingredients, newItem],
         };
       } else {
-        nextComponents.push({ name: groupName, category: groupName, ingredients: [newItem] });
+        nextComponents.push({
+          name: groupName,
+          category: groupName,
+          ingredients: [newItem],
+        });
       }
 
       return nextComponents;
     });
 
-    setMessage('');
-    setLibraryError('');
-    setLibrarySuccess(`${ingredientName} ${editingItem ? 'updated in' : 'added to'} ${groupName}.`);
+    setMessage("");
+    setLibraryError("");
+    setLibrarySuccess(
+      `${ingredientName} ${editingItem ? "updated in" : "added to"} ${groupName}.`,
+    );
     if (successTimerRef.current) clearTimeout(successTimerRef.current);
-    successTimerRef.current = setTimeout(() => setLibrarySuccess(''), 2500);
+    successTimerRef.current = setTimeout(() => setLibrarySuccess(""), 2500);
     setActiveIngredient(null);
-    setAmountUsed('');
-    setUnitUsed('grams');
+    setAmountUsed("");
+    setUnitUsed("grams");
     setEditingItem(null);
   }
 
   function removeIngredient(componentName, ingredientIndex) {
-    setComponents(currentComponents => currentComponents.map(component => {
-      if (component.name !== componentName) return component;
-      return {
-        ...component,
-        ingredients: component.ingredients.filter((item, index) => index !== ingredientIndex)
-      };
-    }));
+    setComponents((currentComponents) =>
+      currentComponents.map((component) => {
+        if (component.name !== componentName) return component;
+        return {
+          ...component,
+          ingredients: component.ingredients.filter(
+            (item, index) => index !== ingredientIndex,
+          ),
+        };
+      }),
+    );
   }
 
   function renameComponent(oldName, newName) {
     const cleanName = newName.trim();
     if (!cleanName) return;
 
-    setComponents(components.map(component => (
-      component.name === oldName ? { ...component, name: cleanName, category: cleanName } : component
-    )));
+    setComponents(
+      components.map((component) =>
+        component.name === oldName
+          ? { ...component, name: cleanName, category: cleanName }
+          : component,
+      ),
+    );
     if (selectedMealPart === oldName) setSelectedMealPart(cleanName);
   }
 
   function editIngredient(componentName, ingredientIndex) {
-    const component = components.find(item => item.name === componentName);
+    const component = components.find((item) => item.name === componentName);
     const item = component?.ingredients[ingredientIndex];
-    const ingredient = ingredients.find(ingredientItem => ingredientItem._id === item?.ingredientId);
+    const ingredient = ingredients.find(
+      (ingredientItem) => ingredientItem._id === item?.ingredientId,
+    );
     if (!component || !item || !ingredient) return;
 
-    setSelectedCategory(getCategoryLabel(ingredient.category || componentName || 'Other'));
+    setSelectedCategory(
+      getCategoryLabel(ingredient.category || componentName || "Other"),
+    );
     setSelectedMealPart(componentName);
     setActiveIngredient(ingredient);
     setAmountUsed(item.quantityUsed);
-    setUnitUsed(normalizeUnit(item.unit || ingredient.unit || 'grams') || item.unit || ingredient.unit || 'grams');
+    setUnitUsed(
+      normalizeUnit(item.unit || ingredient.unit || "grams") ||
+        item.unit ||
+        ingredient.unit ||
+        "grams",
+    );
     setEditingItem({ componentName, ingredientIndex });
     setShowLibrary(true);
   }
 
   async function saveMeal() {
     if (!canSave) {
-      setMessage(outsideFood ? 'Please enter a meal name.' : 'Please enter a meal name and add at least one ingredient.');
+      setMessage(
+        outsideFood
+          ? "Please enter a meal name."
+          : "Please enter a meal name and add at least one ingredient.",
+      );
       return;
     }
 
@@ -350,9 +488,17 @@ export default function ComponentMealEditor({
     try {
       await onSave({
         ...meal,
-        category: meal.category ? normalizeMealCategory(meal.category) : 'Other',
+        category: meal.category
+          ? normalizeMealCategory(meal.category)
+          : "Other",
         outsideFood,
-        ...(outsideFood ? outsideFoodPayload : { ingredients: flatIngredients, components })
+        ...(outsideFood
+          ? outsideFoodPayload
+          : {
+              ingredients: flatIngredients,
+              components,
+              mealParts: components,
+            }),
       });
     } catch {
       return;
@@ -367,20 +513,27 @@ export default function ComponentMealEditor({
   function restoreDraft() {
     if (!draftState) return;
     setMeal({
-      ...(draftState.meal || { name: '', category: '', imageUrl: '' }),
-      category: draftState.meal?.category ? normalizeMealCategory(draftState.meal.category) : ''
+      ...(draftState.meal || { name: "", category: "", imageUrl: "" }),
+      category: draftState.meal?.category
+        ? normalizeMealCategory(draftState.meal.category)
+        : "",
     });
-    setComponents(draftState.components || []);
+    setComponents(
+      normalizeMealParts(
+        draftState.components || [],
+        draftState.meal?.category || "Main",
+      ),
+    );
     setOutsideFood(Boolean(draftState.outsideFood));
     setManualNutrition({
-      restaurantName: draftState.manualNutrition?.restaurantName || '',
-      calories: draftState.manualNutrition?.calories || '',
-      protein: draftState.manualNutrition?.protein || '',
-      carbs: draftState.manualNutrition?.carbs || '',
-      fats: draftState.manualNutrition?.fats || '',
-      sugar: draftState.manualNutrition?.sugar || ''
+      restaurantName: draftState.manualNutrition?.restaurantName || "",
+      calories: draftState.manualNutrition?.calories || "",
+      protein: draftState.manualNutrition?.protein || "",
+      carbs: draftState.manualNutrition?.carbs || "",
+      fats: draftState.manualNutrition?.fats || "",
+      sugar: draftState.manualNutrition?.sugar || "",
     });
-    setSelectedMealPart(draftState.components?.[0]?.name || '');
+    setSelectedMealPart(draftState.components?.[0]?.name || "Main");
     setShowDraftCard(false);
   }
 
@@ -390,249 +543,419 @@ export default function ComponentMealEditor({
     setShowDraftCard(false);
   }
 
-  return <>
-    {message && <Alert variant="warning">{message}</Alert>}
-    {error && <Alert variant="danger">{error}</Alert>}
+  return (
+    <>
+      {message && <Alert variant="warning">{message}</Alert>}
+      {error && <Alert variant="danger">{error}</Alert>}
 
-    {showDraftCard && draftState && (
-      <Card className="draft-restore-card mb-4">
-        <Card.Body className="draft-restore-card-body">
-          <div>
-            <strong>Continue draft</strong>
-            <p className="text-muted mb-0">A saved meal draft was found. Restore it or delete it.</p>
-          </div>
-          <div className="draft-restore-card-actions">
-            <Button variant="success" size="sm" onClick={restoreDraft}>Continue draft</Button>
-            <Button variant="outline-danger" size="sm" onClick={deleteDraft}>Delete draft</Button>
-          </div>
-        </Card.Body>
+      {showDraftCard && draftState && (
+        <Card className="draft-restore-card mb-4">
+          <Card.Body className="draft-restore-card-body">
+            <div>
+              <strong>Continue draft</strong>
+              <p className="text-muted mb-0">
+                A saved meal draft was found. Restore it or delete it.
+              </p>
+            </div>
+            <div className="draft-restore-card-actions">
+              <Button variant="success" size="sm" onClick={restoreDraft}>
+                Continue draft
+              </Button>
+              <Button variant="outline-danger" size="sm" onClick={deleteDraft}>
+                Delete draft
+              </Button>
+            </div>
+          </Card.Body>
+        </Card>
+      )}
+
+      <Card className="page-card p-4 mb-4 meal-setup-card">
+        <Row className="g-4 align-items-stretch">
+          <Col lg={8}>
+            <div>
+              <h4 className="mb-1">Meal Setup</h4>
+              <p className="text-muted mb-0">
+                Update the meal details, then edit ingredients inside each
+                group.
+              </p>
+            </div>
+            <Row className="mt-3">
+              <Col md={4}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Meal Name</Form.Label>
+                  <Form.Control
+                    value={meal.name}
+                    onChange={(e) => setMeal({ ...meal, name: e.target.value })}
+                    placeholder="Fajitas"
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={4}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Meal Category</Form.Label>
+                  <Form.Select
+                    value={meal.category}
+                    onChange={(e) =>
+                      setMeal({ ...meal, category: e.target.value })
+                    }
+                  >
+                    <option value="">Choose meal category</option>
+                    {MEAL_CATEGORIES.map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
+                  </Form.Select>
+                </Form.Group>
+              </Col>
+              <Col md={4}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Image URL</Form.Label>
+                  <Form.Control
+                    value={meal.imageUrl}
+                    onChange={(e) =>
+                      setMeal({ ...meal, imageUrl: e.target.value })
+                    }
+                    placeholder="https://example.com/meal.jpg"
+                  />
+                  <MealImageUpload
+                    imageUrl={meal.imageUrl}
+                    onUploaded={(imageUrl) => setMeal({ ...meal, imageUrl })}
+                    onUploadingChange={setImageUploading}
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+            <OutsideFoodToggle
+              checked={outsideFood}
+              onChange={setOutsideFood}
+            />
+          </Col>
+          <Col lg={4}>
+            <div className="meal-image-preview">
+              <FoodImage
+                src={meal.imageUrl}
+                alt={meal.name || "Meal preview"}
+                category={meal.category || "Other"}
+                className="meal-preview-img"
+                placeholderClassName="meal-preview-placeholder"
+              />
+            </div>
+          </Col>
+        </Row>
       </Card>
-    )}
 
-    <Card className="page-card p-4 mb-4 meal-setup-card">
-      <Row className="g-4 align-items-stretch">
-        <Col lg={8}>
+      {outsideFood && (
+        <ManualNutritionCard
+          values={manualNutrition}
+          onChange={setManualNutrition}
+        />
+      )}
+
+      {!outsideFood && (
+        <div className="meal-builder-toolbar">
           <div>
-            <h4 className="mb-1">Meal Setup</h4>
-            <p className="text-muted mb-0">Update the meal details, then edit ingredients inside each group.</p>
+            <h4>Meal Parts</h4>
+            <p className="text-muted">
+              Build the meal as separate parts like Flatbread, Eggs, Avocado,
+              Pasta, Meat sauce, or Toppings.
+            </p>
           </div>
-          <Row className="mt-3">
-            <Col md={4}>
-              <Form.Group className="mb-3">
-                <Form.Label>Meal Name</Form.Label>
-                <Form.Control value={meal.name} onChange={e => setMeal({ ...meal, name: e.target.value })} placeholder="Fajitas" />
-              </Form.Group>
-            </Col>
-            <Col md={4}>
-              <Form.Group className="mb-3">
-                <Form.Label>Meal Category</Form.Label>
-                <Form.Select value={meal.category} onChange={e => setMeal({ ...meal, category: e.target.value })}>
-                  <option value="">Choose meal category</option>
-                  {MEAL_CATEGORIES.map(category => <option key={category} value={category}>{category}</option>)}
-                </Form.Select>
-              </Form.Group>
-            </Col>
-            <Col md={4}>
-              <Form.Group className="mb-3">
-                <Form.Label>Image URL</Form.Label>
-                <Form.Control value={meal.imageUrl} onChange={e => setMeal({ ...meal, imageUrl: e.target.value })} placeholder="https://example.com/meal.jpg" />
-                <MealImageUpload imageUrl={meal.imageUrl} onUploaded={imageUrl => setMeal({ ...meal, imageUrl })} onUploadingChange={setImageUploading} />
-              </Form.Group>
-            </Col>
-          </Row>
-          <OutsideFoodToggle checked={outsideFood} onChange={setOutsideFood} />
-        </Col>
-        <Col lg={4}>
-          <div className="meal-image-preview">
-            <FoodImage src={meal.imageUrl} alt={meal.name || 'Meal preview'} category={meal.category || 'Other'} className="meal-preview-img" placeholderClassName="meal-preview-placeholder" />
+          <div className="meal-builder-toolbar-actions">
+            <Button variant="outline-success" onClick={addMealPart}>
+              Add Meal Part
+            </Button>
+            <Button
+              variant="success"
+              onClick={() =>
+                openLibrary(selectedMealPart || components[0]?.name || "")
+              }
+            >
+              Add Ingredient
+            </Button>
           </div>
-        </Col>
-      </Row>
-    </Card>
-
-    {outsideFood && (
-      <ManualNutritionCard values={manualNutrition} onChange={setManualNutrition} />
-    )}
-
-    {!outsideFood && (
-      <div className="meal-builder-toolbar">
-        <div>
-          <h4>Meal Parts</h4>
-          <p className="text-muted">Build the meal as separate parts like Flatbread, Eggs, Avocado, Pasta, Meat sauce, or Toppings.</p>
         </div>
-        <div className="meal-builder-toolbar-actions">
-          <Button variant="outline-success" onClick={addMealPart}>Add Meal Part</Button>
-          <Button variant="success" onClick={() => openLibrary(selectedMealPart || components[0]?.name || '')}>Add Ingredient</Button>
-        </div>
-      </div>
-    )}
+      )}
 
-    {!outsideFood && previewComponents.length > 0 && (
-      <Row className="g-4 mb-4">
-        {previewComponents.map(componentPreview => {
-          const originalComponent = components.find(component => component.name === componentPreview.name);
-          const componentCategory = componentPreview.category || componentPreview.name;
-          const isActivePart = selectedMealPart === componentPreview.name;
+      {!outsideFood && previewComponents.length > 0 && (
+        <Row className="g-4 mb-4">
+          {previewComponents.map((componentPreview) => {
+            const originalComponent = components.find(
+              (component) => component.name === componentPreview.name,
+            );
+            const componentCategory =
+              componentPreview.category || componentPreview.name;
+            const isActivePart = selectedMealPart === componentPreview.name;
 
-          return <Col lg={6} key={componentPreview.name}>
-            <Card className={`page-card component-builder-card ${isActivePart ? 'active' : ''}`}>
-              <Card.Body>
-                <div className="component-card-header">
-                  <div className="component-card-title-block">
-                    <div className="component-name-row">
-                      <span className="component-title-emoji">{getCategoryIcon(componentCategory)}</span>
-                      <Form.Control
-                        value={componentPreview.name}
-                        onChange={e => renameComponent(componentPreview.name, e.target.value)}
-                        className="component-name-input"
-                      />
-                    </div>
-                    <div className="component-card-meta">
-                      {componentIngredientLabel(componentPreview.ingredients.length)} - {formatAmount(componentPreview.totalWeight)}g total
-                    </div>
-                  </div>
-                  <div className="component-card-actions">
-                    <Button variant="outline-success" size="sm" onClick={() => openLibrary(componentPreview.name)}>Add Ingredient</Button>
-                    {components.length > 1 && (
-                      <Button variant="outline-danger" size="sm" onClick={() => removeMealPart(componentPreview.name)}>Remove Part</Button>
-                    )}
-                  </div>
-                </div>
-
-                <div className="component-ingredient-list">
-                  {componentPreview.ingredients.length === 0 && (
-                    <div className="component-empty-state">
-                      <p className="text-muted mb-0">No ingredients in this meal part yet.</p>
-                    </div>
-                  )}
-                  {componentPreview.ingredients.map((item, index) => {
-                    const originalItem = originalComponent?.ingredients[index];
-                    const fullIngredient = findIngredient(ingredients, item.ingredientId);
-                    return <div className="component-ingredient-row" key={`${item.ingredientId}-${index}`}>
-                      <FoodImage src={getFoodImage(fullIngredient)} alt={item.name} category={fullIngredient?.category || componentCategory} className="component-ingredient-thumb" placeholderClassName="component-ingredient-placeholder" />
-                      <div className="component-ingredient-main">
-                        <div className="component-ingredient-name">{item.name}</div>
-                        <div className="component-ingredient-meta">{formatAmount(originalItem?.quantityUsed)} {originalItem?.unit}</div>
-                        <div className="component-ingredient-nutrition">
-                          {formatCalories(item.calories)} cal - {formatMacro(item.protein)}g protein
+            return (
+              <Col lg={6} key={componentPreview.name}>
+                <Card
+                  className={`page-card component-builder-card ${isActivePart ? "active" : ""}`}
+                >
+                  <Card.Body>
+                    <div className="component-card-header">
+                      <div className="component-card-title-block">
+                        <div className="component-card-eyebrow">Meal Part</div>
+                        <div className="component-name-row">
+                          <span className="component-title-emoji">
+                            {getCategoryIcon(componentCategory)}
+                          </span>
+                          <Form.Control
+                            value={componentPreview.name}
+                            placeholder={
+                              componentPreview.name === "Main"
+                                ? "Main"
+                                : "Flatbread"
+                            }
+                            onChange={(e) =>
+                              renameComponent(
+                                componentPreview.name,
+                                e.target.value,
+                              )
+                            }
+                            className="component-name-input"
+                          />
+                        </div>
+                        <div className="component-card-meta">
+                          {componentIngredientLabel(
+                            componentPreview.ingredients.length,
+                          )}{" "}
+                          - {formatAmount(componentPreview.totalWeight)}g total
                         </div>
                       </div>
-                      <div className="ingredient-actions">
-                        <Button variant="outline-success" size="sm" onClick={() => editIngredient(componentPreview.name, index)}>Edit</Button>
-                        <Button variant="outline-danger" size="sm" onClick={() => removeIngredient(componentPreview.name, index)}>Remove</Button>
+                      <div className="component-card-actions">
+                        <Button
+                          variant="outline-success"
+                          size="sm"
+                          onClick={() => openLibrary(componentPreview.name)}
+                        >
+                          Add Ingredient
+                        </Button>
+                        {components.length > 1 && (
+                          <Button
+                            variant="outline-danger"
+                            size="sm"
+                            onClick={() =>
+                              removeMealPart(componentPreview.name)
+                            }
+                          >
+                            Remove Part
+                          </Button>
+                        )}
                       </div>
-                    </div>;
-                  })}
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>;
-        })}
-      </Row>
-    )}
+                    </div>
 
-    {!outsideFood && previewComponents.length > 0 && (
-      <Card className="page-card builder-summary-card">
-        <Card.Body>
-          <div className="builder-summary-header">
-            <h4>Nutrition Summary</h4>
-            <p className="text-muted">Calculated from the ingredient amounts in this meal.</p>
-          </div>
+                    <div className="component-ingredient-list">
+                      {componentPreview.ingredients.length === 0 && (
+                        <div className="component-empty-state">
+                          <p className="text-muted mb-0">
+                            No ingredients in this meal part yet.
+                          </p>
+                        </div>
+                      )}
+                      {componentPreview.ingredients.map((item, index) => {
+                        const originalItem =
+                          originalComponent?.ingredients[index];
+                        const fullIngredient = findIngredient(
+                          ingredients,
+                          item.ingredientId,
+                        );
+                        return (
+                          <div
+                            className="component-ingredient-row"
+                            key={`${item.ingredientId}-${index}`}
+                          >
+                            <FoodImage
+                              src={getFoodImage(fullIngredient)}
+                              alt={item.name}
+                              category={
+                                fullIngredient?.category || componentCategory
+                              }
+                              className="component-ingredient-thumb"
+                              placeholderClassName="component-ingredient-placeholder"
+                            />
+                            <div className="component-ingredient-main">
+                              <div className="component-ingredient-name">
+                                {item.name}
+                              </div>
+                              <div className="component-ingredient-meta">
+                                {formatAmount(originalItem?.quantityUsed)}{" "}
+                                {originalItem?.unit}
+                              </div>
+                              <div className="component-ingredient-nutrition">
+                                {formatCalories(item.calories)} cal -{" "}
+                                {formatMacro(item.protein)}g protein
+                              </div>
+                            </div>
+                            <div className="ingredient-actions">
+                              <Button
+                                variant="outline-success"
+                                size="sm"
+                                onClick={() =>
+                                  editIngredient(componentPreview.name, index)
+                                }
+                              >
+                                Edit
+                              </Button>
+                              <Button
+                                variant="outline-danger"
+                                size="sm"
+                                onClick={() =>
+                                  removeIngredient(componentPreview.name, index)
+                                }
+                              >
+                                Remove
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </Card.Body>
+                </Card>
+              </Col>
+            );
+          })}
+        </Row>
+      )}
 
-          <div className="builder-summary-table-wrap">
-            <table className="builder-summary-table">
-              <thead>
-                <tr>
-                  <th>Ingredient</th>
-                  <th>Amount</th>
-                  <th>Calories</th>
-                  <th>Protein</th>
-                  <th>Carbs</th>
-                  <th>Fats</th>
-                  <th>Sugar</th>
-                </tr>
-              </thead>
-              <tbody>
-                {summaryRows.map((item, index) => (
-                  <tr key={`${item.ingredientId}-${index}`}>
-                    <td>{item.name}</td>
-                    <td>{item.amountLabel}</td>
-                    <td>{formatCalories(item.calories)}</td>
-                    <td>{formatMacro(item.protein)}g</td>
-                    <td>{formatMacro(item.carbs)}g</td>
-                    <td>{formatMacro(item.fats)}g</td>
-                    <td>{formatMacro(item.sugar)}g</td>
-                  </tr>
-                ))}
-                <tr className="summary-total-row">
-                  <td>Total</td>
-                  <td>{formatAmount(previewComponents.reduce((sum, item) => sum + Number(item.totalWeight || 0), 0))}g</td>
-                  <td>{formatCalories(mealTotals.calories)}</td>
-                  <td>{formatMacro(mealTotals.protein)}g</td>
-                  <td>{formatMacro(mealTotals.carbs)}g</td>
-                  <td>{formatMacro(mealTotals.fats)}g</td>
-                  <td>{formatMacro(mealTotals.sugar)}g</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div className="builder-summary-mobile">
-            {summaryRows.map((item, index) => (
-              <div className="builder-summary-mobile-card" key={`${item.ingredientId}-mobile-${index}`}>
-                <strong>{item.name}</strong>
-                <span>Amount: {item.amountLabel}</span>
-                <span>Calories: {formatCalories(item.calories)}</span>
-                <span>Protein: {formatMacro(item.protein)}g</span>
-                <span>Carbs: {formatMacro(item.carbs)}g</span>
-                <span>Fats: {formatMacro(item.fats)}g</span>
-                <span>Sugar: {formatMacro(item.sugar)}g</span>
-              </div>
-            ))}
-            <div className="builder-summary-mobile-card total">
-              <strong>Total</strong>
-              <span>Amount: {formatAmount(previewComponents.reduce((sum, item) => sum + Number(item.totalWeight || 0), 0))}g</span>
-              <span>Calories: {formatCalories(mealTotals.calories)}</span>
-              <span>Protein: {formatMacro(mealTotals.protein)}g</span>
-              <span>Carbs: {formatMacro(mealTotals.carbs)}g</span>
-              <span>Fats: {formatMacro(mealTotals.fats)}g</span>
-              <span>Sugar: {formatMacro(mealTotals.sugar)}g</span>
+      {!outsideFood && hasMealIngredients && (
+        <Card className="page-card builder-summary-card">
+          <Card.Body>
+            <div className="builder-summary-header">
+              <h4>Nutrition Summary</h4>
+              <p className="text-muted">
+                Calculated from the ingredient amounts in this meal.
+              </p>
             </div>
-          </div>
-        </Card.Body>
-      </Card>
-    )}
 
-    <div className="meal-save-actions">
-      <Button variant="outline-secondary" onClick={onCancel} disabled={saving}>Cancel</Button>
-      <Button variant="success" onClick={saveMeal} disabled={!canSave}>{imageUploading ? 'Uploading photo...' : saving ? 'Saving...' : saveLabel}</Button>
-    </div>
+            <div className="builder-summary-table-wrap">
+              <table className="builder-summary-table">
+                <thead>
+                  <tr>
+                    <th>Ingredient</th>
+                    <th>Amount</th>
+                    <th>Calories</th>
+                    <th>Protein</th>
+                    <th>Carbs</th>
+                    <th>Fats</th>
+                    <th>Sugar</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {summaryRows.map((item, index) => (
+                    <tr key={`${item.ingredientId}-${index}`}>
+                      <td>{item.name}</td>
+                      <td>{item.amountLabel}</td>
+                      <td>{formatCalories(item.calories)}</td>
+                      <td>{formatMacro(item.protein)}g</td>
+                      <td>{formatMacro(item.carbs)}g</td>
+                      <td>{formatMacro(item.fats)}g</td>
+                      <td>{formatMacro(item.sugar)}g</td>
+                    </tr>
+                  ))}
+                  <tr className="summary-total-row">
+                    <td>Total</td>
+                    <td>
+                      {formatAmount(
+                        previewComponents.reduce(
+                          (sum, item) => sum + Number(item.totalWeight || 0),
+                          0,
+                        ),
+                      )}
+                      g
+                    </td>
+                    <td>{formatCalories(mealTotals.calories)}</td>
+                    <td>{formatMacro(mealTotals.protein)}g</td>
+                    <td>{formatMacro(mealTotals.carbs)}g</td>
+                    <td>{formatMacro(mealTotals.fats)}g</td>
+                    <td>{formatMacro(mealTotals.sugar)}g</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
 
-    <IngredientLibraryModal
-      show={showLibrary}
-      onHide={closeLibrary}
-      ingredients={ingredients}
-      selectedCategory={selectedCategory}
-      setSelectedCategory={chooseLibraryCategory}
-      ingredientsInCategory={ingredientsInCategory}
-      activeIngredient={activeIngredient}
-      selectIngredient={selectIngredient}
-      amountUsed={amountUsed}
-      setAmountUsed={setAmountUsed}
-      unitUsed={unitUsed}
-      setUnitUsed={setUnitUsed}
-      onAdd={addIngredientToMeal}
-      isEditing={!!editingItem}
-      libraryError={libraryError}
-      librarySuccess={librarySuccess}
+            <div className="builder-summary-mobile">
+              {summaryRows.map((item, index) => (
+                <div
+                  className="builder-summary-mobile-card"
+                  key={`${item.ingredientId}-mobile-${index}`}
+                >
+                  <strong>{item.name}</strong>
+                  <span>Amount: {item.amountLabel}</span>
+                  <span>Calories: {formatCalories(item.calories)}</span>
+                  <span>Protein: {formatMacro(item.protein)}g</span>
+                  <span>Carbs: {formatMacro(item.carbs)}g</span>
+                  <span>Fats: {formatMacro(item.fats)}g</span>
+                  <span>Sugar: {formatMacro(item.sugar)}g</span>
+                </div>
+              ))}
+              <div className="builder-summary-mobile-card total">
+                <strong>Total</strong>
+                <span>
+                  Amount:{" "}
+                  {formatAmount(
+                    previewComponents.reduce(
+                      (sum, item) => sum + Number(item.totalWeight || 0),
+                      0,
+                    ),
+                  )}
+                  g
+                </span>
+                <span>Calories: {formatCalories(mealTotals.calories)}</span>
+                <span>Protein: {formatMacro(mealTotals.protein)}g</span>
+                <span>Carbs: {formatMacro(mealTotals.carbs)}g</span>
+                <span>Fats: {formatMacro(mealTotals.fats)}g</span>
+                <span>Sugar: {formatMacro(mealTotals.sugar)}g</span>
+              </div>
+            </div>
+          </Card.Body>
+        </Card>
+      )}
+
+      <div className="meal-save-actions">
+        <Button
+          variant="outline-secondary"
+          onClick={onCancel}
+          disabled={saving}
+        >
+          Cancel
+        </Button>
+        <Button variant="success" onClick={saveMeal} disabled={!canSave}>
+          {imageUploading
+            ? "Uploading photo..."
+            : saving
+              ? "Saving..."
+              : saveLabel}
+        </Button>
+      </div>
+
+      <IngredientLibraryModal
+        show={showLibrary}
+        onHide={closeLibrary}
+        ingredients={ingredients}
+        selectedCategory={selectedCategory}
+        setSelectedCategory={chooseLibraryCategory}
+        ingredientsInCategory={ingredientsInCategory}
+        activeIngredient={activeIngredient}
+        selectIngredient={selectIngredient}
+        amountUsed={amountUsed}
+        setAmountUsed={setAmountUsed}
+        unitUsed={unitUsed}
+        setUnitUsed={setUnitUsed}
+        onAdd={addIngredientToMeal}
+        isEditing={!!editingItem}
+        libraryError={libraryError}
+        librarySuccess={librarySuccess}
       />
-    <UnsavedChangesModal
-      show={showModal}
-      onKeepEditing={keepEditing}
-      onDiscardChanges={discardChanges}
-      onSaveDraft={saveDraft}
-    />
-  </>;
+      <UnsavedChangesModal
+        show={showModal}
+        onKeepEditing={keepEditing}
+        onDiscardChanges={discardChanges}
+        onSaveDraft={saveDraft}
+      />
+    </>
+  );
 }
 
 function IngredientLibraryModal({
@@ -651,20 +974,26 @@ function IngredientLibraryModal({
   onAdd,
   isEditing,
   libraryError,
-  librarySuccess
+  librarySuccess,
 }) {
-  const targetGroup = selectedCategory || 'this category';
+  const targetGroup = selectedCategory || "this category";
   const selectedPreview = activeIngredient
     ? calculateNutritionWithUnit(Number(amountUsed), unitUsed, activeIngredient)
     : null;
   const conversionWarning = activeIngredient
     ? getConversionWarning(amountUsed, unitUsed, activeIngredient)
-    : '';
-  const servingOptions = useMemo(() => getIngredientServingOptions(activeIngredient), [activeIngredient]);
-  const servingUnits = useMemo(() => getIngredientServingUnits(activeIngredient), [activeIngredient]);
+    : "";
+  const servingOptions = useMemo(
+    () => getIngredientServingOptions(activeIngredient),
+    [activeIngredient],
+  );
+  const servingUnits = useMemo(
+    () => getIngredientServingUnits(activeIngredient),
+    [activeIngredient],
+  );
   const addIngredientHref = {
-    pathname: '/ingredients/add',
-    query: { category: selectedCategory }
+    pathname: "/ingredients/add",
+    query: { category: selectedCategory },
   };
   function handleSelectedIngredientSubmit(event) {
     event.preventDefault();
@@ -672,106 +1001,205 @@ function IngredientLibraryModal({
     onAdd();
   }
 
-  return <Modal show={show} onHide={onHide} size="xl" centered dialogClassName="ingredient-library-dialog">
-    <Modal.Header closeButton>
-      <Modal.Title>Ingredient Library</Modal.Title>
-    </Modal.Header>
-    <Modal.Body className="ingredient-library-body">
-      {librarySuccess && <Alert variant="success" className="library-toast-alert">{librarySuccess}</Alert>}
-
-      {!selectedCategory && <>
-        <p className="text-muted ingredient-library-helper">Choose a category to browse ingredients from your inventory.</p>
-        <Row className="g-3 ingredient-library-category-grid">
-          {CATEGORY_LIBRARY.map(category => {
-            const count = ingredients.filter(ingredient => sameCategory(ingredient, category.name)).length;
-            return <Col md={4} lg={3} key={category.name}>
-              <Card className="h-100 border-0 shadow-sm category-card" role="button" onClick={() => setSelectedCategory(category.name)}>
-                <Card.Body>
-                  <div className={`category-icon ${getCategoryClass(category.name)}`}>{category.icon}</div>
-                  <h5>{category.name}</h5>
-                  <p className="text-muted small mb-2">{category.description}</p>
-                  <Badge bg={count > 0 ? 'success' : 'secondary'}>{count} ingredients</Badge>
-                </Card.Body>
-              </Card>
-            </Col>;
-          })}
-        </Row>
-      </>}
-
-      {selectedCategory && <>
-        <div className="ingredient-library-category-header">
-          <div>
-            <h4 className="mb-0">{selectedCategory}</h4>
-            <div className="text-muted small">Ingredients added here will go into the {selectedCategory} component.</div>
-          </div>
-          <div className="ingredient-library-actions">
-            <Button as={Link} href={addIngredientHref} variant="success">+ Add New</Button>
-            <Button variant="outline-secondary" onClick={() => setSelectedCategory('')}>Back</Button>
-          </div>
-        </div>
-
-        {ingredientsInCategory.length === 0 && (
-          <Card className="empty-category-card">
-            <Card.Body>
-              <h5>No {selectedCategory} yet.</h5>
-              <p className="text-muted">Add one now, then come back and select it for this meal.</p>
-            </Card.Body>
-          </Card>
+  return (
+    <Modal
+      show={show}
+      onHide={onHide}
+      size="xl"
+      centered
+      dialogClassName="ingredient-library-dialog"
+    >
+      <Modal.Header closeButton>
+        <Modal.Title>Ingredient Library</Modal.Title>
+      </Modal.Header>
+      <Modal.Body className="ingredient-library-body">
+        {librarySuccess && (
+          <Alert variant="success" className="library-toast-alert">
+            {librarySuccess}
+          </Alert>
         )}
 
-        {ingredientsInCategory.length > 0 && <div className="ingredient-library-picker">
-          <div className="ingredient-library-list">
-              {ingredientsInCategory.map(ingredient => {
-                const nutrition = getIngredientServingNutrition(ingredient);
-                const isActive = activeIngredient?._id === ingredient._id;
-                return <Card className={`ingredient-library-card ${isActive ? 'selected' : ''}`} role="button" onClick={() => selectIngredient(ingredient)} key={ingredient._id}>
-                  <div className="ingredient-library-row">
-                    <FoodImage src={getFoodImage(ingredient)} alt={ingredient.name} category={getCategoryLabel(ingredient.category || selectedCategory)} className="ingredient-library-img" placeholderClassName="ingredient-library-placeholder" />
-                    <Card.Body className="ingredient-library-row-body">
-                      <div className="ingredient-library-row-top">
-                        <h5>{ingredient.name}</h5>
-                        <Badge className="soft-pill soft-pill-beige">{getCategoryLabel(ingredient.category)}</Badge>
-                      </div>
-                      <div className="ingredient-library-row-meta">{formatServingLabel(ingredient)}</div>
-                      <div className="ingredient-library-row-nutrition">
-                        {formatCalories(nutrition.calories)} cal · {formatMacro(nutrition.protein)}g protein
-                      </div>
-                    </Card.Body>
-                  </div>
-                </Card>;
+        {!selectedCategory && (
+          <>
+            <p className="text-muted ingredient-library-helper">
+              Choose a category to browse ingredients from your inventory.
+            </p>
+            <Row className="g-3 ingredient-library-category-grid">
+              {CATEGORY_LIBRARY.map((category) => {
+                const count = ingredients.filter((ingredient) =>
+                  sameCategory(ingredient, category.name),
+                ).length;
+                return (
+                  <Col md={4} lg={3} key={category.name}>
+                    <Card
+                      className="h-100 border-0 shadow-sm category-card"
+                      role="button"
+                      onClick={() => setSelectedCategory(category.name)}
+                    >
+                      <Card.Body>
+                        <div
+                          className={`category-icon ${getCategoryClass(category.name)}`}
+                        >
+                          {category.icon}
+                        </div>
+                        <h5>{category.name}</h5>
+                        <p className="text-muted small mb-2">
+                          {category.description}
+                        </p>
+                        <Badge bg={count > 0 ? "success" : "secondary"}>
+                          {count} ingredients
+                        </Badge>
+                      </Card.Body>
+                    </Card>
+                  </Col>
+                );
               })}
-          </div>
+            </Row>
+          </>
+        )}
 
-          <div className="selected-ingredient-panel">
-              <h5>{activeIngredient ? activeIngredient.name : 'Choose an ingredient'}</h5>
-              {libraryError && <Alert variant="warning" className="library-status-alert">{libraryError}</Alert>}
-              {activeIngredient ? <>
-                <Form onSubmit={handleSelectedIngredientSubmit}>
-                  <ServingAmountSelector
-                    options={servingOptions}
-                    selectedOption={servingOptions.find(option => Number(option.amount) === Number(amountUsed) && normalizeUnit(option.unit) === normalizeUnit(unitUsed))?.servingName}
-                    onOptionChange={option => {
-                      const nextAmount = option.custom && normalizeUnit(option.unit) === 'grams' ? '' : option.amount;
-                      setAmountUsed(String(nextAmount));
-                      setUnitUsed(normalizeUnit(option.unit) || option.unit);
-                    }}
-                    amount={amountUsed}
-                    onAmountChange={setAmountUsed}
-                    unit={unitUsed}
-                    onUnitChange={setUnitUsed}
-                    extraUnits={servingUnits}
-                    amountLabel="Amount used"
-                    nutrition={selectedPreview}
-                    conversionWarning={conversionWarning}
-                    className="selected-ingredient-amount-selector"
-                  />
+        {selectedCategory && (
+          <>
+            <div className="ingredient-library-category-header">
+              <div>
+                <h4 className="mb-0">{selectedCategory}</h4>
+                <div className="text-muted small">
+                  Ingredients added here will go into the {selectedCategory}{" "}
+                  component.
+                </div>
+              </div>
+              <div className="ingredient-library-actions">
+                <Button as={Link} href={addIngredientHref} variant="success">
+                  + Add New
+                </Button>
+                <Button
+                  variant="outline-secondary"
+                  onClick={() => setSelectedCategory("")}
+                >
+                  Back
+                </Button>
+              </div>
+            </div>
 
-                  <Button type="submit" variant="success">{isEditing ? `Update in ${targetGroup}` : `Add to ${targetGroup}`}</Button>
-                </Form>
-              </> : <p className="text-muted mb-0">Select an ingredient card to enter the amount used.</p>}
-          </div>
-        </div>}
-      </>}
-    </Modal.Body>
-  </Modal>;
+            {ingredientsInCategory.length === 0 && (
+              <Card className="empty-category-card">
+                <Card.Body>
+                  <h5>No {selectedCategory} yet.</h5>
+                  <p className="text-muted">
+                    Add one now, then come back and select it for this meal.
+                  </p>
+                </Card.Body>
+              </Card>
+            )}
+
+            {ingredientsInCategory.length > 0 && (
+              <div className="ingredient-library-picker">
+                <div className="ingredient-library-list">
+                  {ingredientsInCategory.map((ingredient) => {
+                    const nutrition = getIngredientServingNutrition(ingredient);
+                    const isActive = activeIngredient?._id === ingredient._id;
+                    return (
+                      <Card
+                        className={`ingredient-library-card ${isActive ? "selected" : ""}`}
+                        role="button"
+                        onClick={() => selectIngredient(ingredient)}
+                        key={ingredient._id}
+                      >
+                        <div className="ingredient-library-row">
+                          <FoodImage
+                            src={getFoodImage(ingredient)}
+                            alt={ingredient.name}
+                            category={getCategoryLabel(
+                              ingredient.category || selectedCategory,
+                            )}
+                            className="ingredient-library-img"
+                            placeholderClassName="ingredient-library-placeholder"
+                          />
+                          <Card.Body className="ingredient-library-row-body">
+                            <div className="ingredient-library-row-top">
+                              <h5>{ingredient.name}</h5>
+                              <Badge className="soft-pill soft-pill-beige">
+                                {getCategoryLabel(ingredient.category)}
+                              </Badge>
+                            </div>
+                            <div className="ingredient-library-row-meta">
+                              {formatServingLabel(ingredient)}
+                            </div>
+                            <div className="ingredient-library-row-nutrition">
+                              {formatCalories(nutrition.calories)} cal ·{" "}
+                              {formatMacro(nutrition.protein)}g protein
+                            </div>
+                          </Card.Body>
+                        </div>
+                      </Card>
+                    );
+                  })}
+                </div>
+
+                <div className="selected-ingredient-panel">
+                  <h5>
+                    {activeIngredient
+                      ? activeIngredient.name
+                      : "Choose an ingredient"}
+                  </h5>
+                  {libraryError && (
+                    <Alert variant="warning" className="library-status-alert">
+                      {libraryError}
+                    </Alert>
+                  )}
+                  {activeIngredient ? (
+                    <>
+                      <Form onSubmit={handleSelectedIngredientSubmit}>
+                        <ServingAmountSelector
+                          options={servingOptions}
+                          selectedOption={
+                            servingOptions.find(
+                              (option) =>
+                                Number(option.amount) === Number(amountUsed) &&
+                                normalizeUnit(option.unit) ===
+                                  normalizeUnit(unitUsed),
+                            )?.servingName
+                          }
+                          onOptionChange={(option) => {
+                            const nextAmount =
+                              option.custom &&
+                              normalizeUnit(option.unit) === "grams"
+                                ? ""
+                                : option.amount;
+                            setAmountUsed(String(nextAmount));
+                            setUnitUsed(
+                              normalizeUnit(option.unit) || option.unit,
+                            );
+                          }}
+                          amount={amountUsed}
+                          onAmountChange={setAmountUsed}
+                          unit={unitUsed}
+                          onUnitChange={setUnitUsed}
+                          extraUnits={servingUnits}
+                          amountLabel="Amount used"
+                          nutrition={selectedPreview}
+                          conversionWarning={conversionWarning}
+                          className="selected-ingredient-amount-selector"
+                        />
+
+                        <Button type="submit" variant="success">
+                          {isEditing
+                            ? `Update in ${targetGroup}`
+                            : `Add to ${targetGroup}`}
+                        </Button>
+                      </Form>
+                    </>
+                  ) : (
+                    <p className="text-muted mb-0">
+                      Select an ingredient card to enter the amount used.
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </Modal.Body>
+    </Modal>
+  );
 }
