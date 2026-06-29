@@ -63,11 +63,7 @@ import {
 } from "../lib/unitConverter";
 import useUnsavedChanges from "../hooks/useUnsavedChanges";
 import UnsavedChangesModal from "../components/UnsavedChangesModal";
-import {
-  createDefaultMealPart,
-  createMealPartId,
-  normalizeMealParts,
-} from "../lib/mealParts";
+import { createDefaultMealPart, normalizeMealParts } from "../lib/mealParts";
 
 function sameCategory(ingredient, categoryName) {
   const ingredientCategory = getCategoryLabel(
@@ -112,7 +108,14 @@ export default function CreateMealComponentPage() {
   const { data: ingredients, error } = useSWR("/api/ingredients");
   const [meal, setMeal] = useState({ name: "", category: "", imageUrl: "" });
   const [imageUploading, setImageUploading] = useState(false);
-  const [mealParts, setMealParts] = useState([createDefaultMealPart()]);
+  const [mealSections, setMealSections] = useState([
+    {
+      id: Date.now().toString(),
+      name: "Main",
+      category: "Main",
+      ingredients: [],
+    },
+  ]);
   const [outsideFood, setOutsideFood] = useState(false);
   const [manualNutrition, setManualNutrition] = useState({
     restaurantName: "",
@@ -165,7 +168,7 @@ export default function CreateMealComponentPage() {
             draft.mealParts || draft.components || [],
             draft.meal?.category || "Main",
           );
-      setMealParts(restoredMealParts);
+      setMealSections(restoredMealParts);
       setOutsideFood(Boolean(draft.outsideFood));
       setManualNutrition({
         restaurantName: draft.manualNutrition?.restaurantName || "",
@@ -188,27 +191,27 @@ export default function CreateMealComponentPage() {
     saveMealDraft(
       {
         meal,
-        mealParts,
-        components: mealParts,
+        mealParts: mealSections,
+        components: mealSections,
         outsideFood,
         manualNutrition,
       },
       getMealDraftKey({ outsideFood }),
     );
-  }, [draftReady, meal, mealParts, outsideFood, manualNutrition]);
+  }, [draftReady, meal, mealSections, outsideFood, manualNutrition]);
 
   useEffect(() => {
     if (outsideFood) return;
-    if (mealParts.length === 0) {
+    if (mealSections.length === 0) {
       const mainPart = createDefaultMealPart();
-      setMealParts([mainPart]);
+      setMealSections([mainPart]);
       setActiveMealPartId(mainPart.id);
       return;
     }
-    if (!mealParts.some((part) => part.id === activeMealPartId)) {
-      setActiveMealPartId(mealParts[0].id);
+    if (!mealSections.some((section) => section.id === activeMealPartId)) {
+      setActiveMealPartId(mealSections[0].id);
     }
-  }, [activeMealPartId, mealParts, outsideFood]);
+  }, [activeMealPartId, mealSections, outsideFood]);
 
   useEffect(
     () => () => {
@@ -218,8 +221,9 @@ export default function CreateMealComponentPage() {
   );
 
   const previewComponents = useMemo(
-    () => (ingredients ? buildPreviewComponents(ingredients, mealParts) : []),
-    [ingredients, mealParts],
+    () =>
+      ingredients ? buildPreviewComponents(ingredients, mealSections) : [],
+    [ingredients, mealSections],
   );
   const hasMealIngredients = previewComponents.some(
     (component) => component.ingredients.length > 0,
@@ -227,10 +231,12 @@ export default function CreateMealComponentPage() {
   const mealTotals = addTotals(
     previewComponents.map((item) => item.nutritionTotals || {}),
   );
-  const flatIngredients = mealParts.flatMap((part) => part.ingredients);
+  const flatIngredients = mealSections.flatMap(
+    (section) => section.ingredients,
+  );
   const summaryRows = previewComponents.flatMap((componentPreview) => {
-    const originalComponent = mealParts.find(
-      (part) => part.id === componentPreview.id,
+    const originalComponent = mealSections.find(
+      (section) => section.id === componentPreview.id,
     );
     return componentPreview.ingredients.map((item, index) => ({
       ...item,
@@ -264,7 +270,12 @@ export default function CreateMealComponentPage() {
   );
   const hasUnsavedChanges =
     draftReady &&
-    (hasMealDraftContent({ meal, mealParts, outsideFood, manualNutrition }) ||
+    (hasMealDraftContent({
+      meal,
+      mealParts: mealSections,
+      outsideFood,
+      manualNutrition,
+    }) ||
       hasLibraryDraft);
   const { showModal, keepEditing, discardChanges, markSaved } =
     useUnsavedChanges(hasUnsavedChanges, {
@@ -286,7 +297,8 @@ export default function CreateMealComponentPage() {
 
   function openLibrary(partId) {
     resetLibraryForm();
-    const targetPartId = partId || activeMealPartId || mealParts[0]?.id || "";
+    const targetPartId =
+      partId || activeMealPartId || mealSections[0]?.id || "";
     setActiveMealPartId(targetPartId);
     setShowLibrary(true);
   }
@@ -295,8 +307,8 @@ export default function CreateMealComponentPage() {
     saveMealDraft(
       {
         meal,
-        mealParts,
-        components: mealParts,
+        mealParts: mealSections,
+        components: mealSections,
         outsideFood,
         manualNutrition,
       },
@@ -309,7 +321,7 @@ export default function CreateMealComponentPage() {
     clearMealDraft(getMealDraftKey({ outsideFood: !outsideFood }));
     setMeal({ name: "", category: "", imageUrl: "" });
     const mainPart = createDefaultMealPart();
-    setMealParts([mainPart]);
+    setMealSections([mainPart]);
     setOutsideFood(false);
     setManualNutrition({
       restaurantName: "",
@@ -355,21 +367,25 @@ export default function CreateMealComponentPage() {
     setLibrarySuccess("");
   }
 
-  function addMealPart() {
-    const nextPart = {
-      id: createMealPartId(),
-      name: "",
-      category: "Other",
-      ingredients: [],
-    };
-    setMealParts((current) => [...current, nextPart]);
-    setActiveMealPartId(nextPart.id);
+  function addMealSection() {
+    setMealSections((previousSections) => [
+      ...previousSections,
+      {
+        id: `${Date.now()}-${previousSections.length}`,
+        name: "",
+        category: "Other",
+        ingredients: [],
+      },
+    ]);
   }
 
-  function removeMealPart(partId) {
-    if (mealParts.length <= 1) return;
-    setMealParts((current) => current.filter((part) => part.id !== partId));
-    if (activeMealPartId === partId) setActiveMealPartId("");
+  function removeMealSection(sectionId) {
+    setMealSections((previousSections) =>
+      previousSections.length <= 1
+        ? previousSections
+        : previousSections.filter((section) => section.id !== sectionId),
+    );
+    if (activeMealPartId === sectionId) setActiveMealPartId("");
   }
 
   function selectIngredient(ingredient) {
@@ -387,8 +403,10 @@ export default function CreateMealComponentPage() {
   }
 
   function addIngredientToMeal() {
-    const targetPartId = activeMealPartId || mealParts[0]?.id;
-    const targetPart = mealParts.find((part) => part.id === targetPartId);
+    const targetPartId = activeMealPartId || mealSections[0]?.id;
+    const targetPart = mealSections.find(
+      (section) => section.id === targetPartId,
+    );
     const amount = Number(amountUsed);
     const ingredientName = activeIngredient?.name;
 
@@ -418,7 +436,7 @@ export default function CreateMealComponentPage() {
       unit: unitUsed || activeIngredient.unit || "grams",
     };
 
-    setMealParts((currentParts) => {
+    setMealSections((currentParts) => {
       const nextParts = currentParts.map((part) => ({
         ...part,
         ingredients:
@@ -456,7 +474,7 @@ export default function CreateMealComponentPage() {
   }
 
   function removeIngredient(partId, ingredientIndex) {
-    setMealParts((currentParts) =>
+    setMealSections((currentParts) =>
       currentParts.map((part) => {
         if (part.id !== partId) return part;
         return {
@@ -469,18 +487,18 @@ export default function CreateMealComponentPage() {
     );
   }
 
-  function renameMealPart(partId, name) {
-    setMealParts((currentParts) =>
-      currentParts.map((part) =>
-        part.id === partId
-          ? { ...part, name, category: name.trim() || "Other" }
-          : part,
+  function updateMealSectionName(sectionId, name) {
+    setMealSections((previousSections) =>
+      previousSections.map((section) =>
+        section.id === sectionId
+          ? { ...section, name, category: name.trim() || "Other" }
+          : section,
       ),
     );
   }
 
   function editIngredient(partId, ingredientIndex) {
-    const part = mealParts.find((item) => item.id === partId);
+    const part = mealSections.find((item) => item.id === partId);
     const item = part?.ingredients[ingredientIndex];
     const ingredient = ingredients.find(
       (ingredientItem) => ingredientItem._id === item?.ingredientId,
@@ -514,7 +532,7 @@ export default function CreateMealComponentPage() {
     }
 
     const outsideFoodPayload = buildOutsideFoodPayload(manualNutrition);
-    const savedMealParts = mealParts.map((part, index) => ({
+    const savedMealParts = mealSections.map((part, index) => ({
       ...part,
       name: part.name.trim() || `Meal Part ${index + 1}`,
       category: part.name.trim() || "Other",
@@ -618,7 +636,7 @@ export default function CreateMealComponentPage() {
                   </div>
                   {hasMealDraftContent({
                     meal,
-                    mealParts,
+                    mealParts: mealSections,
                     outsideFood,
                     manualNutrition,
                   }) && (
@@ -734,171 +752,184 @@ export default function CreateMealComponentPage() {
           )}
 
           {!outsideFood && (
-            <div className="meal-builder-toolbar">
-              <div>
-                <h4>Meal Parts</h4>
-                <p className="text-muted">
-                  Build the meal as separate parts like Flatbread, Eggs,
-                  Avocado, Pasta, Meat sauce, or Toppings.
-                </p>
+            <section className="meal-sections-panel">
+              <div className="meal-sections-header">
+                <div>
+                  <h3>Meal Sections</h3>
+                  <p className="text-muted">
+                    Organize ingredients into parts like Flatbread, Eggs,
+                    Avocado, Pasta, or Toppings.
+                  </p>
+                </div>
+                <Button variant="success" onClick={addMealSection}>
+                  + Add Meal Section
+                </Button>
               </div>
-            </div>
-          )}
 
-          {!outsideFood && previewComponents.length > 0 && (
-            <Row className="g-4 mb-4">
-              {previewComponents.map((componentPreview) => {
-                const originalComponent = mealParts.find(
-                  (part) => part.id === componentPreview.id,
-                );
-                const componentCategory =
-                  componentPreview.category || componentPreview.name;
+              {previewComponents.length > 0 && (
+                <Row className="g-4">
+                  {previewComponents.map((componentPreview) => {
+                    const originalComponent = mealSections.find(
+                      (section) => section.id === componentPreview.id,
+                    );
+                    const componentCategory =
+                      componentPreview.category || componentPreview.name;
 
-                return (
-                  <Col lg={6} key={componentPreview.id}>
-                    <Card
-                      className={`page-card component-builder-card ${activeMealPartId === componentPreview.id ? "active" : ""}`}
-                    >
-                      <Card.Body>
-                        <div className="component-card-header">
-                          <div className="component-card-title-block">
-                            <div className="component-card-eyebrow">
-                              Meal Part
-                            </div>
-                            <div className="component-name-row">
-                              <span className="component-title-emoji">
-                                {getCategoryIcon(componentCategory)}
-                              </span>
-                              <Form.Control
-                                value={componentPreview.name}
-                                placeholder={
-                                  componentPreview.name === "Main"
-                                    ? "Main"
-                                    : "Flatbread"
-                                }
-                                onChange={(e) =>
-                                  renameMealPart(
-                                    componentPreview.id,
-                                    e.target.value,
-                                  )
-                                }
-                                className="component-name-input"
-                              />
-                            </div>
-                            <div className="component-card-meta">
-                              {componentIngredientLabel(
-                                componentPreview.ingredients.length,
-                              )}{" "}
-                              · {formatAmount(componentPreview.totalWeight)}g
-                              total
-                            </div>
-                          </div>
-                          <div className="component-card-actions">
-                            <Button
-                              variant="outline-success"
-                              size="sm"
-                              onClick={() => openLibrary(componentPreview.id)}
-                            >
-                              Add Ingredient
-                            </Button>
-                            {mealParts.length > 1 && (
-                              <Button
-                                variant="outline-danger"
-                                size="sm"
-                                onClick={() =>
-                                  removeMealPart(componentPreview.id)
-                                }
-                              >
-                                Remove Part
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="component-ingredient-list">
-                          {componentPreview.ingredients.length === 0 && (
-                            <div className="component-empty-state">
-                              <p className="text-muted mb-0">
-                                No ingredients in this meal part yet.
-                              </p>
-                            </div>
-                          )}
-                          {componentPreview.ingredients.map((item, index) => {
-                            const originalItem =
-                              originalComponent?.ingredients[index];
-                            const fullIngredient = findIngredient(
-                              ingredients,
-                              item.ingredientId,
-                            );
-                            return (
-                              <div
-                                className="component-ingredient-row"
-                                key={`${item.ingredientId}-${index}`}
-                              >
-                                <FoodImage
-                                  src={getFoodImage(fullIngredient)}
-                                  alt={item.name}
-                                  category={
-                                    fullIngredient?.category ||
-                                    componentCategory
-                                  }
-                                  className="component-ingredient-thumb"
-                                  placeholderClassName="component-ingredient-placeholder"
-                                />
-                                <div className="component-ingredient-main">
-                                  <div className="component-ingredient-name">
-                                    {item.name}
-                                  </div>
-                                  <div className="component-ingredient-meta">
-                                    {formatAmount(originalItem?.quantityUsed)}{" "}
-                                    {originalItem?.unit}
-                                  </div>
-                                  <div className="component-ingredient-nutrition">
-                                    {formatCalories(item.calories)} cal ·{" "}
-                                    {formatMacro(item.protein)}g protein
-                                  </div>
+                    return (
+                      <Col lg={6} key={componentPreview.id}>
+                        <Card
+                          className={`page-card component-builder-card meal-section-card ${activeMealPartId === componentPreview.id ? "active" : ""}`}
+                        >
+                          <Card.Body>
+                            <div className="component-card-header meal-section-card-header">
+                              <div className="component-card-title-block">
+                                <div className="component-card-eyebrow">
+                                  Meal Section
                                 </div>
-                                <div className="ingredient-actions">
-                                  <Button
-                                    variant="outline-success"
-                                    size="sm"
-                                    onClick={() =>
-                                      editIngredient(componentPreview.id, index)
+                                <Form.Label
+                                  htmlFor={`meal-section-${componentPreview.id}`}
+                                >
+                                  Section name
+                                </Form.Label>
+                                <div className="component-name-row">
+                                  <span className="component-title-emoji">
+                                    {getCategoryIcon(componentCategory)}
+                                  </span>
+                                  <Form.Control
+                                    id={`meal-section-${componentPreview.id}`}
+                                    value={componentPreview.name}
+                                    placeholder={
+                                      componentPreview.name === "Main"
+                                        ? "Main"
+                                        : "Flatbread"
                                     }
-                                  >
-                                    Edit
-                                  </Button>
+                                    onChange={(e) =>
+                                      updateMealSectionName(
+                                        componentPreview.id,
+                                        e.target.value,
+                                      )
+                                    }
+                                    className="component-name-input"
+                                  />
+                                </div>
+                                <div className="component-card-meta">
+                                  {componentIngredientLabel(
+                                    componentPreview.ingredients.length,
+                                  )}{" "}
+                                  · {formatAmount(componentPreview.totalWeight)}
+                                  g total
+                                </div>
+                              </div>
+                              <div className="component-card-actions">
+                                <Button
+                                  variant="outline-success"
+                                  size="sm"
+                                  onClick={() =>
+                                    openLibrary(componentPreview.id)
+                                  }
+                                >
+                                  + Add Ingredient to{" "}
+                                  {componentPreview.name || "this section"}
+                                </Button>
+                                {mealSections.length > 1 && (
                                   <Button
                                     variant="outline-danger"
                                     size="sm"
                                     onClick={() =>
-                                      removeIngredient(
-                                        componentPreview.id,
-                                        index,
-                                      )
+                                      removeMealSection(componentPreview.id)
                                     }
                                   >
                                     Remove
                                   </Button>
-                                </div>
+                                )}
                               </div>
-                            );
-                          })}
-                        </div>
-                      </Card.Body>
-                    </Card>
-                  </Col>
-                );
-              })}
-            </Row>
-          )}
+                            </div>
 
-          {!outsideFood && (
-            <div className="meal-parts-add-row">
-              <Button variant="outline-success" onClick={addMealPart}>
-                Add Meal Part
-              </Button>
-            </div>
+                            <div className="component-ingredient-list meal-section-ingredients">
+                              {componentPreview.ingredients.length === 0 && (
+                                <div className="component-empty-state">
+                                  <p className="text-muted mb-0">
+                                    No ingredients in this section yet.
+                                  </p>
+                                </div>
+                              )}
+                              {componentPreview.ingredients.map(
+                                (item, index) => {
+                                  const originalItem =
+                                    originalComponent?.ingredients[index];
+                                  const fullIngredient = findIngredient(
+                                    ingredients,
+                                    item.ingredientId,
+                                  );
+                                  return (
+                                    <div
+                                      className="component-ingredient-row"
+                                      key={`${item.ingredientId}-${index}`}
+                                    >
+                                      <FoodImage
+                                        src={getFoodImage(fullIngredient)}
+                                        alt={item.name}
+                                        category={
+                                          fullIngredient?.category ||
+                                          componentCategory
+                                        }
+                                        className="component-ingredient-thumb"
+                                        placeholderClassName="component-ingredient-placeholder"
+                                      />
+                                      <div className="component-ingredient-main">
+                                        <div className="component-ingredient-name">
+                                          {item.name}
+                                        </div>
+                                        <div className="component-ingredient-meta">
+                                          {formatAmount(
+                                            originalItem?.quantityUsed,
+                                          )}{" "}
+                                          {originalItem?.unit}
+                                        </div>
+                                        <div className="component-ingredient-nutrition">
+                                          {formatCalories(item.calories)} cal ·{" "}
+                                          {formatMacro(item.protein)}g protein
+                                        </div>
+                                      </div>
+                                      <div className="ingredient-actions">
+                                        <Button
+                                          variant="outline-success"
+                                          size="sm"
+                                          onClick={() =>
+                                            editIngredient(
+                                              componentPreview.id,
+                                              index,
+                                            )
+                                          }
+                                        >
+                                          Edit
+                                        </Button>
+                                        <Button
+                                          variant="outline-danger"
+                                          size="sm"
+                                          onClick={() =>
+                                            removeIngredient(
+                                              componentPreview.id,
+                                              index,
+                                            )
+                                          }
+                                        >
+                                          Remove
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  );
+                                },
+                              )}
+                            </div>
+                          </Card.Body>
+                        </Card>
+                      </Col>
+                    );
+                  })}
+                </Row>
+              )}
+            </section>
           )}
 
           {!outsideFood && hasMealIngredients && (
