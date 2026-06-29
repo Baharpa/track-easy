@@ -5599,19 +5599,6 @@ Purpose: One shared empty state whenever no food is logged.
 }
 
 /* Center plus icon used by all logged food empty states */
-.empty-logged-food-card__inner {
-  align-items: center;
-  border: 1px dashed rgba(95, 147, 104, 0.34);
-  border-radius: 24px;
-  display: grid;
-  gap: 12px;
-  justify-items: center;
-  min-height: 198px;
-  padding: 26px 20px;
-  text-align: center;
-}
-
-/* Center plus icon used by all logged food empty states */
 .empty-logged-food-card__icon {
   align-items: center;
   background: rgba(234, 245, 232, 0.98);
@@ -5623,7 +5610,6 @@ Purpose: One shared empty state whenever no food is logged.
   width: 76px;
 }
 
-*/
 /* Empty logged food title text shared across the app */
 .empty-logged-food-card__title {
   color: var(--te-green-dark);
