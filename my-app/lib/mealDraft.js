@@ -106,6 +106,7 @@ export function saveMealDraft(draft, key = MEAL_CREATE_DRAFT_KEY) {
       meal: draft.meal,
       mealParts: draft.mealParts || draft.components || [],
       components: draft.components || draft.mealParts || [],
+      useMealSections: Boolean(draft.useMealSections),
       outsideFood: Boolean(draft.outsideFood),
       manualNutrition: draft.manualNutrition || {},
       updatedAt: new Date().toISOString(),

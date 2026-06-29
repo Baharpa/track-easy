@@ -1341,12 +1341,37 @@ Purpose: Keep meal-building forms and component summaries together.
   overflow: hidden;
 }
 
-.meal-sections-panel {
+.meal-sections-panel,
+.simple-meal-ingredients {
   background: rgba(247, 244, 236, 0.72);
   border: 1px solid rgba(95, 147, 104, 0.24);
   border-radius: 22px;
   margin-bottom: 1.5rem;
   padding: 1rem;
+}
+
+.meal-sections-toggle {
+  align-items: center;
+  background: var(--te-card);
+  border: 1px solid rgba(95, 147, 104, 0.24);
+  border-radius: 18px;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding: 0.9rem 1rem;
+}
+
+.meal-sections-toggle strong {
+  color: var(--te-green-dark);
+  display: block;
+  margin-bottom: 0.15rem;
+}
+
+.meal-sections-toggle .form-check-input {
+  cursor: pointer;
+  height: 1.5rem;
+  width: 2.75rem;
 }
 
 .meal-sections-header,
@@ -1376,12 +1401,18 @@ Purpose: Keep meal-building forms and component summaries together.
 
 @media (max-width: 576px) {
   .meal-sections-header,
-  .meal-section-card-header {
+  .meal-section-card-header,
+  .meal-sections-toggle {
+    align-items: stretch;
     flex-direction: column;
   }
 
   .meal-sections-header .btn {
     width: 100%;
+  }
+
+  .meal-sections-toggle .form-check {
+    align-self: flex-start;
   }
 }
 

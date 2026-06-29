@@ -98,6 +98,9 @@ function normalizeMealIngredient(item) {
 }
 
 export function mealToEditorState(meal) {
+  const useMealSections =
+    (Array.isArray(meal?.mealParts) && meal.mealParts.length > 1) ||
+    (Array.isArray(meal?.components) && meal.components.length > 1);
   const mealParts = normalizeMealParts(
     mealToMealParts(meal).map((component) => ({
       ...component,
@@ -120,6 +123,7 @@ export function mealToEditorState(meal) {
       totalCarbs: meal?.totalCarbs || "",
       totalFats: meal?.totalFats || "",
       totalSugar: meal?.totalSugar || "",
+      useMealSections,
     },
     mealParts,
     components: mealParts,
@@ -190,6 +194,11 @@ export default function ComponentMealEditor({
   const [activeMealPartId, setActiveMealPartId] = useState(
     initialParts?.[0]?.id || "",
   );
+  const [useMealSections, setUseMealSections] = useState(
+    Boolean(initialMeal?.useMealSections),
+  );
+  const [showDisableSectionsConfirm, setShowDisableSectionsConfirm] =
+    useState(false);
   const [draftState, setDraftState] = useState(null);
   const [showDraftCard, setShowDraftCard] = useState(false);
   const successTimerRef = useRef(null);
@@ -200,6 +209,7 @@ export default function ComponentMealEditor({
       JSON.stringify({
         meal: initialMeal || { name: "", category: "", imageUrl: "" },
         mealParts: initialParts || [],
+        useMealSections: Boolean(initialMeal?.useMealSections),
         outsideFood: Boolean(initialMeal?.outsideFood),
         manualNutrition: {
           restaurantName: initialMeal?.restaurantName || "",
@@ -217,10 +227,11 @@ export default function ComponentMealEditor({
       JSON.stringify({
         meal,
         mealParts,
+        useMealSections,
         outsideFood,
         manualNutrition,
       }),
-    [meal, mealParts, outsideFood, manualNutrition],
+    [meal, mealParts, useMealSections, outsideFood, manualNutrition],
   );
   const { showModal, keepEditing, discardChanges, saveDraft, markSaved } =
     useUnsavedChanges(initialSnapshot !== currentSnapshot && !saving, {
@@ -231,12 +242,19 @@ export default function ComponentMealEditor({
             meal,
             mealParts,
             components: mealParts,
+            useMealSections,
             outsideFood,
             manualNutrition,
           },
           draftKey,
         );
-        setDraftState({ meal, mealParts, outsideFood, manualNutrition });
+        setDraftState({
+          meal,
+          mealParts,
+          useMealSections,
+          outsideFood,
+          manualNutrition,
+        });
       },
     });
 
@@ -343,6 +361,37 @@ export default function ComponentMealEditor({
     if (mealParts.length <= 1) return;
     setMealParts((current) => current.filter((part) => part.id !== partId));
     if (activeMealPartId === partId) setActiveMealPartId("");
+  }
+
+  function changeMealSectionsMode(enabled) {
+    if (enabled) {
+      setUseMealSections(true);
+      return;
+    }
+
+    if (mealParts.length > 1) {
+      setShowDisableSectionsConfirm(true);
+      return;
+    }
+
+    setUseMealSections(false);
+  }
+
+  function disableMealSections() {
+    const flattenedIngredients = mealParts.flatMap(
+      (part) => part.ingredients || [],
+    );
+    const mainPart = {
+      ...(mealParts[0] || createDefaultMealPart()),
+      name: "Main",
+      category: "Main",
+      ingredients: flattenedIngredients,
+    };
+
+    setMealParts([mainPart]);
+    setActiveMealPartId(mainPart.id);
+    setUseMealSections(false);
+    setShowDisableSectionsConfirm(false);
   }
 
   function selectIngredient(ingredient) {
@@ -476,6 +525,71 @@ export default function ComponentMealEditor({
     setShowLibrary(true);
   }
 
+  function renderIngredientList(componentPreview, emptyText) {
+    if (!componentPreview) return null;
+
+    const originalPart = mealParts.find(
+      (part) => part.id === componentPreview.id,
+    );
+    const partCategory =
+      componentPreview.category || componentPreview.name || "Other";
+
+    return (
+      <div className="component-ingredient-list meal-section-ingredients">
+        {componentPreview.ingredients.length === 0 && (
+          <div className="component-empty-state">
+            <p className="text-muted mb-0">{emptyText}</p>
+          </div>
+        )}
+        {componentPreview.ingredients.map((item, index) => {
+          const originalItem = originalPart?.ingredients[index];
+          const fullIngredient = findIngredient(ingredients, item.ingredientId);
+          return (
+            <div
+              className="component-ingredient-row"
+              key={`${item.ingredientId}-${index}`}
+            >
+              <FoodImage
+                src={getFoodImage(fullIngredient)}
+                alt={item.name}
+                category={fullIngredient?.category || partCategory}
+                className="component-ingredient-thumb"
+                placeholderClassName="component-ingredient-placeholder"
+              />
+              <div className="component-ingredient-main">
+                <div className="component-ingredient-name">{item.name}</div>
+                <div className="component-ingredient-meta">
+                  {formatAmount(originalItem?.quantityUsed)}{" "}
+                  {originalItem?.unit}
+                </div>
+                <div className="component-ingredient-nutrition">
+                  {formatCalories(item.calories)} cal -{" "}
+                  {formatMacro(item.protein)}g protein
+                </div>
+              </div>
+              <div className="ingredient-actions">
+                <Button
+                  variant="outline-success"
+                  size="sm"
+                  onClick={() => editIngredient(componentPreview.id, index)}
+                >
+                  Edit
+                </Button>
+                <Button
+                  variant="outline-danger"
+                  size="sm"
+                  onClick={() => removeIngredient(componentPreview.id, index)}
+                >
+                  Remove
+                </Button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
   async function saveMeal() {
     if (!canSave) {
       setMessage(
@@ -503,8 +617,8 @@ export default function ComponentMealEditor({
           ? outsideFoodPayload
           : {
               ingredients: flatIngredients,
-              components: savedMealParts,
-              mealParts: savedMealParts,
+              components: useMealSections ? savedMealParts : [],
+              mealParts: useMealSections ? savedMealParts : [],
             }),
       });
     } catch {
@@ -530,6 +644,9 @@ export default function ComponentMealEditor({
       draftState.meal?.category || "Main",
     );
     setMealParts(restoredMealParts);
+    setUseMealSections(
+      draftState.useMealSections ?? restoredMealParts.length > 1,
+    );
     setOutsideFood(Boolean(draftState.outsideFood));
     setManualNutrition({
       restaurantName: draftState.manualNutrition?.restaurantName || "",
@@ -659,9 +776,55 @@ export default function ComponentMealEditor({
       )}
 
       {!outsideFood && (
+        <div className="meal-sections-toggle">
+          <div>
+            <strong>Use meal sections</strong>
+            <p className="text-muted mb-0">
+              Organize ingredients into parts like Flatbread, Eggs, Avocado,
+              Pasta, or Toppings.
+            </p>
+          </div>
+          <Form.Check
+            type="switch"
+            id="edit-use-meal-sections"
+            checked={useMealSections}
+            onChange={(event) => changeMealSectionsMode(event.target.checked)}
+            aria-label="Use meal sections"
+          />
+        </div>
+      )}
+
+      {!outsideFood && !useMealSections && (
+        <section className="simple-meal-ingredients">
+          <div className="meal-sections-header">
+            <div>
+              <h3>Ingredients</h3>
+              <p className="text-muted mb-0">
+                Add ingredients directly to this meal.
+              </p>
+            </div>
+            <Button
+              variant="success"
+              onClick={() => openLibrary(mealParts[0]?.id)}
+            >
+              + Add Ingredient
+            </Button>
+          </div>
+          <Card className="page-card component-builder-card">
+            <Card.Body>
+              {renderIngredientList(
+                previewComponents[0],
+                "No ingredients added yet.",
+              )}
+            </Card.Body>
+          </Card>
+        </section>
+      )}
+
+      {!outsideFood && useMealSections && (
         <div className="meal-builder-toolbar">
           <div>
-            <h4>Meal Parts</h4>
+            <h4>Meal Sections</h4>
             <p className="text-muted">
               Build the meal as separate parts like Flatbread, Eggs, Avocado,
               Pasta, Meat sauce, or Toppings.
@@ -670,7 +833,7 @@ export default function ComponentMealEditor({
         </div>
       )}
 
-      {!outsideFood && previewComponents.length > 0 && (
+      {!outsideFood && useMealSections && previewComponents.length > 0 && (
         <Row className="g-4 mb-4">
           {previewComponents.map((componentPreview) => {
             const originalComponent = mealParts.find(
@@ -688,7 +851,9 @@ export default function ComponentMealEditor({
                   <Card.Body>
                     <div className="component-card-header">
                       <div className="component-card-title-block">
-                        <div className="component-card-eyebrow">Meal Part</div>
+                        <div className="component-card-eyebrow">
+                          Meal Section
+                        </div>
                         <div className="component-name-row">
                           <span className="component-title-emoji">
                             {getCategoryIcon(componentCategory)}
@@ -722,7 +887,7 @@ export default function ComponentMealEditor({
                           size="sm"
                           onClick={() => openLibrary(componentPreview.id)}
                         >
-                          Add Ingredient
+                          + Add Ingredient
                         </Button>
                         {mealParts.length > 1 && (
                           <Button
@@ -730,7 +895,7 @@ export default function ComponentMealEditor({
                             size="sm"
                             onClick={() => removeMealPart(componentPreview.id)}
                           >
-                            Remove Part
+                            Remove
                           </Button>
                         )}
                       </div>
@@ -810,10 +975,10 @@ export default function ComponentMealEditor({
         </Row>
       )}
 
-      {!outsideFood && (
+      {!outsideFood && useMealSections && (
         <div className="meal-parts-add-row">
           <Button variant="outline-success" onClick={addMealPart}>
-            Add Meal Part
+            Add Meal Section
           </Button>
         </div>
       )}
@@ -953,6 +1118,31 @@ export default function ComponentMealEditor({
         onDiscardChanges={discardChanges}
         onSaveDraft={saveDraft}
       />
+      <Modal
+        show={showDisableSectionsConfirm}
+        onHide={() => setShowDisableSectionsConfirm(false)}
+        centered
+        contentClassName="confirm-delete-modal-content"
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Turn off meal sections?</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          Turning off sections will move all ingredients into one list.
+          Continue?
+        </Modal.Body>
+        <Modal.Footer>
+          <Button
+            variant="outline-secondary"
+            onClick={() => setShowDisableSectionsConfirm(false)}
+          >
+            Keep sections
+          </Button>
+          <Button variant="success" onClick={disableMealSections}>
+            Continue
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </>
   );
 }
