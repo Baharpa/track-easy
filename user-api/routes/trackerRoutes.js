@@ -115,7 +115,8 @@ router.post('/log', auth, async (req, res) => {
       if (!req.body.mealId) return res.status(400).json({ message: 'Meal is required.' });
       const meal = await Meal.findOne({ _id: req.body.mealId, userId: req.user._id });
       if (!meal) return res.status(404).json({ message: 'Meal not found.' });
-      const hasComponentAmounts = meal.components?.length > 0 && req.body.componentPortions?.length > 0;
+      const hasMealParts = meal.mealParts?.length > 0 || meal.components?.length > 0;
+      const hasComponentAmounts = hasMealParts && req.body.componentPortions?.length > 0;
       const portion = Number(req.body.portion || req.body.servings || req.body.portionFactor || 1);
       const portionMode = req.body.portionMode || (hasComponentAmounts ? 'customize' : 'whole');
       const loggedGrams = Number(req.body.loggedGrams || 0);

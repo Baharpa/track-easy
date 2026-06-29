@@ -125,6 +125,7 @@ async function buildMealComponents(userId, components) {
     allConsumedIngredients.push(...consumedIngredients);
 
     builtComponents.push({
+      id: component.id || "",
       name: component.name || "Component",
       category: component.category || "Other",
       ingredients: consumedIngredients,

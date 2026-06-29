@@ -65,7 +65,7 @@ import useUnsavedChanges from "../hooks/useUnsavedChanges";
 import UnsavedChangesModal from "../components/UnsavedChangesModal";
 import {
   createDefaultMealPart,
-  MEAL_PART_NAME_OPTIONS,
+  createMealPartId,
   normalizeMealParts,
 } from "../lib/mealParts";
 
@@ -112,7 +112,7 @@ export default function CreateMealComponentPage() {
   const { data: ingredients, error } = useSWR("/api/ingredients");
   const [meal, setMeal] = useState({ name: "", category: "", imageUrl: "" });
   const [imageUploading, setImageUploading] = useState(false);
-  const [components, setComponents] = useState([createDefaultMealPart()]);
+  const [mealParts, setMealParts] = useState([createDefaultMealPart()]);
   const [outsideFood, setOutsideFood] = useState(false);
   const [manualNutrition, setManualNutrition] = useState({
     restaurantName: "",
@@ -140,7 +140,7 @@ export default function CreateMealComponentPage() {
   const [addTodaySaving, setAddTodaySaving] = useState(false);
   const [addTodaySuccess, setAddTodaySuccess] = useState("");
   const [addTodayError, setAddTodayError] = useState("");
-  const [selectedMealPart, setSelectedMealPart] = useState("Main");
+  const [activeMealPartId, setActiveMealPartId] = useState("");
 
   useEffect(() => {
     const createDraft = loadMealDraft(getMealDraftKey({ outsideFood: false }));
@@ -159,14 +159,13 @@ export default function CreateMealComponentPage() {
           ? normalizeMealCategory(draft.meal.category)
           : "",
       });
-      setComponents(
-        draft.outsideFood
-          ? []
-          : normalizeMealParts(
-              draft.components || [],
-              draft.meal?.category || "Main",
-            ),
-      );
+      const restoredMealParts = draft.outsideFood
+        ? []
+        : normalizeMealParts(
+            draft.mealParts || draft.components || [],
+            draft.meal?.category || "Main",
+          );
+      setMealParts(restoredMealParts);
       setOutsideFood(Boolean(draft.outsideFood));
       setManualNutrition({
         restaurantName: draft.manualNutrition?.restaurantName || "",
@@ -176,7 +175,7 @@ export default function CreateMealComponentPage() {
         fats: draft.manualNutrition?.fats || "",
         sugar: draft.manualNutrition?.sugar || "",
       });
-      setSelectedMealPart(draft.components?.[0]?.name || "Main");
+      setActiveMealPartId(restoredMealParts[0]?.id || "");
       setShowDraftBanner(true);
     }
     setDraftReady(true);
@@ -187,16 +186,29 @@ export default function CreateMealComponentPage() {
 
     // Keep the unfinished meal safe when the user refreshes or leaves to add an ingredient.
     saveMealDraft(
-      { meal, components, outsideFood, manualNutrition },
+      {
+        meal,
+        mealParts,
+        components: mealParts,
+        outsideFood,
+        manualNutrition,
+      },
       getMealDraftKey({ outsideFood }),
     );
-  }, [draftReady, meal, components, outsideFood, manualNutrition]);
+  }, [draftReady, meal, mealParts, outsideFood, manualNutrition]);
 
   useEffect(() => {
-    if (outsideFood || components.length > 0) return;
-    setComponents([createDefaultMealPart()]);
-    setSelectedMealPart("Main");
-  }, [components.length, outsideFood]);
+    if (outsideFood) return;
+    if (mealParts.length === 0) {
+      const mainPart = createDefaultMealPart();
+      setMealParts([mainPart]);
+      setActiveMealPartId(mainPart.id);
+      return;
+    }
+    if (!mealParts.some((part) => part.id === activeMealPartId)) {
+      setActiveMealPartId(mealParts[0].id);
+    }
+  }, [activeMealPartId, mealParts, outsideFood]);
 
   useEffect(
     () => () => {
@@ -206,8 +218,8 @@ export default function CreateMealComponentPage() {
   );
 
   const previewComponents = useMemo(
-    () => (ingredients ? buildPreviewComponents(ingredients, components) : []),
-    [ingredients, components],
+    () => (ingredients ? buildPreviewComponents(ingredients, mealParts) : []),
+    [ingredients, mealParts],
   );
   const hasMealIngredients = previewComponents.some(
     (component) => component.ingredients.length > 0,
@@ -215,12 +227,10 @@ export default function CreateMealComponentPage() {
   const mealTotals = addTotals(
     previewComponents.map((item) => item.nutritionTotals || {}),
   );
-  const flatIngredients = components.flatMap(
-    (component) => component.ingredients,
-  );
+  const flatIngredients = mealParts.flatMap((part) => part.ingredients);
   const summaryRows = previewComponents.flatMap((componentPreview) => {
-    const originalComponent = components.find(
-      (component) => component.name === componentPreview.name,
+    const originalComponent = mealParts.find(
+      (part) => part.id === componentPreview.id,
     );
     return componentPreview.ingredients.map((item, index) => ({
       ...item,
@@ -254,7 +264,7 @@ export default function CreateMealComponentPage() {
   );
   const hasUnsavedChanges =
     draftReady &&
-    (hasMealDraftContent({ meal, components, outsideFood, manualNutrition }) ||
+    (hasMealDraftContent({ meal, mealParts, outsideFood, manualNutrition }) ||
       hasLibraryDraft);
   const { showModal, keepEditing, discardChanges, markSaved } =
     useUnsavedChanges(hasUnsavedChanges, {
@@ -274,34 +284,22 @@ export default function CreateMealComponentPage() {
     setLibrarySuccess("");
   }
 
-  function ensureMealPart(partName = "") {
-    const cleanName = partName.trim();
-    if (!cleanName) return "";
-    setComponents((current) => {
-      if (current.some((component) => component.name === cleanName))
-        return current;
-      return [
-        ...current,
-        { name: cleanName, category: cleanName, ingredients: [] },
-      ];
-    });
-    return cleanName;
-  }
-
-  function openLibrary(partName = "") {
+  function openLibrary(partId) {
     resetLibraryForm();
-    const targetPart =
-      partName || selectedMealPart || components[0]?.name || "";
-    if (targetPart) {
-      setSelectedMealPart(targetPart);
-      ensureMealPart(targetPart);
-    }
+    const targetPartId = partId || activeMealPartId || mealParts[0]?.id || "";
+    setActiveMealPartId(targetPartId);
     setShowLibrary(true);
   }
 
   function saveCurrentDraft() {
     saveMealDraft(
-      { meal, components, outsideFood, manualNutrition },
+      {
+        meal,
+        mealParts,
+        components: mealParts,
+        outsideFood,
+        manualNutrition,
+      },
       getMealDraftKey({ outsideFood }),
     );
   }
@@ -310,7 +308,8 @@ export default function CreateMealComponentPage() {
     clearMealDraft(getMealDraftKey({ outsideFood }));
     clearMealDraft(getMealDraftKey({ outsideFood: !outsideFood }));
     setMeal({ name: "", category: "", imageUrl: "" });
-    setComponents([createDefaultMealPart()]);
+    const mainPart = createDefaultMealPart();
+    setMealParts([mainPart]);
     setOutsideFood(false);
     setManualNutrition({
       restaurantName: "",
@@ -322,7 +321,7 @@ export default function CreateMealComponentPage() {
     });
     setMessage("");
     resetLibraryForm();
-    setSelectedMealPart("Main");
+    setActiveMealPartId(mainPart.id);
     setShowDraftBanner(false);
     setShowClearDraft(false);
   }
@@ -357,23 +356,20 @@ export default function CreateMealComponentPage() {
   }
 
   function addMealPart() {
-    const nextName =
-      MEAL_PART_NAME_OPTIONS.find(
-        (name) => !components.some((component) => component.name === name),
-      ) || `Meal Part ${components.length + 1}`;
-    setComponents((current) => [
-      ...current,
-      { name: nextName, category: nextName, ingredients: [] },
-    ]);
-    setSelectedMealPart(nextName);
+    const nextPart = {
+      id: createMealPartId(),
+      name: "",
+      category: "Other",
+      ingredients: [],
+    };
+    setMealParts((current) => [...current, nextPart]);
+    setActiveMealPartId(nextPart.id);
   }
 
-  function removeMealPart(partName) {
-    if (components.length <= 1) return;
-    setComponents((current) =>
-      current.filter((component) => component.name !== partName),
-    );
-    setSelectedMealPart((current) => (current === partName ? "" : current));
+  function removeMealPart(partId) {
+    if (mealParts.length <= 1) return;
+    setMealParts((current) => current.filter((part) => part.id !== partId));
+    if (activeMealPartId === partId) setActiveMealPartId("");
   }
 
   function selectIngredient(ingredient) {
@@ -390,12 +386,9 @@ export default function CreateMealComponentPage() {
     setLibrarySuccess("");
   }
 
-  function groupNameFromForm() {
-    return selectedMealPart || components[0]?.name || "Main";
-  }
-
   function addIngredientToMeal() {
-    const groupName = groupNameFromForm();
+    const targetPartId = activeMealPartId || mealParts[0]?.id;
+    const targetPart = mealParts.find((part) => part.id === targetPartId);
     const amount = Number(amountUsed);
     const ingredientName = activeIngredient?.name;
 
@@ -414,8 +407,8 @@ export default function CreateMealComponentPage() {
       return;
     }
 
-    if (!groupName) {
-      setLibraryError("Please choose a category.");
+    if (!targetPart) {
+      setLibraryError("Please choose a meal part.");
       return;
     }
 
@@ -425,43 +418,35 @@ export default function CreateMealComponentPage() {
       unit: unitUsed || activeIngredient.unit || "grams",
     };
 
-    if (!selectedMealPart) {
-      setSelectedMealPart(groupName);
-    }
-
-    setComponents((currentComponents) => {
-      let nextComponents = currentComponents.map((component) => ({
-        ...component,
+    setMealParts((currentParts) => {
+      const nextParts = currentParts.map((part) => ({
+        ...part,
         ingredients:
-          editingItem && component.name === editingItem.componentName
-            ? component.ingredients.filter(
+          editingItem && part.id === editingItem.partId
+            ? part.ingredients.filter(
                 (item, index) => index !== editingItem.ingredientIndex,
               )
-            : component.ingredients,
+            : part.ingredients,
       }));
 
-      const existingIndex = nextComponents.findIndex(
-        (component) => component.name === groupName,
+      const targetIndex = nextParts.findIndex(
+        (part) => part.id === targetPartId,
       );
-      if (existingIndex >= 0) {
-        nextComponents[existingIndex] = {
-          ...nextComponents[existingIndex],
-          ingredients: [...nextComponents[existingIndex].ingredients, newItem],
-        };
-      } else {
-        nextComponents.push({
-          name: groupName,
-          category: groupName,
-          ingredients: [newItem],
-        });
-      }
+      if (targetIndex < 0) return currentParts;
 
-      return nextComponents;
+      nextParts[targetIndex] = {
+        ...nextParts[targetIndex],
+        ingredients: [...nextParts[targetIndex].ingredients, newItem],
+      };
+
+      return nextParts;
     });
 
     setMessage("");
     setLibraryError("");
-    setLibrarySuccess(`${ingredientName} added to ${groupName}.`);
+    setLibrarySuccess(
+      `${ingredientName} added to ${targetPart.name.trim() || "this meal part"}.`,
+    );
     if (successTimerRef.current) clearTimeout(successTimerRef.current);
     successTimerRef.current = setTimeout(() => setLibrarySuccess(""), 2500);
     setActiveIngredient(null);
@@ -470,13 +455,13 @@ export default function CreateMealComponentPage() {
     setEditingItem(null);
   }
 
-  function removeIngredient(componentName, ingredientIndex) {
-    setComponents((currentComponents) =>
-      currentComponents.map((component) => {
-        if (component.name !== componentName) return component;
+  function removeIngredient(partId, ingredientIndex) {
+    setMealParts((currentParts) =>
+      currentParts.map((part) => {
+        if (part.id !== partId) return part;
         return {
-          ...component,
-          ingredients: component.ingredients.filter(
+          ...part,
+          ingredients: part.ingredients.filter(
             (item, index) => index !== ingredientIndex,
           ),
         };
@@ -484,34 +469,28 @@ export default function CreateMealComponentPage() {
     );
   }
 
-  function renameComponent(oldName, newName) {
-    const cleanName = newName.trim();
-    if (!cleanName) return;
-
-    setComponents(
-      components.map((component) =>
-        component.name === oldName
-          ? { ...component, name: cleanName, category: cleanName }
-          : component,
+  function renameMealPart(partId, name) {
+    setMealParts((currentParts) =>
+      currentParts.map((part) =>
+        part.id === partId
+          ? { ...part, name, category: name.trim() || "Other" }
+          : part,
       ),
     );
-    if (selectedMealPart === oldName) {
-      setSelectedMealPart(cleanName);
-    }
   }
 
-  function editIngredient(componentName, ingredientIndex) {
-    const component = components.find((item) => item.name === componentName);
-    const item = component?.ingredients[ingredientIndex];
+  function editIngredient(partId, ingredientIndex) {
+    const part = mealParts.find((item) => item.id === partId);
+    const item = part?.ingredients[ingredientIndex];
     const ingredient = ingredients.find(
       (ingredientItem) => ingredientItem._id === item?.ingredientId,
     );
-    if (!component || !item || !ingredient) return;
+    if (!part || !item || !ingredient) return;
 
     setSelectedCategory(
-      getCategoryLabel(ingredient.category || componentName || "Other"),
+      getCategoryLabel(ingredient.category || part.name || "Other"),
     );
-    setSelectedMealPart(componentName);
+    setActiveMealPartId(partId);
     setActiveIngredient(ingredient);
     setAmountUsed(item.quantityUsed);
     setUnitUsed(
@@ -520,7 +499,7 @@ export default function CreateMealComponentPage() {
         ingredient.unit ||
         "grams",
     );
-    setEditingItem({ componentName, ingredientIndex });
+    setEditingItem({ partId, ingredientIndex });
     setShowLibrary(true);
   }
 
@@ -535,6 +514,11 @@ export default function CreateMealComponentPage() {
     }
 
     const outsideFoodPayload = buildOutsideFoodPayload(manualNutrition);
+    const savedMealParts = mealParts.map((part, index) => ({
+      ...part,
+      name: part.name.trim() || `Meal Part ${index + 1}`,
+      category: part.name.trim() || "Other",
+    }));
     const createdMeal = await apiFetch("/api/meals", {
       method: "POST",
       body: JSON.stringify({
@@ -547,8 +531,8 @@ export default function CreateMealComponentPage() {
           ? outsideFoodPayload
           : {
               ingredients: flatIngredients,
-              components,
-              mealParts: components,
+              components: savedMealParts,
+              mealParts: savedMealParts,
             }),
       }),
     });
@@ -634,7 +618,7 @@ export default function CreateMealComponentPage() {
                   </div>
                   {hasMealDraftContent({
                     meal,
-                    components,
+                    mealParts,
                     outsideFood,
                     manualNutrition,
                   }) && (
@@ -764,16 +748,16 @@ export default function CreateMealComponentPage() {
           {!outsideFood && previewComponents.length > 0 && (
             <Row className="g-4 mb-4">
               {previewComponents.map((componentPreview) => {
-                const originalComponent = components.find(
-                  (component) => component.name === componentPreview.name,
+                const originalComponent = mealParts.find(
+                  (part) => part.id === componentPreview.id,
                 );
                 const componentCategory =
                   componentPreview.category || componentPreview.name;
 
                 return (
-                  <Col lg={6} key={componentPreview.name}>
+                  <Col lg={6} key={componentPreview.id}>
                     <Card
-                      className={`page-card component-builder-card ${selectedMealPart === componentPreview.name ? "active" : ""}`}
+                      className={`page-card component-builder-card ${activeMealPartId === componentPreview.id ? "active" : ""}`}
                     >
                       <Card.Body>
                         <div className="component-card-header">
@@ -793,8 +777,8 @@ export default function CreateMealComponentPage() {
                                     : "Flatbread"
                                 }
                                 onChange={(e) =>
-                                  renameComponent(
-                                    componentPreview.name,
+                                  renameMealPart(
+                                    componentPreview.id,
                                     e.target.value,
                                   )
                                 }
@@ -813,16 +797,16 @@ export default function CreateMealComponentPage() {
                             <Button
                               variant="outline-success"
                               size="sm"
-                              onClick={() => openLibrary(componentPreview.name)}
+                              onClick={() => openLibrary(componentPreview.id)}
                             >
                               Add Ingredient
                             </Button>
-                            {components.length > 1 && (
+                            {mealParts.length > 1 && (
                               <Button
                                 variant="outline-danger"
                                 size="sm"
                                 onClick={() =>
-                                  removeMealPart(componentPreview.name)
+                                  removeMealPart(componentPreview.id)
                                 }
                               >
                                 Remove Part
@@ -879,10 +863,7 @@ export default function CreateMealComponentPage() {
                                     variant="outline-success"
                                     size="sm"
                                     onClick={() =>
-                                      editIngredient(
-                                        componentPreview.name,
-                                        index,
-                                      )
+                                      editIngredient(componentPreview.id, index)
                                     }
                                   >
                                     Edit
@@ -892,7 +873,7 @@ export default function CreateMealComponentPage() {
                                     size="sm"
                                     onClick={() =>
                                       removeIngredient(
-                                        componentPreview.name,
+                                        componentPreview.id,
                                         index,
                                       )
                                     }

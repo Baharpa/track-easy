@@ -55,7 +55,7 @@ import {
 } from "../lib/mealDraft";
 import {
   createDefaultMealPart,
-  MEAL_PART_NAME_OPTIONS,
+  createMealPartId,
   mealToMealParts,
   normalizeMealParts,
 } from "../lib/mealParts";
@@ -98,6 +98,16 @@ function normalizeMealIngredient(item) {
 }
 
 export function mealToEditorState(meal) {
+  const mealParts = normalizeMealParts(
+    mealToMealParts(meal).map((component) => ({
+      ...component,
+      ingredients: (component?.ingredients || [])
+        .map(normalizeMealIngredient)
+        .filter((item) => item.ingredientId),
+    })),
+    meal?.category || "Main",
+  );
+
   return {
     meal: {
       name: meal?.name || "",
@@ -111,15 +121,8 @@ export function mealToEditorState(meal) {
       totalFats: meal?.totalFats || "",
       totalSugar: meal?.totalSugar || "",
     },
-    components: normalizeMealParts(
-      mealToMealParts(meal).map((component) => ({
-        ...component,
-        ingredients: (component?.ingredients || [])
-          .map(normalizeMealIngredient)
-          .filter((item) => item.ingredientId),
-      })),
-      meal?.category || "Main",
-    ),
+    mealParts,
+    components: mealParts,
   };
 }
 
@@ -142,6 +145,7 @@ function findIngredient(ingredients, ingredientId) {
 export default function ComponentMealEditor({
   ingredients = [],
   initialMeal,
+  initialMealParts = [],
   initialComponents = [],
   onSave,
   onSaveSuccess,
@@ -154,9 +158,12 @@ export default function ComponentMealEditor({
   const [meal, setMeal] = useState(
     initialMeal || { name: "", category: "", imageUrl: "" },
   );
-  const [components, setComponents] = useState(
-    initialComponents?.length > 0
-      ? initialComponents
+  const initialParts = initialMealParts?.length
+    ? initialMealParts
+    : initialComponents;
+  const [mealParts, setMealParts] = useState(
+    initialParts?.length > 0
+      ? normalizeMealParts(initialParts, initialMeal?.category || "Main")
       : [createDefaultMealPart()],
   );
   const [outsideFood, setOutsideFood] = useState(
@@ -180,8 +187,8 @@ export default function ComponentMealEditor({
   const [editingItem, setEditingItem] = useState(null);
   const [libraryError, setLibraryError] = useState("");
   const [librarySuccess, setLibrarySuccess] = useState("");
-  const [selectedMealPart, setSelectedMealPart] = useState(
-    initialComponents?.[0]?.name || "Main",
+  const [activeMealPartId, setActiveMealPartId] = useState(
+    initialParts?.[0]?.id || "",
   );
   const [draftState, setDraftState] = useState(null);
   const [showDraftCard, setShowDraftCard] = useState(false);
@@ -192,7 +199,7 @@ export default function ComponentMealEditor({
     () =>
       JSON.stringify({
         meal: initialMeal || { name: "", category: "", imageUrl: "" },
-        components: initialComponents || [],
+        mealParts: initialParts || [],
         outsideFood: Boolean(initialMeal?.outsideFood),
         manualNutrition: {
           restaurantName: initialMeal?.restaurantName || "",
@@ -203,27 +210,33 @@ export default function ComponentMealEditor({
           sugar: initialMeal?.totalSugar || "",
         },
       }),
-    [initialComponents, initialMeal],
+    [initialMeal, initialParts],
   );
   const currentSnapshot = useMemo(
     () =>
       JSON.stringify({
         meal,
-        components,
+        mealParts,
         outsideFood,
         manualNutrition,
       }),
-    [meal, components, outsideFood, manualNutrition],
+    [meal, mealParts, outsideFood, manualNutrition],
   );
   const { showModal, keepEditing, discardChanges, saveDraft, markSaved } =
     useUnsavedChanges(initialSnapshot !== currentSnapshot && !saving, {
       onDiscard: () => clearMealDraft(draftKey),
       onSaveDraft: async () => {
         saveMealDraft(
-          { meal, components, outsideFood, manualNutrition },
+          {
+            meal,
+            mealParts,
+            components: mealParts,
+            outsideFood,
+            manualNutrition,
+          },
           draftKey,
         );
-        setDraftState({ meal, components, outsideFood, manualNutrition });
+        setDraftState({ meal, mealParts, outsideFood, manualNutrition });
       },
     });
 
@@ -241,14 +254,21 @@ export default function ComponentMealEditor({
   }, [draftKey]);
 
   useEffect(() => {
-    if (outsideFood || components.length > 0) return;
-    setComponents([createDefaultMealPart()]);
-    setSelectedMealPart("Main");
-  }, [components.length, outsideFood]);
+    if (outsideFood) return;
+    if (mealParts.length === 0) {
+      const mainPart = createDefaultMealPart();
+      setMealParts([mainPart]);
+      setActiveMealPartId(mainPart.id);
+      return;
+    }
+    if (!mealParts.some((part) => part.id === activeMealPartId)) {
+      setActiveMealPartId(mealParts[0].id);
+    }
+  }, [activeMealPartId, mealParts, outsideFood]);
 
   const previewComponents = useMemo(
-    () => buildPreviewComponents(ingredients, components),
-    [ingredients, components],
+    () => buildPreviewComponents(ingredients, mealParts),
+    [ingredients, mealParts],
   );
   const hasMealIngredients = previewComponents.some(
     (component) => component.ingredients.length > 0,
@@ -256,12 +276,10 @@ export default function ComponentMealEditor({
   const mealTotals = addTotals(
     previewComponents.map((item) => item.nutritionTotals || {}),
   );
-  const flatIngredients = components.flatMap(
-    (component) => component.ingredients,
-  );
+  const flatIngredients = mealParts.flatMap((part) => part.ingredients);
   const summaryRows = previewComponents.flatMap((componentPreview) => {
-    const originalComponent = components.find(
-      (component) => component.name === componentPreview.name,
+    const originalComponent = mealParts.find(
+      (part) => part.id === componentPreview.id,
     );
     return componentPreview.ingredients.map((item, index) => ({
       ...item,
@@ -290,18 +308,9 @@ export default function ComponentMealEditor({
     setLibrarySuccess("");
   }
 
-  function openLibrary(partName = "") {
+  function openLibrary(partId) {
     resetLibraryForm();
-    if (partName) setSelectedMealPart(partName);
-    if (
-      partName &&
-      !components.some((component) => component.name === partName)
-    ) {
-      setComponents((current) => [
-        ...current,
-        { name: partName, category: partName, ingredients: [] },
-      ]);
-    }
+    setActiveMealPartId(partId || activeMealPartId || mealParts[0]?.id || "");
     setShowLibrary(true);
   }
 
@@ -320,23 +329,20 @@ export default function ComponentMealEditor({
   }
 
   function addMealPart() {
-    const nextName =
-      MEAL_PART_NAME_OPTIONS.find(
-        (name) => !components.some((component) => component.name === name),
-      ) || `Meal Part ${components.length + 1}`;
-    setComponents((current) => [
-      ...current,
-      { name: nextName, category: nextName, ingredients: [] },
-    ]);
-    setSelectedMealPart(nextName);
+    const nextPart = {
+      id: createMealPartId(),
+      name: "",
+      category: "Other",
+      ingredients: [],
+    };
+    setMealParts((current) => [...current, nextPart]);
+    setActiveMealPartId(nextPart.id);
   }
 
-  function removeMealPart(partName) {
-    if (components.length <= 1) return;
-    setComponents((current) =>
-      current.filter((component) => component.name !== partName),
-    );
-    setSelectedMealPart((current) => (current === partName ? "" : current));
+  function removeMealPart(partId) {
+    if (mealParts.length <= 1) return;
+    setMealParts((current) => current.filter((part) => part.id !== partId));
+    if (activeMealPartId === partId) setActiveMealPartId("");
   }
 
   function selectIngredient(ingredient) {
@@ -354,7 +360,8 @@ export default function ComponentMealEditor({
   }
 
   function addIngredientToMeal() {
-    const groupName = selectedMealPart || components[0]?.name || "Main";
+    const targetPartId = activeMealPartId || mealParts[0]?.id;
+    const targetPart = mealParts.find((part) => part.id === targetPartId);
     const amount = Number(amountUsed);
     const ingredientName = activeIngredient?.name;
 
@@ -373,46 +380,45 @@ export default function ComponentMealEditor({
       return;
     }
 
+    if (!targetPart) {
+      setLibraryError("Please choose a meal part.");
+      return;
+    }
+
     const newItem = {
       ingredientId: activeIngredient._id,
       quantityUsed: amount,
       unit: unitUsed || activeIngredient.unit || "grams",
     };
 
-    setComponents((currentComponents) => {
-      let nextComponents = currentComponents.map((component) => ({
-        ...component,
+    setMealParts((currentParts) => {
+      const nextParts = currentParts.map((part) => ({
+        ...part,
         ingredients:
-          editingItem && component.name === editingItem.componentName
-            ? component.ingredients.filter(
+          editingItem && part.id === editingItem.partId
+            ? part.ingredients.filter(
                 (item, index) => index !== editingItem.ingredientIndex,
               )
-            : component.ingredients,
+            : part.ingredients,
       }));
 
-      const existingIndex = nextComponents.findIndex(
-        (component) => component.name === groupName,
+      const targetIndex = nextParts.findIndex(
+        (part) => part.id === targetPartId,
       );
-      if (existingIndex >= 0) {
-        nextComponents[existingIndex] = {
-          ...nextComponents[existingIndex],
-          ingredients: [...nextComponents[existingIndex].ingredients, newItem],
-        };
-      } else {
-        nextComponents.push({
-          name: groupName,
-          category: groupName,
-          ingredients: [newItem],
-        });
-      }
+      if (targetIndex < 0) return currentParts;
 
-      return nextComponents;
+      nextParts[targetIndex] = {
+        ...nextParts[targetIndex],
+        ingredients: [...nextParts[targetIndex].ingredients, newItem],
+      };
+
+      return nextParts;
     });
 
     setMessage("");
     setLibraryError("");
     setLibrarySuccess(
-      `${ingredientName} ${editingItem ? "updated in" : "added to"} ${groupName}.`,
+      `${ingredientName} ${editingItem ? "updated in" : "added to"} ${targetPart.name.trim() || "this meal part"}.`,
     );
     if (successTimerRef.current) clearTimeout(successTimerRef.current);
     successTimerRef.current = setTimeout(() => setLibrarySuccess(""), 2500);
@@ -422,13 +428,13 @@ export default function ComponentMealEditor({
     setEditingItem(null);
   }
 
-  function removeIngredient(componentName, ingredientIndex) {
-    setComponents((currentComponents) =>
-      currentComponents.map((component) => {
-        if (component.name !== componentName) return component;
+  function removeIngredient(partId, ingredientIndex) {
+    setMealParts((currentParts) =>
+      currentParts.map((part) => {
+        if (part.id !== partId) return part;
         return {
-          ...component,
-          ingredients: component.ingredients.filter(
+          ...part,
+          ingredients: part.ingredients.filter(
             (item, index) => index !== ingredientIndex,
           ),
         };
@@ -436,32 +442,28 @@ export default function ComponentMealEditor({
     );
   }
 
-  function renameComponent(oldName, newName) {
-    const cleanName = newName.trim();
-    if (!cleanName) return;
-
-    setComponents(
-      components.map((component) =>
-        component.name === oldName
-          ? { ...component, name: cleanName, category: cleanName }
-          : component,
+  function renameMealPart(partId, name) {
+    setMealParts((currentParts) =>
+      currentParts.map((part) =>
+        part.id === partId
+          ? { ...part, name, category: name.trim() || "Other" }
+          : part,
       ),
     );
-    if (selectedMealPart === oldName) setSelectedMealPart(cleanName);
   }
 
-  function editIngredient(componentName, ingredientIndex) {
-    const component = components.find((item) => item.name === componentName);
-    const item = component?.ingredients[ingredientIndex];
+  function editIngredient(partId, ingredientIndex) {
+    const part = mealParts.find((item) => item.id === partId);
+    const item = part?.ingredients[ingredientIndex];
     const ingredient = ingredients.find(
       (ingredientItem) => ingredientItem._id === item?.ingredientId,
     );
-    if (!component || !item || !ingredient) return;
+    if (!part || !item || !ingredient) return;
 
     setSelectedCategory(
-      getCategoryLabel(ingredient.category || componentName || "Other"),
+      getCategoryLabel(ingredient.category || part.name || "Other"),
     );
-    setSelectedMealPart(componentName);
+    setActiveMealPartId(partId);
     setActiveIngredient(ingredient);
     setAmountUsed(item.quantityUsed);
     setUnitUsed(
@@ -470,7 +472,7 @@ export default function ComponentMealEditor({
         ingredient.unit ||
         "grams",
     );
-    setEditingItem({ componentName, ingredientIndex });
+    setEditingItem({ partId, ingredientIndex });
     setShowLibrary(true);
   }
 
@@ -485,6 +487,11 @@ export default function ComponentMealEditor({
     }
 
     const outsideFoodPayload = buildOutsideFoodPayload(manualNutrition);
+    const savedMealParts = mealParts.map((part, index) => ({
+      ...part,
+      name: part.name.trim() || `Meal Part ${index + 1}`,
+      category: part.name.trim() || "Other",
+    }));
     try {
       await onSave({
         ...meal,
@@ -496,8 +503,8 @@ export default function ComponentMealEditor({
           ? outsideFoodPayload
           : {
               ingredients: flatIngredients,
-              components,
-              mealParts: components,
+              components: savedMealParts,
+              mealParts: savedMealParts,
             }),
       });
     } catch {
@@ -518,12 +525,11 @@ export default function ComponentMealEditor({
         ? normalizeMealCategory(draftState.meal.category)
         : "",
     });
-    setComponents(
-      normalizeMealParts(
-        draftState.components || [],
-        draftState.meal?.category || "Main",
-      ),
+    const restoredMealParts = normalizeMealParts(
+      draftState.mealParts || draftState.components || [],
+      draftState.meal?.category || "Main",
     );
+    setMealParts(restoredMealParts);
     setOutsideFood(Boolean(draftState.outsideFood));
     setManualNutrition({
       restaurantName: draftState.manualNutrition?.restaurantName || "",
@@ -533,7 +539,7 @@ export default function ComponentMealEditor({
       fats: draftState.manualNutrition?.fats || "",
       sugar: draftState.manualNutrition?.sugar || "",
     });
-    setSelectedMealPart(draftState.components?.[0]?.name || "Main");
+    setActiveMealPartId(restoredMealParts[0]?.id || "");
     setShowDraftCard(false);
   }
 
@@ -667,15 +673,15 @@ export default function ComponentMealEditor({
       {!outsideFood && previewComponents.length > 0 && (
         <Row className="g-4 mb-4">
           {previewComponents.map((componentPreview) => {
-            const originalComponent = components.find(
-              (component) => component.name === componentPreview.name,
+            const originalComponent = mealParts.find(
+              (part) => part.id === componentPreview.id,
             );
             const componentCategory =
               componentPreview.category || componentPreview.name;
-            const isActivePart = selectedMealPart === componentPreview.name;
+            const isActivePart = activeMealPartId === componentPreview.id;
 
             return (
-              <Col lg={6} key={componentPreview.name}>
+              <Col lg={6} key={componentPreview.id}>
                 <Card
                   className={`page-card component-builder-card ${isActivePart ? "active" : ""}`}
                 >
@@ -695,8 +701,8 @@ export default function ComponentMealEditor({
                                 : "Flatbread"
                             }
                             onChange={(e) =>
-                              renameComponent(
-                                componentPreview.name,
+                              renameMealPart(
+                                componentPreview.id,
                                 e.target.value,
                               )
                             }
@@ -714,17 +720,15 @@ export default function ComponentMealEditor({
                         <Button
                           variant="outline-success"
                           size="sm"
-                          onClick={() => openLibrary(componentPreview.name)}
+                          onClick={() => openLibrary(componentPreview.id)}
                         >
                           Add Ingredient
                         </Button>
-                        {components.length > 1 && (
+                        {mealParts.length > 1 && (
                           <Button
                             variant="outline-danger"
                             size="sm"
-                            onClick={() =>
-                              removeMealPart(componentPreview.name)
-                            }
+                            onClick={() => removeMealPart(componentPreview.id)}
                           >
                             Remove Part
                           </Button>
@@ -779,7 +783,7 @@ export default function ComponentMealEditor({
                                 variant="outline-success"
                                 size="sm"
                                 onClick={() =>
-                                  editIngredient(componentPreview.name, index)
+                                  editIngredient(componentPreview.id, index)
                                 }
                               >
                                 Edit
@@ -788,7 +792,7 @@ export default function ComponentMealEditor({
                                 variant="outline-danger"
                                 size="sm"
                                 onClick={() =>
-                                  removeIngredient(componentPreview.name, index)
+                                  removeIngredient(componentPreview.id, index)
                                 }
                               >
                                 Remove

@@ -21,8 +21,10 @@ export default function MealDetails({ meal }) {
     { label: 'Sugar', value: `${formatMacro(nutritionValue(meal, 'totalSugar', 'sugar'))}g` },
     { label: 'Fats', value: `${formatMacro(nutritionValue(meal, 'totalFats', 'fats'))}g` }
   ];
-  const components = meal.components || [];
-  const ingredients = meal.ingredients || [];
+  const components = meal.mealParts?.length ? meal.mealParts : meal.components || [];
+  const ingredients = meal.ingredients?.length
+    ? meal.ingredients
+    : components.flatMap(part => part.ingredients || []);
 
   return (
     <Card className="page-card meal-details-card">
@@ -45,7 +47,7 @@ export default function MealDetails({ meal }) {
         {components.length > 0 && (
           <section className="meal-detail-section">
             <div className="meal-detail-section-heading">
-              <h4>Meal Components</h4>
+              <h4>Meal Parts</h4>
             </div>
             <div className="meal-component-list">
               {components.map((component, index) => (

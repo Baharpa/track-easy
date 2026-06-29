@@ -45,7 +45,10 @@ export default function LogFood() {
   const [logSuccess, setLogSuccess] = useState('');
   const selectedMealId = watch('mealId');
   const selectedMeal = (meals || []).find(meal => meal._id === selectedMealId);
-  const hasComponents = selectedMeal?.components?.length > 0;
+  const selectedMealParts = selectedMeal?.mealParts?.length
+    ? selectedMeal.mealParts
+    : selectedMeal?.components || [];
+  const hasComponents = selectedMealParts.length > 0;
   const hasUnsavedChanges = useMemo(() => Boolean(
     activeTab === 'meal'
       ? selectedMealId
@@ -80,7 +83,8 @@ export default function LogFood() {
 
   function getMealWeight(meal) {
     const ingredientsWeight = (meal?.ingredients || []).reduce((sum, item) => sum + Number(item.gramsUsed || item.quantityUsed || 0), 0);
-    const componentsWeight = (meal?.components || []).reduce((sum, component) => sum + Number(component.totalWeight || 0), 0);
+    const mealParts = meal?.mealParts?.length ? meal.mealParts : meal?.components || [];
+    const componentsWeight = mealParts.reduce((sum, component) => sum + Number(component.totalWeight || 0), 0);
     return ingredientsWeight || componentsWeight || 0;
   }
 
@@ -118,7 +122,7 @@ export default function LogFood() {
     }
 
     if (hasComponents && customGrams <= 0) {
-      body.componentPortions = selectedMeal.components.map((component, index) => ({
+      body.componentPortions = selectedMealParts.map((component, index) => ({
         componentIndex: index,
         eatenAmount: Number(componentPortions[index]?.eatenAmount || component.totalWeight),
         unit: componentPortions[index]?.unit || 'grams'
@@ -242,7 +246,7 @@ export default function LogFood() {
             )}
             {selectedMeal && hasComponents && <div className="component-portion-section">
               <Form.Label>Customize Meal Parts</Form.Label>
-              {selectedMeal.components.map((component, index) => (
+              {selectedMealParts.map((component, index) => (
                 <Row key={`${component.name}-${index}`} className="component-portion-row">
                   <Col md={5}>
                     <div className="component-portion-name">{component.name}</div>

@@ -69,6 +69,9 @@ export default function LoggedMealDetail() {
   const { data: meal } = useSWR(
     log?.mealId ? `/api/meals/${log.mealId}` : null,
   );
+  const loggedMealParts = log?.mealParts?.length
+    ? log.mealParts
+    : log?.components || [];
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
@@ -345,20 +348,20 @@ export default function LoggedMealDetail() {
         </Alert>
       )}
 
-      {!editMode && log.components?.length > 0 && (
+      {!editMode && loggedMealParts.length > 0 && (
         <Card className="page-card p-4 mb-4">
-          <h4>Component Breakdown</h4>
+          <h4>Meal Parts</h4>
           <Table responsive hover>
             <thead>
               <tr>
-                <th>Component</th>
+                <th>Meal Part</th>
                 <th>Eaten Amount</th>
                 <th>Calories</th>
                 <th>Protein</th>
               </tr>
             </thead>
             <tbody>
-              {log.components.map((component, index) => (
+              {loggedMealParts.map((component, index) => (
                 <tr key={index}>
                   <td>{component.name}</td>
                   <td>

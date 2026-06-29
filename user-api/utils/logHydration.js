@@ -35,9 +35,9 @@ function getMealWeight(meal = {}) {
     (sum, item) => sum + Number(item.gramsUsed || 0),
     0,
   );
-  const componentSource = meal.components?.length
-    ? meal.components
-    : meal.mealParts || [];
+  const componentSource = meal.mealParts?.length
+    ? meal.mealParts
+    : meal.components || [];
   const componentWeight = componentSource.reduce(
     (sum, component) => sum + Number(component.totalWeight || 0),
     0,
@@ -125,6 +125,7 @@ async function hydrateMealComponents(userId, components = []) {
     const totals = addTotals(consumedIngredients);
     allConsumedIngredients.push(...consumedIngredients);
     builtComponents.push({
+      id: component.id || "",
       name: component.name || "Component",
       category: component.category || component.name || "Other",
       ingredients: consumedIngredients,
@@ -158,12 +159,12 @@ async function hydrateMealDocument(userId, meal) {
   }
 
   const sourceComponents =
-    (Array.isArray(source.components) &&
-      source.components.length > 0 &&
-      source.components) ||
     (Array.isArray(source.mealParts) &&
       source.mealParts.length > 0 &&
       source.mealParts) ||
+    (Array.isArray(source.components) &&
+      source.components.length > 0 &&
+      source.components) ||
     (Array.isArray(source.ingredients) && source.ingredients.length > 0
       ? [
           {
@@ -173,7 +174,7 @@ async function hydrateMealDocument(userId, meal) {
           },
         ]
       : []);
-  const ingredients = await hydrateMealIngredients(
+  const legacyIngredients = await hydrateMealIngredients(
     userId,
     source.ingredients || [],
   );
@@ -181,6 +182,9 @@ async function hydrateMealDocument(userId, meal) {
     userId,
     sourceComponents,
   );
+  const ingredients = legacyIngredients.length
+    ? legacyIngredients
+    : componentsResult.allConsumedIngredients;
   const totals = addTotals(ingredients);
 
   return {
@@ -225,12 +229,12 @@ function buildPortionLogFromMeal(meal, portion, portionLabel, options = {}) {
   }
 
   const sourceComponents =
-    (Array.isArray(meal.components) &&
-      meal.components.length > 0 &&
-      meal.components) ||
     (Array.isArray(meal.mealParts) &&
       meal.mealParts.length > 0 &&
       meal.mealParts) ||
+    (Array.isArray(meal.components) &&
+      meal.components.length > 0 &&
+      meal.components) ||
     (Array.isArray(meal.ingredients) && meal.ingredients.length > 0
       ? [
           {
@@ -240,7 +244,10 @@ function buildPortionLogFromMeal(meal, portion, portionLabel, options = {}) {
           },
         ]
       : []);
-  const ingredients = (meal.ingredients || []).map((item) =>
+  const sourceIngredients = meal.ingredients?.length
+    ? meal.ingredients
+    : sourceComponents.flatMap((component) => component.ingredients || []);
+  const ingredients = sourceIngredients.map((item) =>
     scaleLoggedIngredient(item, portionFactor),
   );
   const components = sourceComponents.map((component) => {
@@ -248,6 +255,7 @@ function buildPortionLogFromMeal(meal, portion, portionLabel, options = {}) {
       scaleLoggedIngredient(item, portionFactor),
     );
     return {
+      id: component.id || "",
       name: component.name,
       category: component.category,
       eatenWeight: round(Number(component.totalWeight || 0) * portionFactor),
@@ -290,9 +298,9 @@ function buildComponentLogFromMeal(meal, componentPortions = []) {
   }));
 
   for (const componentInput of normalizedPortions) {
-    const sourceComponents = meal.components?.length
-      ? meal.components
-      : meal.mealParts || [];
+    const sourceComponents = meal.mealParts?.length
+      ? meal.mealParts
+      : meal.components || [];
     const component = sourceComponents[componentInput.componentIndex];
     if (!component) continue;
 
@@ -315,6 +323,7 @@ function buildComponentLogFromMeal(meal, componentPortions = []) {
     const nutritionTotals = addTotals(ingredients);
     allIngredients.push(...ingredients);
     components.push({
+      id: component.id || "",
       name: component.name,
       category: component.category,
       eatenWeight: round(eatenWeight),
@@ -426,17 +435,24 @@ async function hydrateLoggedMeal(userId, logMeal) {
     };
   }
 
+  const sourceLoggedParts = source.mealParts?.length
+    ? source.mealParts
+    : source.components || [];
   if (
     source.portionLabel === "custom component amounts" &&
-    (source.components || []).length > 0
+    sourceLoggedParts.length > 0
   ) {
-    const componentPortions = source.components.map((component, index) => ({
+    const componentPortions = sourceLoggedParts.map((component, index) => ({
       componentIndex:
         hydratedMeal.components.findIndex(
-          (currentComponent) => currentComponent.name === component.name,
+          (currentComponent) =>
+            (component.id && currentComponent.id === component.id) ||
+            currentComponent.name === component.name,
         ) >= 0
           ? hydratedMeal.components.findIndex(
-              (currentComponent) => currentComponent.name === component.name,
+              (currentComponent) =>
+                (component.id && currentComponent.id === component.id) ||
+                currentComponent.name === component.name,
             )
           : index,
       eatenAmount: Number(component.eatenWeight || component.totalWeight || 0),

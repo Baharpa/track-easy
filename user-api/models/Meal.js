@@ -21,6 +21,7 @@ const mealIngredientSchema = new mongoose.Schema(
 
 const mealComponentSchema = new mongoose.Schema(
   {
+    id: String,
     name: String,
     category: String,
     ingredients: [mealIngredientSchema],

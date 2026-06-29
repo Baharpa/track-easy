@@ -52,7 +52,7 @@ export default function EditMeal() {
       {meal && ingredients && <ComponentMealEditor
         ingredients={ingredients}
       initialMeal={editorState.meal}
-      initialComponents={editorState.components}
+      initialMealParts={editorState.mealParts}
       onSave={submit}
       onSaveSuccess={handleSuccess}
         onCancel={() => router.push(`/meals/${id}`)}

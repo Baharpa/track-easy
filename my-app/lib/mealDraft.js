@@ -5,10 +5,10 @@ export const MEAL_EDIT_DRAFT_KEY_PREFIX = "trackeasy:meal:edit:";
 
 export function hasMealDraftContent(draft) {
   const meal = draft?.meal || {};
-  const mealParts = Array.isArray(draft?.components)
-    ? draft.components
-    : Array.isArray(draft?.mealParts)
-      ? draft.mealParts
+  const mealParts = Array.isArray(draft?.mealParts)
+    ? draft.mealParts
+    : Array.isArray(draft?.components)
+      ? draft.components
       : [];
   const hasMealPartContent = mealParts.some((part) => {
     const name = String(part?.name || "").trim();
@@ -104,7 +104,8 @@ export function saveMealDraft(draft, key = MEAL_CREATE_DRAFT_KEY) {
     key,
     JSON.stringify({
       meal: draft.meal,
-      components: draft.components || [],
+      mealParts: draft.mealParts || draft.components || [],
+      components: draft.components || draft.mealParts || [],
       outsideFood: Boolean(draft.outsideFood),
       manualNutrition: draft.manualNutrition || {},
       updatedAt: new Date().toISOString(),

@@ -40,6 +40,7 @@ const loggedMealSchema = new mongoose.Schema({
   }],
 
   components: [{
+    id: String,
     name: String,
     category: String,
     eatenWeight: Number,
@@ -49,6 +50,33 @@ const loggedMealSchema = new mongoose.Schema({
       name: String,
       quantityUsed: Number,
       unit: String,
+      calories: Number,
+      protein: Number,
+      carbs: Number,
+      fats: Number,
+      sugar: Number
+    }],
+    nutritionTotals: {
+      calories: Number,
+      protein: Number,
+      carbs: Number,
+      fats: Number,
+      sugar: Number
+    }
+  }],
+
+  mealParts: [{
+    id: String,
+    name: String,
+    category: String,
+    eatenWeight: Number,
+    unit: String,
+    ingredients: [{
+      ingredientId: { type: mongoose.Schema.Types.ObjectId, ref: 'Ingredient' },
+      name: String,
+      quantityUsed: Number,
+      unit: String,
+      gramsUsed: Number,
       calories: Number,
       protein: Number,
       carbs: Number,
