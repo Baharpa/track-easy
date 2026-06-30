@@ -25,6 +25,11 @@ const loggedMealSchema = new mongoose.Schema({
   carbs: Number,
   fats: Number,
   sugar: Number,
+  imageUrl: String,
+  imagePublicId: String,
+  imageSource: String,
+  imageSourceUrl: String,
+  imageAuthor: String,
 
   ingredients: [{
       ingredientId: { type: mongoose.Schema.Types.ObjectId, ref: 'Ingredient' },
@@ -99,7 +104,8 @@ const loggedMealSchema = new mongoose.Schema({
   }],
 
   // For logging timestamp if needed
-  loggedAt: { type: Date, default: Date.now }
+  loggedAt: { type: Date, default: Date.now },
+  createdAt: { type: Date }
 }, { _id: true });
 
 const dailyLogSchema = new mongoose.Schema({

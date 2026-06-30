@@ -1,5 +1,11 @@
 const express = require("express");
 const auth = require("../config/auth");
+const { queueAutoFoodImage } = require("../utils/autoFoodImage");
+const {
+  deleteCloudinaryImageIfUnused,
+  refreshDocumentImage,
+  removeDocumentImage,
+} = require("../utils/imageManagement");
 const Meal = require("../models/Meal");
 const Ingredient = require("../models/Ingredient");
 const {
@@ -145,10 +151,20 @@ async function buildMealBody(req) {
       ? req.body.mealParts
       : req.body.components;
   if (outsideFood) {
+    const imageUrl = String(req.body.imageUrl || req.body.image || req.body.photoUrl || "").trim();
     return {
       name: req.body.name,
       category: req.body.category || "Meal",
-      imageUrl: req.body.imageUrl || "",
+      imageUrl,
+      imagePublicId: req.body.imagePublicId || "",
+      imageSource: req.body.imageSource || (req.body.imageAttribution?.provider === "Pexels"
+        ? "pexels-auto"
+        : imageUrl
+          ? req.body.imagePublicId ? "cloudinary-upload" : "manual-url"
+          : ""),
+      imageSourceUrl: req.body.imageSourceUrl || "",
+      imageAuthor: req.body.imageAuthor || "",
+      imageAttribution: req.body.imageAttribution || {},
       outsideFood: true,
       restaurantName: req.body.restaurantName || "",
       components: [],
@@ -179,10 +195,20 @@ async function buildMealBody(req) {
 
   const totals = addTotals(ingredients);
 
+  const imageUrl = String(req.body.imageUrl || req.body.image || req.body.photoUrl || "").trim();
   return {
     name: req.body.name,
     category: req.body.category || "Meal",
-    imageUrl: req.body.imageUrl || "",
+    imageUrl,
+    imagePublicId: req.body.imagePublicId || "",
+    imageSource: req.body.imageSource || (req.body.imageAttribution?.provider === "Pexels"
+      ? "pexels-auto"
+      : imageUrl
+        ? req.body.imagePublicId ? "cloudinary-upload" : "manual-url"
+        : ""),
+    imageSourceUrl: req.body.imageSourceUrl || "",
+    imageAuthor: req.body.imageAuthor || "",
+    imageAttribution: req.body.imageAttribution || {},
     outsideFood: false,
     restaurantName: "",
     components,
@@ -215,6 +241,16 @@ router.post("/", auth, async (req, res) => {
     const mealBody = await buildMealBody(req);
     const meal = await Meal.create(mealBody);
     res.status(201).json(await hydrateMealDocument(req.user._id, meal));
+    if (!meal.imageUrl) {
+      queueAutoFoodImage({
+        model: Meal,
+        documentId: meal._id,
+        userId: req.user._id,
+        name: meal.name,
+        type: "meal",
+        restaurantName: meal.restaurantName
+      });
+    }
   } catch (err) {
     res
       .status(400)
@@ -230,6 +266,7 @@ router.get("/:id", auth, async (req, res) => {
 
 router.put("/:id", auth, async (req, res) => {
   try {
+    const previousMeal = await Meal.findOne({ _id: req.params.id, userId: req.user._id });
     const mealBody = await buildMealBody(req);
     delete mealBody.userId;
 
@@ -241,10 +278,46 @@ router.put("/:id", auth, async (req, res) => {
 
     if (!meal) return res.status(404).json({ message: "Meal not found." });
     res.json(await hydrateMealDocument(req.user._id, meal));
+    if (previousMeal?.imagePublicId && previousMeal.imagePublicId !== meal.imagePublicId) {
+      deleteCloudinaryImageIfUnused(previousMeal.imagePublicId).catch(error => {
+        console.warn(`Could not check old meal image usage: ${error.message}`);
+      });
+    }
   } catch (err) {
     res
       .status(400)
       .json({ message: "Could not update meal.", error: err.message });
+  }
+});
+
+router.post("/:id/image/refresh", auth, async (req, res) => {
+  try {
+    const result = await refreshDocumentImage({
+      model: Meal,
+      documentId: req.params.id,
+      userId: req.user._id,
+      type: "meal",
+      confirmReplace: Boolean(req.body.confirmReplace),
+    });
+    if (!result.document) return res.status(result.status).json(result);
+    res.json(await hydrateMealDocument(req.user._id, result.document));
+  } catch (error) {
+    res.status(500).json({ message: error.message || "Could not refresh image." });
+  }
+});
+
+router.delete("/:id/image", auth, async (req, res) => {
+  try {
+    const result = await removeDocumentImage({
+      model: Meal,
+      documentId: req.params.id,
+      userId: req.user._id,
+      type: "meal",
+    });
+    if (!result.document) return res.status(result.status).json(result);
+    res.json(await hydrateMealDocument(req.user._id, result.document));
+  } catch (error) {
+    res.status(500).json({ message: error.message || "Could not remove image." });
   }
 });
 
@@ -255,6 +328,11 @@ router.delete("/:id", auth, async (req, res) => {
   });
   if (!meal) return res.status(404).json({ message: "Meal not found." });
   res.json({ message: "Meal deleted." });
+  if (meal.imagePublicId) {
+    deleteCloudinaryImageIfUnused(meal.imagePublicId).catch(error => {
+      console.warn(`Could not clean up deleted meal image: ${error.message}`);
+    });
+  }
 });
 
 module.exports = router;

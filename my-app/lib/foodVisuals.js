@@ -37,5 +37,26 @@ export function getCategoryClass(categoryName) {
 }
 
 export function getFoodImage(food) {
-  return safeImageUrl(food?.imageUrl);
+  if (typeof food === 'string') return safeImageUrl(food);
+  if (!food || typeof food !== 'object') return '';
+
+  const relatedItems = [
+    food,
+    food.meal,
+    typeof food.mealId === 'object' ? food.mealId : null,
+    food.ingredient,
+    typeof food.ingredientId === 'object' ? food.ingredientId : null,
+    food.food,
+    food.item,
+    food.populatedFood
+  ];
+
+  for (const item of relatedItems) {
+    const imageUrl = safeImageUrl(item?.imageUrl || item?.image || item?.photoUrl || '');
+    if (imageUrl) return imageUrl;
+  }
+
+  return safeImageUrl(
+    food.thumbnailUrl || food.mealImageUrl || food.ingredientImageUrl || ''
+  );
 }

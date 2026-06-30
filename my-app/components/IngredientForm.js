@@ -2,6 +2,7 @@ import { useForm, Controller } from "react-hook-form";
 import { useEffect, useMemo, useState } from "react";
 import { Alert, Button, Card, Col, Form, Row } from "react-bootstrap";
 import MealImageUpload from "./MealImageUpload";
+import ImageManagementActions from "./ImageManagementActions";
 import SmartFoodSuggestionCard from "./SmartFoodSuggestionCard";
 import UnitSelect from "./UnitSelect";
 import { CATEGORY_LIBRARY } from "../lib/foodVisuals";
@@ -45,6 +46,8 @@ function buildDefaultValues(defaultValues) {
 
   return {
     ...defaultValues,
+    imageUrl:
+      defaultValues.imageUrl || defaultValues.image || defaultValues.photoUrl || "",
     category: hasValue(defaultValues.category)
       ? normalizeCategory(defaultValues.category)
       : "",
@@ -194,6 +197,20 @@ export default function IngredientForm({
       },
     });
   const imageUrl = watch("imageUrl");
+  const imagePublicId = watch("imagePublicId");
+  const imageSource = watch("imageSource");
+  const imageSourceUrl = watch("imageSourceUrl");
+  const imageAuthor = watch("imageAuthor");
+  const imageUrlRegistration = register("imageUrl");
+
+  function applyImageFields(item = {}) {
+    setValue("imageUrl", item.imageUrl || "", { shouldDirty: true });
+    setValue("imagePublicId", item.imagePublicId || "", { shouldDirty: true });
+    setValue("imageSource", item.imageSource || "", { shouldDirty: true });
+    setValue("imageSourceUrl", item.imageSourceUrl || "", { shouldDirty: true });
+    setValue("imageAuthor", item.imageAuthor || "", { shouldDirty: true });
+    setValue("imageAttribution", item.imageAttribution || {}, { shouldDirty: true });
+  }
   const nameValue = watch("name") || "";
   const normalizedName = normalizeFoodQuery(nameValue);
   const smartFoodMatch = useMemo(
@@ -660,15 +677,42 @@ export default function IngredientForm({
           <Form.Group className="mb-3">
             <Form.Label>Image URL</Form.Label>
             <Form.Control
-              {...register("imageUrl")}
+              {...imageUrlRegistration}
+              onChange={(event) => {
+                imageUrlRegistration.onChange(event);
+                setValue("imagePublicId", "", { shouldDirty: true });
+                setValue("imageSource", event.target.value.trim() ? "manual-url" : "", { shouldDirty: true });
+                setValue("imageSourceUrl", "", { shouldDirty: true });
+                setValue("imageAuthor", "", { shouldDirty: true });
+                setValue("imageAttribution", {}, { shouldDirty: true });
+              }}
               placeholder="https://example.com/food.jpg"
             />
+            <input type="hidden" {...register("imagePublicId")} />
+            <input type="hidden" {...register("imageSource")} />
+            <input type="hidden" {...register("imageSourceUrl")} />
+            <input type="hidden" {...register("imageAuthor")} />
             <MealImageUpload
               imageUrl={imageUrl}
-              onUploaded={(uploadedUrl) =>
-                setValue("imageUrl", uploadedUrl, { shouldDirty: true })
-              }
+              uploadType="ingredient"
+              onUploaded={(uploadedUrl, publicId) => applyImageFields({
+                imageUrl: uploadedUrl,
+                imagePublicId: publicId,
+                imageSource: "cloudinary-upload"
+              })}
               onUploadingChange={setImageUploading}
+            />
+            <ImageManagementActions
+              item={{
+                ...defaultValues,
+                imageUrl,
+                imagePublicId,
+                imageSource,
+                imageSourceUrl,
+                imageAuthor
+              }}
+              itemType="ingredient"
+              onChanged={applyImageFields}
             />
           </Form.Group>
 

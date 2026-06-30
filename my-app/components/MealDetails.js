@@ -1,120 +1,200 @@
-import { Card, Table } from 'react-bootstrap';
-import { formatAmount, formatCalories, formatMacro } from '../lib/formatNutrition';
+import { useMemo, useState } from 'react';
+import { Button } from 'react-bootstrap';
 import FoodImage from './FoodImage';
+import { TrackEasyIcon } from './TrackEasyIcons';
+import { formatAmount, formatCalories, formatMacro } from '../lib/formatNutrition';
 import { normalizeMealCategory } from '../lib/mealCategoryHelpers';
-import NutritionRows from './NutritionRows';
 
-function nutritionValue(item, totalKey, directKey) {
-  return item?.[totalKey] ?? item?.[directKey] ?? 0;
+const nutritionItems = [
+  { key: 'calories', label: 'Calories', color: '#ef795f', format: formatCalories, unit: ' cal' },
+  { key: 'protein', label: 'Protein', color: '#77a477', format: formatMacro, unit: 'g' },
+  { key: 'carbs', label: 'Carbs', color: '#6594be', format: formatMacro, unit: 'g' },
+  { key: 'fats', label: 'Fats', color: '#e5ad51', format: formatMacro, unit: 'g' },
+  { key: 'sugar', label: 'Sugar', color: '#a981bd', format: formatMacro, unit: 'g' }
+];
+
+function mealNutrition(meal) {
+  return {
+    calories: Number(meal.totalCalories ?? meal.calories ?? 0),
+    protein: Number(meal.totalProtein ?? meal.protein ?? 0),
+    carbs: Number(meal.totalCarbs ?? meal.carbs ?? 0),
+    fats: Number(meal.totalFats ?? meal.fats ?? 0),
+    sugar: Number(meal.totalSugar ?? meal.sugar ?? 0)
+  };
 }
 
-function amountUsedLabel(item) {
-  return `${formatAmount(item?.originalQuantityUsed || item?.quantityUsed)} ${item?.originalUnit || item?.unit || 'g'}`;
+function amountLabel(item) {
+  const amount = item.originalQuantityUsed ?? item.quantityUsed ?? item.amount ?? item.gramsUsed ?? 0;
+  const unit = item.originalUnit || item.unit || (item.gramsUsed ? 'grams' : '');
+  return `${formatAmount(amount)} ${unit}`.trim();
+}
+
+function nutritionNumber(item, keys) {
+  for (const key of keys) {
+    if (item?.[key] !== undefined && item?.[key] !== null && item?.[key] !== '') {
+      const value = Number(item[key]);
+      if (Number.isFinite(value)) return value;
+    }
+  }
+  return 0;
+}
+
+function ingredientGrams(item) {
+  const grams = Number(item.gramsUsed);
+  if (grams > 0) return grams;
+  const unit = String(item.originalUnit || item.unit || '').toLowerCase();
+  const amount = Number(item.originalQuantityUsed ?? item.quantityUsed ?? item.amount ?? 0);
+  if (unit === 'kilograms' || unit === 'kilogram' || unit === 'kg') return amount * 1000;
+  if (unit === 'grams' || unit === 'gram' || unit === 'g') return amount;
+  return null;
+}
+
+function mealWeight(meal, ingredients) {
+  if (Number(meal.totalWeight) > 0) return Number(meal.totalWeight);
+  const gramWeights = ingredients.map(({ ingredient }) => Number(ingredient.gramsUsed || 0));
+  if (gramWeights.some((value) => value > 0)) return gramWeights.reduce((sum, value) => sum + value, 0);
+  return ingredients.reduce((sum, { ingredient }) => {
+    const unit = String(ingredient.unit || '').toLowerCase();
+    return unit.includes('gram') ? sum + Number(ingredient.quantityUsed || 0) : sum;
+  }, 0);
 }
 
 export default function MealDetails({ meal }) {
-  const mealCategory = normalizeMealCategory(meal.category);
-  const nutritionStats = [
-    { label: 'Calories', value: `${formatCalories(nutritionValue(meal, 'totalCalories', 'calories'))} cal` },
-    { label: 'Protein', value: `${formatMacro(nutritionValue(meal, 'totalProtein', 'protein'))}g` },
-    { label: 'Carbs', value: `${formatMacro(nutritionValue(meal, 'totalCarbs', 'carbs'))}g` },
-    { label: 'Sugar', value: `${formatMacro(nutritionValue(meal, 'totalSugar', 'sugar'))}g` },
-    { label: 'Fats', value: `${formatMacro(nutritionValue(meal, 'totalFats', 'fats'))}g` }
-  ];
-  const components = meal.mealParts?.length ? meal.mealParts : meal.components || [];
-  const ingredients = meal.ingredients?.length
-    ? meal.ingredients
-    : components.flatMap(part => part.ingredients || []);
+  const [expanded, setExpanded] = useState(false);
+  const category = normalizeMealCategory(meal.category);
+  const parts = meal.mealParts?.length ? meal.mealParts : meal.components || [];
+  const ingredientEntries = useMemo(() => {
+    if (parts.length > 0) {
+      return parts.flatMap((part) => (part.ingredients || []).map((ingredient) => ({
+        ingredient,
+        section: part.name || part.category || 'Main'
+      })));
+    }
+    return (meal.ingredients || []).map((ingredient) => ({ ingredient, section: '' }));
+  }, [meal.ingredients, parts]);
+  const visibleEntries = expanded ? ingredientEntries : ingredientEntries.slice(0, 5);
+  const hiddenCount = Math.max(0, ingredientEntries.length - 5);
+  const nutrition = mealNutrition(meal);
+  const weight = mealWeight(meal, ingredientEntries);
+  const nutritionSum = nutritionItems.reduce((sum, item) => sum + Math.max(0, nutrition[item.key]), 0);
+  const chartTotal = nutritionSum || 1;
+  let chartPosition = 0;
+  const chartStops = nutritionSum === 0 ? '#e9e5dc 0% 100%' : nutritionItems.map((item) => {
+    const percentage = Math.max(0, nutrition[item.key]) / chartTotal * 100;
+    const start = chartPosition;
+    chartPosition += percentage;
+    return `${item.color} ${start}% ${chartPosition}%`;
+  }).join(', ');
 
   return (
-    <Card className="page-card meal-details-card">
-      <Card.Body>
-        <div className="meal-details-hero">
-          <FoodImage src={meal.imageUrl} alt={meal.name} category={mealCategory} className="meal-detail-img" placeholderClassName="meal-detail-placeholder" />
-          <div>
-            <h3 className="mb-1">{meal.name}</h3>
-            <div className="meal-detail-category">{mealCategory}</div>
-          </div>
+    <>
+      <section className="meal-overview-hero">
+        <FoodImage src={meal} alt={meal.name} category={category} variant="detail" className="meal-overview-hero-image" placeholderClassName="meal-overview-hero-placeholder" />
+        <div className="meal-overview-hero-overlay">
+          <span>{category}</span>
+          <h2>{meal.name}</h2>
+          {weight > 0 && <strong>{formatAmount(weight)} g</strong>}
+        </div>
+      </section>
+
+      <section className="meal-overview-nutrition-card">
+        <div className="meal-overview-total">
+          <span>Meal Totals</span>
+          <div><strong>{formatCalories(nutrition.calories)}</strong><small>cal</small></div>
+          {weight > 0 && <p><strong>{formatAmount(weight)} g</strong><span>total weight</span></p>}
         </div>
 
-        <section className="meal-detail-section">
-          <div className="meal-detail-section-heading">
-            <h4>Total Nutrition</h4>
-          </div>
-          <NutritionRows rows={nutritionStats} />
-        </section>
-
-        {components.length > 0 && (
-          <section className="meal-detail-section">
-            <div className="meal-detail-section-heading">
-              <h4>Meal Parts</h4>
+        <div className="meal-overview-chart-area">
+          <div className="meal-overview-donut" style={{ background: `conic-gradient(${chartStops})` }} aria-label="Meal nutrition chart">
+            <div className="meal-overview-donut-center">
+              <strong>{formatCalories(nutrition.calories)}</strong>
+              <span>cal</span>
+              {weight > 0 && <small>{formatAmount(weight)} g total</small>}
             </div>
-            <div className="meal-component-list">
-              {components.map((component, index) => (
-                <div className="meal-component-row" key={`${component.name}-${index}`}>
-                  <div>
-                    <h5>{component.name || component.category || 'Component'}</h5>
-                    <span>{component.ingredients?.length || 0} ingredient{component.ingredients?.length === 1 ? '' : 's'} - {formatAmount(component.totalWeight)}g total</span>
-                  </div>
-                  <div className="meal-component-nutrition">
-                    {formatCalories(component.nutritionTotals?.calories)} cal - {formatMacro(component.nutritionTotals?.protein)}g protein
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        <section className="meal-detail-section">
-          <div className="meal-detail-section-heading">
-            <h4>Ingredient Breakdown</h4>
           </div>
-          <div className="meal-ingredient-table-wrap">
-            <Table hover className="meal-ingredient-table">
-              <thead><tr><th>Ingredient</th><th>Amount Used</th><th>Calories</th><th>Protein</th><th>Carbs</th><th>Fats</th><th>Sugar</th></tr></thead>
-              <tbody>
-                {ingredients.map((item, index) => (
-                  <tr key={`${item.name}-${index}`}>
-                    <td>
-                      <div className="meal-ingredient-name-cell">
-                        <FoodImage src={item.imageUrl} alt={item.name} category={item.category || 'Other'} className="meal-ingredient-thumb" placeholderClassName="meal-ingredient-placeholder" />
-                        <span>{item.name}</span>
-                      </div>
-                    </td>
-                    <td>{amountUsedLabel(item)}</td>
-                    <td>{formatCalories(item.calories)}</td>
-                    <td>{formatMacro(item.protein)}g</td>
-                    <td>{formatMacro(item.carbs)}g</td>
-                    <td>{formatMacro(item.fats)}g</td>
-                    <td>{formatMacro(item.sugar)}g</td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
-          </div>
-
-          <div className="meal-ingredient-mobile-list">
-            {ingredients.map((item, index) => (
-              <div className="meal-ingredient-mobile-card" key={`${item.name}-mobile-${index}`}>
-                <div className="meal-ingredient-mobile-header">
-                  <FoodImage src={item.imageUrl} alt={item.name} category={item.category || 'Other'} className="meal-ingredient-thumb" placeholderClassName="meal-ingredient-placeholder" />
-                  <div>
-                    <h5>{item.name}</h5>
-                    <span>{amountUsedLabel(item)}</span>
-                  </div>
+          <div className="meal-overview-legend">
+            {nutritionItems.map((item) => {
+              const percentage = Math.round(Math.max(0, nutrition[item.key]) / chartTotal * 100);
+              return (
+                <div className="meal-overview-legend-item" key={item.key}>
+                  <i style={{ backgroundColor: item.color }} />
+                  <span><strong>{item.label}</strong><small>{item.format(nutrition[item.key])}{item.unit} · {percentage}%</small></span>
                 </div>
-                <div className="meal-ingredient-mobile-stats">
-                  <span>{formatCalories(item.calories)} cal</span>
-                  <span>{formatMacro(item.protein)}g protein</span>
-                  <span>{formatMacro(item.carbs)}g carbs</span>
-                  <span>{formatMacro(item.fats)}g fats</span>
-                  <span>{formatMacro(item.sugar)}g sugar</span>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      <section className="meal-overview-ingredients-card">
+        <header className="meal-overview-ingredients-header">
+          <span className="meal-overview-ingredients-icon"><TrackEasyIcon name="menu" size={22} /></span>
+          <div><h3>Ingredients</h3><p>{ingredientEntries.length} ingredient{ingredientEntries.length === 1 ? '' : 's'}</p></div>
+        </header>
+
+        <div className="meal-overview-ingredient-list">
+          {visibleEntries.map(({ ingredient, section }, index) => {
+            const previousSection = index > 0 ? visibleEntries[index - 1].section : '';
+            return (
+              <div key={`${ingredient.ingredientId || ingredient.name}-${index}`}>
+                {section && section !== previousSection && <div className="meal-overview-section-label">{section}</div>}
+                <div className="meal-overview-ingredient-row">
+                  <FoodImage src={ingredient} alt={ingredient.name} category={ingredient.category || section || 'Other'} variant="compact" className="meal-overview-ingredient-image" placeholderClassName="meal-overview-ingredient-placeholder" />
+                  <strong>{ingredient.name}</strong>
+                  <span>{amountLabel(ingredient)}</span>
                 </div>
               </div>
-            ))}
+            );
+          })}
+          {ingredientEntries.length === 0 && <p className="meal-overview-empty">No ingredients saved for this meal.</p>}
+        </div>
+
+        {hiddenCount > 0 && (
+          <Button type="button" variant="link" className={`meal-overview-expand ${expanded ? 'expanded' : ''}`} onClick={() => setExpanded((value) => !value)}>
+            {expanded ? 'Show fewer ingredients' : `+ ${hiddenCount} more ingredient${hiddenCount === 1 ? '' : 's'}`}
+          </Button>
+        )}
+      </section>
+
+      {ingredientEntries.length > 0 && (
+        <section className="meal-overview-table-card">
+          <header>
+            <h3>Ingredient Nutrition</h3>
+            <p>Everything used in this meal.</p>
+          </header>
+          <div className="meal-overview-table-wrap">
+            <table className="meal-overview-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Grams</th>
+                  <th>Calories</th>
+                  <th>Protein</th>
+                  <th>Fat</th>
+                  <th>Carbs</th>
+                  <th>Sugar</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ingredientEntries.map(({ ingredient, section }, index) => {
+                  const grams = ingredientGrams(ingredient);
+                  return (
+                    <tr key={`${ingredient.ingredientId || ingredient.name}-nutrition-${index}`}>
+                      <td><strong>{ingredient.name}</strong>{section && <small>{section}</small>}</td>
+                      <td>{grams === null ? '—' : `${formatAmount(grams)}g`}</td>
+                      <td>{formatCalories(nutritionNumber(ingredient, ['calories', 'totalCalories']))}</td>
+                      <td>{formatMacro(nutritionNumber(ingredient, ['protein', 'totalProtein']))}g</td>
+                      <td>{formatMacro(nutritionNumber(ingredient, ['fats', 'fat', 'totalFats']))}g</td>
+                      <td>{formatMacro(nutritionNumber(ingredient, ['carbs', 'totalCarbs']))}g</td>
+                      <td>{formatMacro(nutritionNumber(ingredient, ['sugar', 'totalSugar']))}g</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </section>
-      </Card.Body>
-    </Card>
+      )}
+    </>
   );
 }

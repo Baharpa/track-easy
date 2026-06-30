@@ -19,22 +19,17 @@ export default function useUnsavedChanges(isDirty, { enabled = true, onDiscard, 
   useEffect(() => {
     if (!enabled) return;
 
-    const handleRouteChangeStart = url => {
-      if (!dirtyRef.current || allowNavigationRef.current) {
-        return;
-      }
-
-      pendingActionRef.current = { type: 'push', url };
+    const handleDocumentClick = event => {
+      if (!dirtyRef.current || allowNavigationRef.current || event.defaultPrevented || event.button !== 0) return;
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const anchor = event.target.closest?.('a[href]');
+      if (!anchor || anchor.target === '_blank' || anchor.hasAttribute('download')) return;
+      const target = new URL(anchor.href, window.location.href);
+      if (target.origin !== window.location.origin) return;
+      event.preventDefault();
+      event.stopPropagation();
+      pendingActionRef.current = { type: 'push', url: `${target.pathname}${target.search}${target.hash}` };
       setShowModal(true);
-      const error = new Error('Route change cancelled due to unsaved changes.');
-      error.cancelled = true;
-      router.events.emit('routeChangeError', error, url, { shallow: false });
-      throw error;
-    };
-
-    const handleRouteChangeComplete = () => {
-      allowNavigationRef.current = false;
-      pendingActionRef.current = null;
     };
 
     const handleBeforeUnload = event => {
@@ -44,8 +39,7 @@ export default function useUnsavedChanges(isDirty, { enabled = true, onDiscard, 
       return '';
     };
 
-    router.events.on('routeChangeStart', handleRouteChangeStart);
-    router.events.on('routeChangeComplete', handleRouteChangeComplete);
+    document.addEventListener('click', handleDocumentClick, true);
     window.addEventListener('beforeunload', handleBeforeUnload);
     router.beforePopState(() => {
       if (!dirtyRef.current || allowNavigationRef.current) return true;
@@ -55,8 +49,7 @@ export default function useUnsavedChanges(isDirty, { enabled = true, onDiscard, 
     });
 
     return () => {
-      router.events.off('routeChangeStart', handleRouteChangeStart);
-      router.events.off('routeChangeComplete', handleRouteChangeComplete);
+      document.removeEventListener('click', handleDocumentClick, true);
       window.removeEventListener('beforeunload', handleBeforeUnload);
       router.beforePopState(() => true);
     };
@@ -67,6 +60,15 @@ export default function useUnsavedChanges(isDirty, { enabled = true, onDiscard, 
     pendingActionRef.current = null;
   }
 
+  function requestNavigation(action) {
+    if (!dirtyRef.current || allowNavigationRef.current) {
+      action();
+      return;
+    }
+    pendingActionRef.current = { type: 'callback', action };
+    setShowModal(true);
+  }
+
   function continuePendingNavigation() {
     const pending = pendingActionRef.current;
     allowNavigationRef.current = true;
@@ -75,6 +77,11 @@ export default function useUnsavedChanges(isDirty, { enabled = true, onDiscard, 
 
     if (pending?.type === 'back') {
       router.back();
+      return;
+    }
+
+    if (pending?.type === 'callback') {
+      pending.action();
       return;
     }
 
@@ -112,6 +119,7 @@ export default function useUnsavedChanges(isDirty, { enabled = true, onDiscard, 
     keepEditing,
     discardChanges,
     saveDraft,
-    markSaved
+    markSaved,
+    requestNavigation
   };
 }

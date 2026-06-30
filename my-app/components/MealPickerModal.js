@@ -172,7 +172,7 @@ export default function MealPickerModal({ show, onHide, meals = [], selectedMeal
               return (
                 <Card className={`meal-picker-card ${selected ? 'selected' : ''}`} key={meal._id}>
                   <FoodImage
-                    src={meal.imageUrl}
+                    src={meal}
                     alt={meal.name}
                     category={normalizeMealCategory(meal.category)}
                     className="meal-picker-thumb"

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button } from 'react-bootstrap';
 import { uploadImage } from '../lib/api';
+import { getFoodImage } from '../lib/foodVisuals';
 
 const MAX_UPLOAD_SIZE = 2 * 1024 * 1024;
 const MAX_IMAGE_DIMENSION = 1200;
@@ -69,15 +70,19 @@ async function compressImage(file) {
   return new File([blob], `${baseName}.jpg`, { type: 'image/jpeg' });
 }
 
-export default function MealImageUpload({ imageUrl, onUploaded, onUploadingChange }) {
+export default function MealImageUpload({ imageUrl, onUploaded, onUploadingChange, uploadType = 'meal' }) {
   const inputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState('');
   const [previewUrl, setPreviewUrl] = useState('');
+  const [previewFailed, setPreviewFailed] = useState(false);
+  const displayUrl = previewUrl || getFoodImage(imageUrl);
 
   useEffect(() => () => {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
   }, [previewUrl]);
+
+  useEffect(() => setPreviewFailed(false), [displayUrl]);
 
   function updateUploading(value) {
     setUploading(value);
@@ -93,11 +98,11 @@ export default function MealImageUpload({ imageUrl, onUploaded, onUploadingChang
     try {
       updateUploading(true);
       setMessage('Uploading photo...');
-      const compressedFile = await compressImage(file);
       if (previewUrl) URL.revokeObjectURL(previewUrl);
-      setPreviewUrl(URL.createObjectURL(compressedFile));
-      const result = await uploadImage(compressedFile);
-      onUploaded(result.imageUrl);
+      setPreviewUrl(URL.createObjectURL(file));
+      const compressedFile = await compressImage(file);
+      const result = await uploadImage(compressedFile, uploadType);
+      onUploaded(result.imageUrl, result.publicId);
       setMessage('Photo uploaded.');
     } catch (err) {
       setMessage(err.message || 'Image upload failed.');
@@ -125,7 +130,7 @@ export default function MealImageUpload({ imageUrl, onUploaded, onUploadingChang
       >
         {uploading ? 'Uploading photo...' : 'Choose from camera/library'}
       </Button>
-      {previewUrl && <img src={previewUrl} alt="Selected meal preview" className="meal-image-upload-preview" />}
+      {displayUrl && !previewFailed && <img src={displayUrl} alt="Selected meal preview" className="meal-image-upload-preview" onError={() => setPreviewFailed(true)} />}
       {imageUrl && <small className="meal-image-upload-status">Preview updates after upload.</small>}
       {message && <small className={`meal-image-upload-message ${message.includes('uploaded') ? 'success' : 'error'}`}>{message}</small>}
     </div>

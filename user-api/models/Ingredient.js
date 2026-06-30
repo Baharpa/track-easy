@@ -50,6 +50,16 @@ const ingredientSchema = new mongoose.Schema({
   }],
   
   imageUrl: { type: String, default: '' },
+  imagePublicId: { type: String, default: '' },
+  imageSource: { type: String, default: '' },
+  imageSourceUrl: { type: String, default: '' },
+  imageAuthor: { type: String, default: '' },
+  imageAttribution: {
+    provider: { type: String, default: '' },
+    photographer: { type: String, default: '' },
+    photographerUrl: { type: String, default: '' },
+    sourceUrl: { type: String, default: '' }
+  },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
 }, { timestamps: true });
 

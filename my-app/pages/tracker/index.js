@@ -323,7 +323,7 @@ function SelectedMealPreview({ meal, onChange }) {
 
   return (
     <Card className="compact-card picker-row">
-      <FoodImage src={meal.imageUrl} alt={meal.name} category={mealCategory} className="thumb-sm" placeholderClassName="emoji-thumb thumb-sm" />
+      <FoodImage src={meal} alt={meal.name} category={mealCategory} className="thumb-sm" placeholderClassName="emoji-thumb thumb-sm" />
       <Card.Body className="picker-row-body">
         <div className="picker-row-header">
           <div>

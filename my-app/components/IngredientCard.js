@@ -31,16 +31,17 @@ export default function IngredientCard({ ingredient, onDeleted }) {
       <FoodInfoCard
         title={ingredient.name}
         subtitle={servingText}
-        imageSrc={ingredient.imageUrl}
+        imageSrc={ingredient}
         category={category}
         nutritionRows={nutritionRows}
         premium
         showNutritionIcons
+        detailHref={{ pathname: `/ingredients/${ingredient._id}`, query: { from: 'ingredients' } }}
         actions={(
           <>
             <Button
               as={Link}
-              href={`/ingredients/${ingredient._id}`}
+              href={{ pathname: `/ingredients/${ingredient._id}`, query: { mode: 'edit', from: 'ingredients' } }}
               variant="link"
               className="food-info-action"
               size="sm"

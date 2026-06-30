@@ -4,6 +4,7 @@ import { Button, Dropdown } from "react-bootstrap";
 import ConfirmDeleteModal from "./ConfirmDeleteModal";
 import FoodInfoCard from "./FoodInfoCard";
 import { TrackEasyIcon } from "./TrackEasyIcons";
+import { getFoodImage } from "../lib/foodVisuals";
 
 function whole(value) {
   return Math.round(Number(value) || 0);
@@ -16,28 +17,18 @@ function loggedFoodDescription(item = {}) {
   return `${item.servings || item.portion || 1} serving`;
 }
 
-function loggedFoodImage(item = {}) {
-  return (
-    item.imageUrl ||
-    item.image ||
-    item.photoUrl ||
-    item.thumbnailUrl ||
-    item.mealImageUrl ||
-    item.ingredientImageUrl ||
-    ""
-  );
-}
-
 export default function LoggedFoodCard({
   item,
   onOpen,
   onRemove,
   detailHref,
+  from = "tracker",
   className = "",
+  compact = false,
 }) {
   const [showConfirm, setShowConfirm] = useState(false);
-  const imageSrc = loggedFoodImage(item);
-  const logHref = detailHref || (item?._id ? `/logs/${item._id}` : "");
+  const imageSrc = getFoodImage(item);
+  const logHref = detailHref || (item?._id ? { pathname: `/logs/${item._id}`, query: { from } } : "");
   const editHref =
     typeof logHref === "string"
       ? { pathname: logHref, query: { mode: "edit" } }
@@ -73,8 +64,12 @@ export default function LoggedFoodCard({
         category={
           item?.type === "ingredient" ? "Other" : item?.category || "Meal"
         }
-        nutritionRows={nutritionRows}
-        className={`logged-food-card ${className}`.trim()}
+        nutritionRows={compact ? [] : nutritionRows}
+        variant={compact ? "compact" : "premium"}
+        showNutritionIcons
+        className={`${className} ${compact ? "logged-food-card--compact" : ""}`.trim()}
+        detailHref={logHref || undefined}
+        onCardClick={!logHref && typeof onOpen === "function" ? handleOpen : undefined}
         actions={
           <>
             {onRemove && (

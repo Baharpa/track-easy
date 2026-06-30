@@ -48,6 +48,7 @@ app.use(cors({
   }
 }));
 app.use(express.json());
+// Read-only compatibility for image URLs saved before Cloudinary was introduced.
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(passport.initialize());
 

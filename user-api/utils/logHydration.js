@@ -6,10 +6,16 @@ const {
   normalizeUnit,
   getIngredientServingOptions,
 } = require("./unitConverter");
+const { imageFields } = require("./imageManagement");
 
 function toPlain(doc) {
   if (!doc) return null;
   return typeof doc.toObject === "function" ? doc.toObject() : { ...doc };
+}
+
+function currentImageFields(logItem, currentItem) {
+  const loggedImage = imageFields(logItem);
+  return loggedImage.imageUrl ? loggedImage : imageFields(currentItem);
 }
 
 function scaleLoggedIngredient(item, factor) {
@@ -27,6 +33,7 @@ function scaleLoggedIngredient(item, factor) {
     carbs: round(Number(item.carbs || 0) * factor),
     fats: round(Number(item.fats || 0) * factor),
     sugar: round(Number(item.sugar || 0) * factor),
+    ...imageFields(item),
   };
 }
 
@@ -73,6 +80,7 @@ async function hydrateMealIngredients(userId, selectedIngredients = []) {
       quantityUsed: round(quantityUsed),
       gramsUsed: round(gramsUsed || quantityUsed || 0),
       unit,
+      ...imageFields(ingredient),
       ...nutrition,
     });
   }
@@ -418,6 +426,7 @@ async function hydrateLoggedMeal(userId, logMeal) {
         },
       ],
       components: [],
+      ...currentImageFields(source, ingredient),
     };
   }
 
@@ -432,6 +441,7 @@ async function hydrateLoggedMeal(userId, logMeal) {
     return {
       ...source,
       ...buildComponentLogFromMeal(hydratedMeal, source.componentPortions),
+      ...currentImageFields(source, hydratedMeal),
     };
   }
 
@@ -461,6 +471,7 @@ async function hydrateLoggedMeal(userId, logMeal) {
     return {
       ...source,
       ...buildComponentLogFromMeal(hydratedMeal, componentPortions),
+      ...currentImageFields(source, hydratedMeal),
     };
   }
 
@@ -476,6 +487,7 @@ async function hydrateLoggedMeal(userId, logMeal) {
         loggedGrams: source.loggedGrams,
       },
     ),
+    ...currentImageFields(source, hydratedMeal),
   };
 }
 

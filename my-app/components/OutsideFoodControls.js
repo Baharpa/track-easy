@@ -20,25 +20,38 @@ export function buildOutsideFoodPayload(values = {}) {
   };
 }
 
-export function OutsideFoodToggle({ checked, onChange }) {
+export function MealBuilderToggle({ id, checked, onChange, icon, title, subtitle }) {
   return (
-    <div className="outside-food-toggle-card">
-      <span className="outside-food-toggle-icon" aria-hidden="true">
-        <TrackEasyIcon name="bowl" size={24} />
+    <div className="meal-builder-toggle-card">
+      <span className="meal-builder-toggle-icon" aria-hidden="true">
+        <TrackEasyIcon name={icon} size={24} />
       </span>
-      <div className="outside-food-toggle-copy">
-        <strong>Outside Food</strong>
-        <span>Skip ingredient groups and enter nutrition manually.</span>
+      <div className="meal-builder-toggle-copy">
+        <strong>{title}</strong>
+        <span>{subtitle}</span>
       </div>
       <Form.Check
         type="switch"
-        id="outside-food-toggle"
+        id={id}
         checked={checked}
         onChange={event => onChange(event.target.checked)}
-        aria-label="Outside Food"
-        className="outside-food-switch"
+        aria-label={title}
+        className="meal-builder-toggle-switch"
       />
     </div>
+  );
+}
+
+export function OutsideFoodToggle({ checked, onChange }) {
+  return (
+    <MealBuilderToggle
+      id="outside-food-toggle"
+      checked={checked}
+      onChange={onChange}
+      icon="bowl"
+      title="Outside Food"
+      subtitle="Skip ingredient groups and enter nutrition manually."
+    />
   );
 }
 

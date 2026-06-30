@@ -5,16 +5,8 @@ import useSWR, { useSWRConfig } from "swr";
 import {
   Alert,
   Button,
-  Card,
-  Col,
-  Form,
-  Modal,
-  Row,
-  Table,
 } from "react-bootstrap";
-import AppBackButton from "../../components/AppBackButton";
 import ConfirmDeleteModal from "../../components/ConfirmDeleteModal";
-import PageHeader from "../../components/PageHeader";
 import PortionSelector from "../../components/PortionSelector";
 import RouteGuard from "../../components/RouteGuard";
 import ServingAmountSelector from "../../components/ServingAmountSelector";
@@ -30,35 +22,39 @@ import {
 } from "../../lib/unitConverter";
 import {
   formatAmount,
-  formatCalories,
-  formatMacro,
 } from "../../lib/formatNutrition";
 import { getIngredientServingNutrition } from "../../lib/formatNutrition";
+import FoodImage from "../../components/FoodImage";
+import FoodNutritionOverview from "../../components/FoodNutritionOverview";
+import MealDetails from "../../components/MealDetails";
+import {
+  DetailDangerZone,
+  DetailHeroCard,
+  DetailIngredientRow,
+  DetailMealPartCard,
+  DetailNutritionSummary,
+  DetailPageShell,
+  DetailSectionCard,
+} from "../../components/DetailPageSystem";
 
 function isIngredientLog(log) {
   return log?.type === "ingredient" || Boolean(log?.ingredientId);
-}
-
-function whole(value) {
-  return Math.round(Number(value) || 0);
 }
 
 export default function LoggedMealDetail() {
   const router = useRouter();
   const { id, mode, date } = router.query;
   const { mutate } = useSWRConfig();
-  const fromHistory = router.query.from === "history";
+  const from = typeof router.query.from === "string" ? router.query.from : "tracker";
   const logDateQuery =
     typeof date === "string" ? `?date=${encodeURIComponent(date)}` : "";
-  const logFromQuery = fromHistory
-    ? `${logDateQuery ? "&" : "?"}from=history`
-    : "";
+  const logFromQuery = `${logDateQuery ? "&" : "?"}from=${encodeURIComponent(from)}`;
   const logDetailPath = id ? `/api/tracker/log/${id}${logDateQuery}` : null;
   const logPageHref = id ? `/logs/${id}${logDateQuery}${logFromQuery}` : "";
   const logEditHref = id
     ? `/logs/${id}?${new URLSearchParams({
         ...(typeof date === "string" ? { date } : {}),
-        ...(fromHistory ? { from: "history" } : {}),
+        from,
         mode: "edit",
       }).toString()}`
     : "";
@@ -115,7 +111,7 @@ export default function LoggedMealDetail() {
         (Number(portion) !== Number(log?.portion || log?.servings || 1) ||
           String(portionLabel) !==
             String(log?.portionLabel || "1 whole meal"))));
-  const { showModal, keepEditing, discardChanges, markSaved } =
+  const { showModal, keepEditing, discardChanges, markSaved, requestNavigation } =
     useUnsavedChanges(isDirty);
 
   useEffect(() => {
@@ -141,17 +137,6 @@ export default function LoggedMealDetail() {
     setInitializedLogId(log._id);
   }, [editMode, ingredient?.unit, initializedLogId, log]);
 
-  const nutritionRows = useMemo(() => {
-    if (!log) return [];
-    return [
-      { label: "Calories", value: `${whole(log.calories)} cal` },
-      { label: "Protein", value: `${whole(log.protein)}g` },
-      { label: "Carbs", value: `${whole(log.carbs)}g` },
-      { label: "Sugar", value: `${whole(log.sugar)}g` },
-      { label: "Fats", value: `${whole(log.fats)}g` },
-    ];
-  }, [log]);
-
   if (!id || (!log && !error)) {
     return (
       <RouteGuard>
@@ -170,6 +155,9 @@ export default function LoggedMealDetail() {
 
   const loggedFoodName =
     log.name || ingredient?.name || meal?.name || "Logged food";
+  const loggedTimestamp = log.loggedAt || log.createdAt;
+  const loggedDateText = loggedTimestamp ? new Date(loggedTimestamp).toLocaleString() : "";
+  const loggedAmountText = log.portionLabel || `${formatAmount(log.amount || 0)} ${log.unit || ""}`.trim();
   const showIngredientEditor = editMode && isIngredientLog(log);
   const showMealEditor = editMode && canEditMeal && !isIngredientLog(log);
 
@@ -219,7 +207,8 @@ export default function LoggedMealDetail() {
       await mutate(
         (key) => typeof key === "string" && key.startsWith("/api/tracker/week"),
       );
-      router.push("/tracker");
+      const destinations = { history: "/history", dashboard: "/dashboard", tracker: "/tracker" };
+      router.push(destinations[from] || "/tracker");
     } catch (err) {
       setDeleteError(err.message || "Failed to delete logged food.");
       setIsDeleting(false);
@@ -228,55 +217,26 @@ export default function LoggedMealDetail() {
 
   return (
     <RouteGuard>
-      <AppBackButton
-        href="/history"
-        label={fromHistory ? "Back to History" : "Back to Tracker"}
-      />
-      <PageHeader
+      <DetailPageShell title={editMode ? "Edit Logged Food" : "Logged Food Details"} subtitle={editMode ? "Update this logged item." : "Review this logged food and its nutrition."} defaultFrom="tracker">
+      {editMode && <DetailHeroCard
+        item={log}
         title={loggedFoodName}
-        text={
-          editMode
-            ? "Update this logged item."
-            : `Logged ${isIngredientLog(log) ? "ingredient" : "meal"}: ${log.portionLabel || log.servings || `${formatAmount(log.amount || 0)} ${log.unit || ""}`}`
-        }
-      />
-
-      <Card className="page-card p-4 mb-4">
-        <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap">
-          <div>
-            <h4 className="mb-2">Nutrition Details</h4>
-            <div className="food-info-card__subtitle mb-0">
-              {isIngredientLog(log)
-                ? `Ingredient: ${ingredient?.name || log.name || "Logged ingredient"}`
-                : `Meal: ${meal?.name || log.name || "Logged meal"}`}
-            </div>
-          </div>
-          {!editMode && (
-            <Button as={Link} href={logEditHref} variant="outline-success">
-              Edit log
-            </Button>
-          )}
-        </div>
-
-        <Row className="mt-3">
-          {nutritionRows.map((item) => (
-            <Col xs={6} sm={4} key={item.label} className="mt-3 mt-sm-0 mb-1">
-              <div className="text-center">
-                <div
-                  className={`log-stat-value log-stat-${item.label.toLowerCase()}`}
-                >
-                  {item.value}
-                </div>
-                <small className="text-muted">{item.label}</small>
-              </div>
-            </Col>
-          ))}
-        </Row>
-      </Card>
+        subtitle={isIngredientLog(log) ? "Logged ingredient" : "Logged meal"}
+        meta={[loggedAmountText, loggedDateText].filter(Boolean).join(" · ")}
+        category={meal?.category || ingredient?.category || "Other"}
+        actions={!editMode && <Button as={Link} href={logEditHref} variant="success">Edit Log</Button>}
+      />}
+      {!editMode && !isIngredientLog(log) && <MealDetails meal={{ ...(meal || {}), ...log, name: loggedFoodName, imageUrl: log.imageUrl || meal?.imageUrl, image: log.image || meal?.image }} />}
+      {!editMode && isIngredientLog(log) && <>
+        <section className="meal-overview-hero ingredient-overview-hero">
+          <FoodImage src={{ ...(ingredient || {}), ...log }} alt={loggedFoodName} category={ingredient?.category || 'Other'} variant="detail" className="meal-overview-hero-image" placeholderClassName="meal-overview-hero-placeholder" />
+          <div className="meal-overview-hero-overlay"><span>Logged ingredient</span><h2>{loggedFoodName}</h2><strong>{loggedAmountText}</strong></div>
+        </section>
+        <FoodNutritionOverview item={log} amount={loggedAmountText} amountLabel="logged amount" />
+      </>}
 
       {showIngredientEditor && ingredient && (
-        <Card className="page-card p-4 mb-4">
-          <h4>Edit Log</h4>
+        <DetailSectionCard title="Edit Log">
           <ServingAmountSelector
             options={ingredientServingOptions}
             selectedOption={
@@ -310,17 +270,16 @@ export default function LoggedMealDetail() {
             </Button>
             <Button
               variant="outline-secondary"
-              onClick={() => router.replace(logPageHref)}
+              onClick={() => requestNavigation(() => router.replace(logPageHref))}
             >
               Cancel
             </Button>
           </div>
-        </Card>
+        </DetailSectionCard>
       )}
 
       {showMealEditor && meal && (
-        <Card className="page-card p-4 mb-4">
-          <h4>Edit Log</h4>
+        <DetailSectionCard title="Edit Log">
           <PortionSelector
             value={portion}
             onChange={({ portion: nextPortion, portionLabel: nextLabel }) => {
@@ -334,12 +293,12 @@ export default function LoggedMealDetail() {
             </Button>
             <Button
               variant="outline-secondary"
-              onClick={() => router.replace(logPageHref)}
+              onClick={() => requestNavigation(() => router.replace(logPageHref))}
             >
               Cancel
             </Button>
           </div>
-        </Card>
+        </DetailSectionCard>
       )}
 
       {editMode && !showIngredientEditor && !showMealEditor && (
@@ -348,85 +307,29 @@ export default function LoggedMealDetail() {
         </Alert>
       )}
 
-      {!editMode && loggedMealParts.length > 0 && (
-        <Card className="page-card p-4 mb-4">
-          <h4>Meal Parts</h4>
-          <Table responsive hover>
-            <thead>
-              <tr>
-                <th>Meal Part</th>
-                <th>Eaten Amount</th>
-                <th>Calories</th>
-                <th>Protein</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loggedMealParts.map((component, index) => (
-                <tr key={index}>
-                  <td>{component.name}</td>
-                  <td>
-                    {formatAmount(component.eatenWeight || 0)}{" "}
-                    {component.unit || "grams"}
-                  </td>
-                  <td>
-                    {formatCalories(component.nutritionTotals?.calories || 0)}
-                  </td>
-                  <td>
-                    {formatMacro(component.nutritionTotals?.protein || 0)}g
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
-        </Card>
+      {false && !editMode && loggedMealParts.length > 0 && (
+        <DetailSectionCard title="Meal Parts" subtitle="Parts and amounts included in this log.">
+          <div className="detail-meal-part-list">
+            {loggedMealParts.map((component, index) => <DetailMealPartCard part={component} key={`${component.id || component.name}-${index}`} />)}
+          </div>
+        </DetailSectionCard>
       )}
 
-      {!editMode && log.ingredients?.length > 0 && (
-        <Card className="page-card p-4 mb-4">
-          <h4>Ingredient Breakdown</h4>
-          <Table responsive hover>
-            <thead>
-              <tr>
-                <th>Ingredient</th>
-                <th>Amount</th>
-                <th>Calories</th>
-                <th>Protein</th>
-                <th>Carbs</th>
-                <th>Fats</th>
-                <th>Sugar</th>
-              </tr>
-            </thead>
-            <tbody>
-              {log.ingredients.map((item, index) => (
-                <tr key={index}>
-                  <td>{item.name}</td>
-                  <td>
-                    {formatAmount(item.quantityUsed || 0)}{" "}
-                    {item.unit || "grams"}
-                  </td>
-                  <td>{formatCalories(item.calories || 0)}</td>
-                  <td>{formatMacro(item.protein || 0)}g</td>
-                  <td>{formatMacro(item.carbs || 0)}g</td>
-                  <td>{formatMacro(item.fats || 0)}g</td>
-                  <td>{formatMacro(item.sugar || 0)}g</td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
-        </Card>
+      {false && !editMode && log.ingredients?.length > 0 && (
+        <DetailSectionCard title="Ingredient Breakdown" subtitle="Ingredients included in this logged amount.">
+          <div className="detail-ingredient-list">
+            {log.ingredients.map((item, index) => <DetailIngredientRow ingredient={item} key={`${item.ingredientId || item.name}-${index}`} />)}
+          </div>
+        </DetailSectionCard>
       )}
 
       {!editMode && (
-        <Card className="page-card p-4 mb-4 border-danger">
-          <h4>Danger Zone</h4>
-          <p className="text-muted">
-            Once you delete this logged food, it cannot be recovered.
-          </p>
-          <Button variant="danger" onClick={() => setShowDeleteModal(true)}>
-            Delete Logged Food
-          </Button>
-        </Card>
+        <>
+          {deleteError && <Alert variant="danger">{deleteError}</Alert>}
+          <DetailDangerZone text="Once deleted, this logged food cannot be recovered." buttonLabel="Delete Logged Food" onDelete={() => setShowDeleteModal(true)} />
+        </>
       )}
+      </DetailPageShell>
 
       <ConfirmDeleteModal
         show={showDeleteModal}

@@ -272,7 +272,7 @@ function MobileSearchDrawer({ show, onHide, searchQuery, setSearchQuery, mealRes
             {mealResults.length === 0 ? (
               <div className="mobile-search-empty">No meals match your search.</div>
             ) : mealResults.map(meal => (
-              <Link href={`/meals/${meal._id}`} key={meal._id} className="mobile-search-card" onClick={onHide}>
+              <Link href={{ pathname: `/meals/${meal._id}`, query: { from: 'meals' } }} key={meal._id} className="mobile-search-card" onClick={onHide}>
                 <span className="mobile-search-icon">
                   <TrackEasyIcon name="bowl" size={16} />
                 </span>
@@ -280,7 +280,6 @@ function MobileSearchDrawer({ show, onHide, searchQuery, setSearchQuery, mealRes
                   <strong>{meal.name}</strong>
                   <span>{formatSearchNutrition({ ...meal, type: 'meal' })}</span>
                 </span>
-                <TrackEasyIcon name="chevron-right" size={14} className="mobile-search-arrow" />
               </Link>
             ))}
           </div>
@@ -295,7 +294,7 @@ function MobileSearchDrawer({ show, onHide, searchQuery, setSearchQuery, mealRes
             {ingredientResults.length === 0 ? (
               <div className="mobile-search-empty">No ingredients match your search.</div>
             ) : ingredientResults.map(ingredient => (
-              <Link href={`/ingredients/${ingredient._id}`} key={ingredient._id} className="mobile-search-card" onClick={onHide}>
+              <Link href={{ pathname: `/ingredients/${ingredient._id}`, query: { from: 'ingredients' } }} key={ingredient._id} className="mobile-search-card" onClick={onHide}>
                 <span className="mobile-search-icon mobile-search-icon-green">
                   <TrackEasyIcon name="leaf" size={16} />
                 </span>
@@ -303,7 +302,6 @@ function MobileSearchDrawer({ show, onHide, searchQuery, setSearchQuery, mealRes
                   <strong>{ingredient.name}</strong>
                   <span>{formatSearchNutrition({ ...ingredient, type: 'ingredient' })}</span>
                 </span>
-                <TrackEasyIcon name="chevron-right" size={14} className="mobile-search-arrow" />
               </Link>
             ))}
           </div>

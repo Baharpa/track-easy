@@ -20,8 +20,10 @@ import SmartFoodSuggestionCard from "../components/SmartFoodSuggestionCard";
 import UnitSelect from "../components/UnitSelect";
 import FoodImage from "../components/FoodImage";
 import MealImageUpload from "../components/MealImageUpload";
+import MealNutritionSummary from "../components/MealNutritionSummary";
 import {
   buildOutsideFoodPayload,
+  MealBuilderToggle,
   ManualNutritionCard,
   OutsideFoodToggle,
 } from "../components/OutsideFoodControls";
@@ -665,6 +667,12 @@ export default function CreateMealComponentPage() {
             }),
       }),
     });
+    if (!createdMeal.imageUrl) {
+      window.setTimeout(() => {
+        mutate("/api/meals");
+        mutate(`/api/meals/${createdMeal._id}`);
+      }, 5000);
+    }
     markSaved();
     clearMealDraft(getMealDraftKey({ outsideFood }));
     clearMealDraft(getMealDraftKey({ outsideFood: !outsideFood }));
@@ -673,12 +681,12 @@ export default function CreateMealComponentPage() {
       setShowAddTodayPrompt(true);
       return;
     }
-    router.push("/meals");
+    router.push({ pathname: `/meals/${createdMeal._id}`, query: { from: "meals" } });
   }
 
   function closeAddTodayPrompt() {
     setShowAddTodayPrompt(false);
-    router.push("/meals");
+    router.push({ pathname: `/meals/${createdOutsideFoodMeal?._id}`, query: { from: "meals" } });
   }
 
   async function addCreatedOutsideFoodToToday() {
@@ -700,7 +708,7 @@ export default function CreateMealComponentPage() {
         (key) => typeof key === "string" && key.startsWith("/api/tracker/week"),
       );
       setAddTodaySuccess("Meal added");
-      window.setTimeout(() => router.push("/meals"), 900);
+      window.setTimeout(() => router.push({ pathname: `/meals/${createdOutsideFoodMeal._id}`, query: { from: "meals" } }), 900);
     } catch (err) {
       setAddTodayError(err.message || "Could not add meal.");
     } finally {
@@ -735,9 +743,9 @@ export default function CreateMealComponentPage() {
             onPrimary={applySmartMealSuggestion}
           />
 
-          <Card className="page-card p-4 mb-4 meal-setup-card">
+          <Card className="page-card meal-setup-card">
             <Row className="g-4 align-items-stretch">
-              <Col lg={8}>
+              <Col lg={12}>
                 <div className="d-flex justify-content-between align-items-start flex-wrap gap-3">
                   <div>
                     <h4 className="mb-1">Meal Setup</h4>
@@ -796,16 +804,28 @@ export default function CreateMealComponentPage() {
                       <Form.Label>Image URL</Form.Label>
                       <Form.Control
                         value={meal.imageUrl}
-                        onChange={(e) =>
-                          setMeal({ ...meal, imageUrl: e.target.value })
-                        }
+                        onChange={(e) => setMeal({
+                          ...meal,
+                          imageUrl: e.target.value,
+                          imagePublicId: "",
+                          imageSource: e.target.value.trim() ? "manual-url" : "",
+                          imageSourceUrl: "",
+                          imageAuthor: "",
+                          imageAttribution: {}
+                        })}
                         placeholder="https://example.com/meal.jpg"
                       />
                       <MealImageUpload
                         imageUrl={meal.imageUrl}
-                        onUploaded={(imageUrl) =>
-                          setMeal({ ...meal, imageUrl })
-                        }
+                        onUploaded={(imageUrl, imagePublicId) => setMeal({
+                          ...meal,
+                          imageUrl,
+                          imagePublicId,
+                          imageSource: "cloudinary-upload",
+                          imageSourceUrl: "",
+                          imageAuthor: "",
+                          imageAttribution: {}
+                        })}
                         onUploadingChange={setImageUploading}
                       />
                     </Form.Group>
@@ -815,17 +835,6 @@ export default function CreateMealComponentPage() {
                   checked={outsideFood}
                   onChange={setOutsideFood}
                 />
-              </Col>
-              <Col lg={4}>
-                <div className="meal-image-preview">
-                  <FoodImage
-                    src={meal.imageUrl}
-                    alt={meal.name || "Meal preview"}
-                    category={meal.category || "Other"}
-                    className="meal-preview-img"
-                    placeholderClassName="meal-preview-placeholder"
-                  />
-                </div>
               </Col>
             </Row>
           </Card>
@@ -863,24 +872,14 @@ export default function CreateMealComponentPage() {
           )}
 
           {!outsideFood && (
-            <div className="meal-sections-toggle">
-              <div>
-                <strong>Use meal sections</strong>
-                <p className="text-muted mb-0">
-                  Organize ingredients into parts like Flatbread, Eggs, Avocado,
-                  Pasta, or Toppings.
-                </p>
-              </div>
-              <Form.Check
-                type="switch"
-                id="use-meal-sections"
-                checked={useMealSections}
-                onChange={(event) =>
-                  changeMealSectionsMode(event.target.checked)
-                }
-                aria-label="Use meal sections"
-              />
-            </div>
+            <MealBuilderToggle
+              id="use-meal-sections"
+              checked={useMealSections}
+              onChange={changeMealSectionsMode}
+              icon="plus"
+              title="Use meal sections"
+              subtitle="Organize ingredients into parts."
+            />
           )}
 
           {!outsideFood && !useMealSections && (
@@ -899,14 +898,10 @@ export default function CreateMealComponentPage() {
                   + Add Ingredient
                 </Button>
               </div>
-              <Card className="page-card component-builder-card">
-                <Card.Body>
-                  {renderIngredientList(
-                    previewComponents[0],
-                    "No ingredients added yet.",
-                  )}
-                </Card.Body>
-              </Card>
+              {renderIngredientList(
+                previewComponents[0],
+                "No ingredients added yet.",
+              )}
             </section>
           )}
 
@@ -916,8 +911,7 @@ export default function CreateMealComponentPage() {
                 <div>
                   <h3>Meal Sections</h3>
                   <p className="text-muted">
-                    Organize ingredients into parts like Flatbread, Eggs,
-                    Avocado, Pasta, or Toppings.
+                    Organize ingredients into parts.
                   </p>
                 </div>
                 <Button variant="success" onClick={addMealSection}>
@@ -1091,102 +1085,7 @@ export default function CreateMealComponentPage() {
           )}
 
           {!outsideFood && hasMealIngredients && (
-            <>
-              <Card className="page-card builder-summary-card">
-                <Card.Body>
-                  <div className="builder-summary-header">
-                    <h4>Nutrition Summary</h4>
-                    <p className="text-muted">
-                      Calculated from the ingredient amounts in this meal.
-                    </p>
-                  </div>
-
-                  <div className="builder-summary-table-wrap">
-                    <table className="builder-summary-table">
-                      <thead>
-                        <tr>
-                          <th>Ingredient</th>
-                          <th>Amount</th>
-                          <th>Calories</th>
-                          <th>Protein</th>
-                          <th>Carbs</th>
-                          <th>Fats</th>
-                          <th>Sugar</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {summaryRows.map((item, index) => (
-                          <tr key={`${item.ingredientId}-${index}`}>
-                            <td>{item.name}</td>
-                            <td>{item.amountLabel}</td>
-                            <td>{formatCalories(item.calories)}</td>
-                            <td>{formatMacro(item.protein)}g</td>
-                            <td>{formatMacro(item.carbs)}g</td>
-                            <td>{formatMacro(item.fats)}g</td>
-                            <td>{formatMacro(item.sugar)}g</td>
-                          </tr>
-                        ))}
-                        <tr className="summary-total-row">
-                          <td>Total</td>
-                          <td>
-                            {formatAmount(
-                              previewComponents.reduce(
-                                (sum, item) =>
-                                  sum + Number(item.totalWeight || 0),
-                                0,
-                              ),
-                            )}
-                            g
-                          </td>
-                          <td>{formatCalories(mealTotals.calories)}</td>
-                          <td>{formatMacro(mealTotals.protein)}g</td>
-                          <td>{formatMacro(mealTotals.carbs)}g</td>
-                          <td>{formatMacro(mealTotals.fats)}g</td>
-                          <td>{formatMacro(mealTotals.sugar)}g</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <div className="builder-summary-mobile">
-                    {summaryRows.map((item, index) => (
-                      <div
-                        className="builder-summary-mobile-card"
-                        key={`${item.ingredientId}-mobile-${index}`}
-                      >
-                        <strong>{item.name}</strong>
-                        <span>Amount: {item.amountLabel}</span>
-                        <span>Calories: {formatCalories(item.calories)}</span>
-                        <span>Protein: {formatMacro(item.protein)}g</span>
-                        <span>Carbs: {formatMacro(item.carbs)}g</span>
-                        <span>Fats: {formatMacro(item.fats)}g</span>
-                        <span>Sugar: {formatMacro(item.sugar)}g</span>
-                      </div>
-                    ))}
-                    <div className="builder-summary-mobile-card total">
-                      <strong>Total</strong>
-                      <span>
-                        Amount:{" "}
-                        {formatAmount(
-                          previewComponents.reduce(
-                            (sum, item) => sum + Number(item.totalWeight || 0),
-                            0,
-                          ),
-                        )}
-                        g
-                      </span>
-                      <span>
-                        Calories: {formatCalories(mealTotals.calories)}
-                      </span>
-                      <span>Protein: {formatMacro(mealTotals.protein)}g</span>
-                      <span>Carbs: {formatMacro(mealTotals.carbs)}g</span>
-                      <span>Fats: {formatMacro(mealTotals.fats)}g</span>
-                      <span>Sugar: {formatMacro(mealTotals.sugar)}g</span>
-                    </div>
-                  </div>
-                </Card.Body>
-              </Card>
-            </>
+            <MealNutritionSummary totals={mealTotals} rows={summaryRows} />
           )}
 
           <div className="meal-save-actions">

@@ -170,9 +170,9 @@ export default function Dashboard() {
               {todaysFood.length === 0 ? (
                 <EmptyLoggedFoodCard />
               ) : (
-                <div className="logged-food-list">
+                <div className="mobile-card-grid food-card-grid">
                   {todaysFood.map(item => (
-                    <LoggedFoodCard item={item} onRemove={removeLoggedFood} key={item._id} />
+                    <LoggedFoodCard item={item} from="dashboard" onRemove={removeLoggedFood} key={item._id} />
                   ))}
                 </div>
               )}

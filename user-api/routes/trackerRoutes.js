@@ -13,16 +13,66 @@ const {
 } = require('../utils/logHydration');
 const router = express.Router();
 
-function todayString() {
-  return new Date().toISOString().slice(0, 10);
+function timezoneOffset(req) {
+  const value = Number(req.query.timezoneOffset ?? req.body?.timezoneOffset ?? 0);
+  return Number.isFinite(value) && Math.abs(value) <= 14 * 60 ? value : 0;
 }
 
-function dateString(date) {
+function timezoneName(req) {
+  const value = String(req.query.timezone || req.body?.timezone || '').trim();
+  if (!value) return '';
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: value }).format(new Date());
+    return value;
+  } catch {
+    return '';
+  }
+}
+
+function localDateString(date = new Date(), offsetMinutes = 0, timeZone = '') {
+  if (timeZone) {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).formatToParts(date);
+    const value = Object.fromEntries(parts.map(part => [part.type, part.value]));
+    return `${value.year}-${value.month}-${value.day}`;
+  }
+  return new Date(date.getTime() - offsetMinutes * 60 * 1000).toISOString().slice(0, 10);
+}
+
+function shiftDateString(dateString, days) {
+  const date = new Date(`${dateString}T00:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() + days);
   return date.toISOString().slice(0, 10);
 }
 
+function localDayRange(req) {
+  const requestedDate = req.query.date || req.body?.date || localDateString(new Date(), timezoneOffset(req), timezoneName(req));
+  const [year, month, day] = requestedDate.split('-').map(Number);
+  const offset = timezoneOffset(req);
+  const fallbackStart = new Date(Date.UTC(year, month - 1, day) + offset * 60 * 1000);
+  const suppliedStart = new Date(req.query.startDate || req.body?.startDate || '');
+  const suppliedEnd = new Date(req.query.endDate || req.body?.endDate || '');
+  const start = Number.isNaN(suppliedStart.getTime()) ? fallbackStart : suppliedStart;
+  const end = Number.isNaN(suppliedEnd.getTime())
+    ? new Date(start.getTime() + 24 * 60 * 60 * 1000 - 1)
+    : suppliedEnd;
+
+  return { date: requestedDate, start, end, offset };
+}
+
 function requestedLogDate(req) {
-  return req.query.date || req.body.date || todayString();
+  return req.query.date || req.body?.date || localDateString(new Date(), timezoneOffset(req), timezoneName(req));
+}
+
+async function findLogContainingMeal(req) {
+  const date = req.query.date || req.body?.date;
+  const query = { userId: req.user._id, 'meals._id': req.params.logMealId };
+  if (date) query.date = date;
+  return DailyLog.findOne(query);
 }
 
 function loggedMealTime(meal) {
@@ -42,14 +92,12 @@ function sortLoggedMealsNewestFirst(meals = []) {
   return [...meals].sort((a, b) => loggedMealTime(b) - loggedMealTime(a));
 }
 
-function currentMonday(offsetWeeks = 0) {
-  const date = new Date();
-  const day = date.getDay();
+function currentMondayString(offsetMinutes = 0, offsetWeeks = 0, timeZone = '') {
+  const localToday = localDateString(new Date(), offsetMinutes, timeZone);
+  const date = new Date(`${localToday}T00:00:00.000Z`);
+  const day = date.getUTCDay();
   const diff = day === 0 ? -6 : 1 - day;
-  date.setDate(date.getDate() + diff);
-  date.setDate(date.getDate() - (Number(offsetWeeks) || 0) * 7);
-  date.setHours(0, 0, 0, 0);
-  return date;
+  return shiftDateString(localToday, diff - (Number(offsetWeeks) || 0) * 7);
 }
 
 function recalculate(log) {
@@ -101,7 +149,7 @@ function buildIngredientLog(ingredient, amount, unit) {
 router.post('/log', auth, async (req, res) => {
   try {
     const isIngredientLog = req.body.type === 'ingredient' || (req.body.ingredientId && req.body.type !== 'meal');
-    const date = req.body.date || todayString();
+    const date = requestedLogDate(req);
     let log = await DailyLog.findOne({ userId: req.user._id, date });
     if (!log) log = new DailyLog({ userId: req.user._id, date, meals: [] });
 
@@ -132,6 +180,8 @@ router.post('/log', auth, async (req, res) => {
           });
     }
 
+    loggedMeal.loggedAt = new Date();
+    loggedMeal.createdAt = loggedMeal.loggedAt;
     log.meals.push(loggedMeal);
 
     recalculate(log);
@@ -143,73 +193,68 @@ router.post('/log', auth, async (req, res) => {
 });
 
 router.get('/today', auth, async (req, res) => {
-  const date = todayString();
-  const log = await DailyLog.findOne({ userId: req.user._id, date });
-  if (!log) {
-    return res.json({ date, meals: [], totalCalories: 0, totalProtein: 0, totalCarbs: 0, totalFats: 0, totalSugar: 0 });
-  }
-
+  const { date, start, end } = localDayRange(req);
+  const logs = await DailyLog.find({
+    userId: req.user._id,
+    date: { $gte: shiftDateString(date, -1), $lte: shiftDateString(date, 1) }
+  });
   const hydratedMeals = [];
-  for (const meal of log.meals || []) {
-    hydratedMeals.push(await hydrateLoggedMeal(req.user._id, meal));
+  for (const log of logs) {
+    for (const meal of log.meals || []) {
+      const timestamp = loggedMealTime(meal);
+      const belongsToDay = timestamp
+        ? timestamp >= start.getTime() && timestamp <= end.getTime()
+        : log.date === date;
+      if (belongsToDay) hydratedMeals.push(await hydrateLoggedMeal(req.user._id, meal));
+    }
   }
 
-  const result = log.toObject();
-  result.meals = sortLoggedMealsNewestFirst(hydratedMeals);
+  const result = { date, meals: sortLoggedMealsNewestFirst(hydratedMeals) };
   recalculate(result);
   res.json(result);
 });
 
 router.get('/week', auth, async (req, res) => {
   const offset = Math.max(0, Math.min(3, Number(req.query.offset) || 0));
-  const start = currentMonday(offset);
-  const days = Array.from({ length: 7 }, (_, index) => {
-    const date = new Date(start);
-    date.setDate(start.getDate() + index);
-    return date;
-  });
-  const startString = dateString(days[0]);
-  const endString = dateString(days[6]);
-  const logs = await DailyLog.find({ userId: req.user._id, date: { $gte: startString, $lte: endString } }).sort({ date: 1 });
-  const hydratedLogs = [];
-  for (const log of logs) {
-    const hydratedMeals = [];
-    for (const meal of log.meals || []) {
-      hydratedMeals.push(await hydrateLoggedMeal(req.user._id, meal));
-    }
-    const item = log.toObject();
-    item.meals = sortLoggedMealsNewestFirst(hydratedMeals);
-    recalculate(item);
-    hydratedLogs.push(item);
-  }
-  const logsByDate = new Map(hydratedLogs.map(log => [log.date, log]));
+  const userOffset = timezoneOffset(req);
+  const userTimeZone = timezoneName(req);
+  const startString = currentMondayString(userOffset, offset, userTimeZone);
+  const dayStrings = Array.from({ length: 7 }, (_, index) => shiftDateString(startString, index));
+  const endString = dayStrings[6];
+  const logs = await DailyLog.find({
+    userId: req.user._id,
+    date: { $gte: shiftDateString(startString, -1), $lte: shiftDateString(endString, 1) }
+  }).sort({ date: 1 });
+  const mealsByDate = new Map(dayStrings.map(date => [date, []]));
 
-  res.json(days.map(day => {
-    const date = dateString(day);
-    const log = logsByDate.get(date);
-    return log ? {
-      ...log,
-      dayLabel: day.toLocaleDateString('en-US', { weekday: 'short' }),
-      hasLogs: (log.meals || []).length > 0
-    } : {
+  for (const log of logs) {
+    for (const meal of log.meals || []) {
+      const timestamp = loggedMealTime(meal);
+      const localDate = timestamp ? localDateString(new Date(timestamp), userOffset, userTimeZone) : log.date;
+      if (mealsByDate.has(localDate)) {
+        mealsByDate.get(localDate).push(await hydrateLoggedMeal(req.user._id, meal));
+      }
+    }
+  }
+
+  res.json(dayStrings.map(date => {
+    const meals = sortLoggedMealsNewestFirst(mealsByDate.get(date));
+    const result = {
       date,
-      dayLabel: day.toLocaleDateString('en-US', { weekday: 'short' }),
-      meals: [],
-      totalCalories: 0,
-      totalProtein: 0,
-      totalCarbs: 0,
-      totalFats: 0,
-      totalSugar: 0,
-      hasLogs: false
+      dayLabel: new Date(`${date}T00:00:00.000Z`).toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' }),
+      meals,
+      hasLogs: meals.length > 0
     };
+    recalculate(result);
+    return result;
   }));
 });
 
 // GET logged food by ID
 router.get('/log/:logMealId', auth, async (req, res) => {
-  const date = requestedLogDate(req);
-  const log = await DailyLog.findOne({ userId: req.user._id, date });
+  const log = await findLogContainingMeal(req);
   if (!log) return res.status(404).json({ message: 'No logs for today.' });
+  const date = log.date;
 
   const mealIndex = log.meals.findIndex(m => m._id && m._id.toString() === req.params.logMealId);
   if (mealIndex === -1) return res.status(404).json({ message: 'Logged meal not found.' });
@@ -220,8 +265,7 @@ router.get('/log/:logMealId', auth, async (req, res) => {
 
 // PUT update logged meal portion
 router.put('/log/:logMealId', auth, async (req, res) => {
-  const date = requestedLogDate(req);
-  const log = await DailyLog.findOne({ userId: req.user._id, date });
+  const log = await findLogContainingMeal(req);
   if (!log) return res.status(404).json({ message: 'No logs for today.' });
 
   const mealIndex = log.meals.findIndex(m => m._id && m._id.toString() === req.params.logMealId);
@@ -281,8 +325,7 @@ router.put('/log/:logMealId', auth, async (req, res) => {
 
 // DELETE logged food
 router.delete('/log/:logMealId', auth, async (req, res) => {
-  const date = requestedLogDate(req);
-  const log = await DailyLog.findOne({ userId: req.user._id, date });
+  const log = await findLogContainingMeal(req);
   if (!log) return res.status(404).json({ message: 'No logs for today.' });
   
   const mealIndex = log.meals.findIndex(m => m._id && m._id.toString() === req.params.logMealId);

@@ -39,27 +39,29 @@ export default function EditMeal() {
   }
 
   async function handleSuccess() {
-    router.replace(`/meals/${id}`);
+    router.replace({ pathname: `/meals/${id}`, query: { from: router.query.from || 'meals' } });
   }
 
   const editorState = meal ? mealToEditorState(meal) : null;
 
   return <RouteGuard>
-    <AppBackButton href={id ? `/meals/${id}` : '/meals'} label="Back" />
+    <main className="meal-editor-page">
+      <AppBackButton href={id ? { pathname: `/meals/${id}`, query: { from: router.query.from || 'meals' } } : '/meals'} label="Back" />
       <PageHeader title="Edit Meal" text="Update meal details and ingredient amounts." />
       {(mealError || ingredientsError) && <ErrorMessage text="Failed to load meal editor data." />}
       {(!meal || !ingredients) && !(mealError || ingredientsError) && <LoadingMessage text="Loading meal editor..." />}
       {meal && ingredients && <ComponentMealEditor
         ingredients={ingredients}
-      initialMeal={editorState.meal}
-      initialMealParts={editorState.mealParts}
-      onSave={submit}
-      onSaveSuccess={handleSuccess}
-        onCancel={() => router.push(`/meals/${id}`)}
+        initialMeal={editorState.meal}
+        initialMealParts={editorState.mealParts}
+        onSave={submit}
+        onSaveSuccess={handleSuccess}
+        onCancel={() => router.push({ pathname: `/meals/${id}`, query: { from: router.query.from || 'meals' } })}
         saveLabel="Update Meal"
         saving={isSaving}
         error={saveError}
         draftKey={getMealDraftKey({ mealId: id })}
       />}
+    </main>
     </RouteGuard>;
 }

@@ -2,6 +2,12 @@ const express = require('express');
 const auth = require('../config/auth');
 const Ingredient = require('../models/Ingredient');
 const { isValidUnit, normalizeUnit } = require('../utils/unitConverter');
+const { queueAutoFoodImage } = require('../utils/autoFoodImage');
+const {
+  deleteCloudinaryImageIfUnused,
+  refreshDocumentImage,
+  removeDocumentImage
+} = require('../utils/imageManagement');
 const router = express.Router();
 
 function validateIngredient(body) {
@@ -74,7 +80,20 @@ function normalizeConversion(option) {
 }
 
 function cleanIngredientBody(body) {
-  const cleaned = { ...body, unit: normalizeUnit(body.unit) };
+  const imageUrl = String(body.imageUrl || body.image || body.photoUrl || '').trim();
+  const cleaned = {
+    ...body,
+    imageUrl,
+    imagePublicId: body.imagePublicId || '',
+    imageSource: body.imageSource || (body.imageAttribution?.provider === 'Pexels'
+      ? 'pexels-auto'
+      : imageUrl
+        ? body.imagePublicId ? 'cloudinary-upload' : 'manual-url'
+        : ''),
+    unit: normalizeUnit(body.unit)
+  };
+  delete cleaned.image;
+  delete cleaned.photoUrl;
   ['calories', 'protein', 'carbs', 'fats', 'sugar', 'caloriesPer100g', 'proteinPer100g', 'carbsPer100g', 'fatsPer100g', 'sugarPer100g', 'gramsPerTeaspoon', 'gramsPerTablespoon', 'gramsPerCup', 'gramsPerPiece', 'quantity'].forEach(field => {
     if (cleaned[field] === '') cleaned[field] = undefined;
   });
@@ -110,6 +129,15 @@ router.post('/', auth, async (req, res) => {
 
     const ingredient = await Ingredient.create({ ...cleanIngredientBody(req.body), userId: req.user._id });
     res.status(201).json(ingredient);
+    if (!ingredient.imageUrl) {
+      queueAutoFoodImage({
+        model: Ingredient,
+        documentId: ingredient._id,
+        userId: req.user._id,
+        name: ingredient.name,
+        type: 'ingredient'
+      });
+    }
   } catch (err) {
     res.status(400).json({ message: 'Could not create ingredient.', error: err.message });
   }
@@ -125,6 +153,7 @@ router.put('/:id', auth, async (req, res) => {
   const validationMessage = validateIngredient(req.body);
   if (validationMessage) return res.status(400).json({ message: validationMessage });
 
+  const previousIngredient = await Ingredient.findOne({ _id: req.params.id, userId: req.user._id });
   const ingredient = await Ingredient.findOneAndUpdate(
     { _id: req.params.id, userId: req.user._id },
     cleanIngredientBody(req.body),
@@ -132,12 +161,53 @@ router.put('/:id', auth, async (req, res) => {
   );
   if (!ingredient) return res.status(404).json({ message: 'Ingredient not found.' });
   res.json(ingredient);
+  if (previousIngredient?.imagePublicId && previousIngredient.imagePublicId !== ingredient.imagePublicId) {
+    deleteCloudinaryImageIfUnused(previousIngredient.imagePublicId).catch(error => {
+      console.warn(`Could not check old ingredient image usage: ${error.message}`);
+    });
+  }
+});
+
+router.post('/:id/image/refresh', auth, async (req, res) => {
+  try {
+    const result = await refreshDocumentImage({
+      model: Ingredient,
+      documentId: req.params.id,
+      userId: req.user._id,
+      type: 'ingredient',
+      confirmReplace: Boolean(req.body.confirmReplace)
+    });
+    if (!result.document) return res.status(result.status).json(result);
+    res.json(result.document);
+  } catch (error) {
+    res.status(500).json({ message: error.message || 'Could not refresh image.' });
+  }
+});
+
+router.delete('/:id/image', auth, async (req, res) => {
+  try {
+    const result = await removeDocumentImage({
+      model: Ingredient,
+      documentId: req.params.id,
+      userId: req.user._id,
+      type: 'ingredient'
+    });
+    if (!result.document) return res.status(result.status).json(result);
+    res.json(result.document);
+  } catch (error) {
+    res.status(500).json({ message: error.message || 'Could not remove image.' });
+  }
 });
 
 router.delete('/:id', auth, async (req, res) => {
   const ingredient = await Ingredient.findOneAndDelete({ _id: req.params.id, userId: req.user._id });
   if (!ingredient) return res.status(404).json({ message: 'Ingredient not found.' });
   res.json({ message: 'Ingredient deleted.' });
+  if (ingredient.imagePublicId) {
+    deleteCloudinaryImageIfUnused(ingredient.imagePublicId).catch(error => {
+      console.warn(`Could not clean up deleted ingredient image: ${error.message}`);
+    });
+  }
 });
 
 module.exports = router;

@@ -46,12 +46,13 @@ export default function MealCard({ meal, isFavourite = false, onFavouriteChange,
     <>
       <FoodInfoCard
         title={meal.name}
-        imageSrc={meal.imageUrl}
+        imageSrc={meal}
         category={mealCategory}
         nutritionRows={nutritionRows}
         premium
         showNutritionIcons
         className="meal-display-card"
+        detailHref={{ pathname: `/meals/${meal._id}`, query: { from: 'meals' } }}
         actions={(
           <>
             <Button
@@ -67,7 +68,7 @@ export default function MealCard({ meal, isFavourite = false, onFavouriteChange,
             </Button>
             <Button
               as={Link}
-              href={`/meals/edit/${meal._id}`}
+              href={{ pathname: `/meals/edit/${meal._id}`, query: { from: 'meals' } }}
               variant="link"
               size="sm"
               className="food-info-action"

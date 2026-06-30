@@ -527,7 +527,7 @@ function WeeklyMealsByDay({ days, onRemove }) {
             {(day.meals || []).length === 0 ? (
               <p className="weekly-meal-empty">No food logged</p>
             ) : (
-              <div className="weekly-meal-list">
+              <div className="mobile-card-grid food-card-grid">
                 {sortLoggedFoodsNewestFirst(day.meals || []).map((food) => (
                   <HistoryFoodCard
                     food={food}
@@ -565,7 +565,7 @@ function HistoryFoodCard({ food, date, onRemove }) {
       item={food}
       detailHref={logDetailHref(food, date)}
       onRemove={onRemove}
-      className="history-logged-food-card"
+      compact
     />
   );
 }
@@ -576,7 +576,7 @@ function FoodList({ title, foods = [], date, compact = false, onRemove }) {
     sortedFoods.length === 0 ? (
       <EmptyLoggedFoodCard />
     ) : (
-      <div className="history-food-card-grid">
+      <div className="mobile-card-grid food-card-grid">
         {sortedFoods.map((food) => (
           <HistoryFoodCard
             food={food}
